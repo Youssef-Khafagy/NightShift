@@ -1,0 +1,7 @@
+{
+  "BudgetName": "nightshift-tripwire",
+  "BudgetType": "COST",
+  "TimeUnit": "MONTHLY",
+  "BudgetLimit": { "Amount": "0.01", "Unit": "USD" },
+  "CostTypes": { "IncludeCredit": false, "IncludeRefund": false }
+}
