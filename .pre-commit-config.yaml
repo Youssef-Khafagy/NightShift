@@ -1,0 +1,41 @@
+# Runs on every `git commit`. Install once per clone: `pre-commit install`
+# Run on everything: `pre-commit run --all-files`
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files   # blocks files over 500 KB
+      - id: check-merge-conflict      # blocks leftover <<<<<<< markers
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: detect-private-key
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks                  # scans staged changes for secrets
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.8
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: no-aws-account-id         # keeps real account IDs out of a public repo
+        name: no AWS account ID in ARNs or --account-id
+        entry: '(arn:aws:[a-z0-9-]*:[a-z0-9-]*:\d{12}:|--account-id[ =]\d{12})'
+        language: pygrep
+      - id: terraform-fmt             # uses the Terraform we installed with apt
+        name: terraform fmt
+        entry: terraform fmt -check -recursive -diff
+        language: system
+        pass_filenames: false
+        files: \.(tf|tfvars)$
