@@ -1,0 +1,7 @@
+{
+  "BudgetName": "nightshift-monthly-1usd",
+  "BudgetType": "COST",
+  "TimeUnit": "MONTHLY",
+  "BudgetLimit": { "Amount": "1.00", "Unit": "USD" },
+  "CostTypes": { "IncludeCredit": false, "IncludeRefund": false }
+}
