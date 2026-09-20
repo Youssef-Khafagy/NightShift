@@ -29,6 +29,11 @@ build/
 
 # Lambda build artifacts
 *.zip
+terraform/.build/
+
+# Saved plan files and captured plan output
+tfplan
+plan.txt
 
 # Node / Next.js (dashboard, M8)
 node_modules/
