@@ -172,7 +172,34 @@ def prune(root: Path) -> int:
     if console_scripts.is_dir():
         shutil.rmtree(console_scripts)
         removed += 1
+    removed += drop_escaping_record_entries(root)
     return removed
+
+
+def drop_escaping_record_entries(root: Path) -> int:
+    """Remove RECORD lines that point outside the layer.
+
+    A wheel's RECORD lists every installed file with its hash. pip generates
+    console scripts itself and writes them with a shebang naming the
+    interpreter that did the install, so the same wheel yields a different
+    script on every machine. Those scripts land outside the import tree and
+    are pruned above, but RECORD still carries their hash, and that alone was
+    enough to make a runner's layer differ from a laptop's byte for byte.
+
+    Dropping entries that escape the layer is not a workaround. RECORD is
+    meant to describe what is installed, and a file that is not in the
+    artifact does not belong in it.
+    """
+    dropped = 0
+    for record in root.rglob("*.dist-info/RECORD"):
+        lines = record.read_text().splitlines()
+        kept = [line for line in lines if not line.split(",", 1)[0].startswith("../")]
+        if len(kept) != len(lines):
+            # Rewrite line by line rather than through a csv writer, so every
+            # surviving line keeps its exact original bytes.
+            record.write_text("\n".join(kept) + "\n")
+            dropped += len(lines) - len(kept)
+    return dropped
 
 
 def sorted_files(root: Path) -> list[str]:
