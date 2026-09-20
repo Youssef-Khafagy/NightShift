@@ -1,0 +1,134 @@
+# Runs on every pull request. Read-only: it can plan, never apply.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Default to no permissions, then grant per job. A token that can only read
+# contents cannot push, comment or create releases if a dependency is hostile.
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TERRAFORM_VERSION: 1.16.3
+  AWS_REGION: ca-central-1
+
+jobs:
+  checks:
+    name: Lint and secrets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # gitleaks scans history, not just the diff, so it needs all of it.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      # The terraform-fmt hook is a local hook that calls the terraform binary.
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      # Same checks as the local git hook, same pinned versions, one config.
+      # The hook is skippable with --no-verify; this job is not.
+      - name: Run pre-commit
+        run: pre-commit run --all-files --show-diff-on-failure
+
+  terraform:
+    name: Terraform plan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for the OIDC token that AWS exchanges for credentials.
+      id-token: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Assume the read-only plan role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/nightshift-ci-plan
+          role-session-name: nightshift-ci-plan-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        working-directory: terraform
+        run: terraform validate
+
+      - uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: v0.64.0
+
+      - name: TFLint
+        working-directory: terraform
+        env:
+          TFLINT_CONFIG: ${{ github.workspace }}/.tflint.hcl
+        run: |
+          tflint --init --config "$TFLINT_CONFIG"
+          tflint --recursive --config "$TFLINT_CONFIG" --format compact
+
+      - name: Trivy config scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: terraform
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+      # -lock=false because this role has no write access to the state bucket,
+      # and writing a lock object is a write. A plan that cannot lock is fine:
+      # it is read-only and nothing else applies concurrently on a PR.
+      - name: Terraform plan
+        id: plan
+        working-directory: terraform
+        run: |
+          terraform plan -input=false -lock=false -no-color -out=tfplan | tee plan.txt
+          terraform show -no-color tfplan > /dev/null
+
+      # Only the counts go on the pull request. The full plan stays in the job
+      # log, where GitHub masks the account ID because it is a secret. A PR
+      # comment is not masked, and this repo becomes public later.
+      - name: Comment plan summary
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('terraform/plan.txt', 'utf8');
+            const line = plan.split('\n').reverse()
+              .find(l => l.startsWith('Plan:') || l.includes('No changes.'))
+              || 'Plan produced no summary line.';
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `**Terraform plan**\n\n\`${line.trim()}\`\n\nFull plan is in the [job log](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).`,
+            });

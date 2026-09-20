@@ -1,0 +1,79 @@
+# Terraform apply. This is the approval gate.
+#
+# GitHub environments with required reviewers would be the usual way to gate
+# an apply, but GitHub Free cannot create environments on private repos and
+# required reviewers on a private repo need Enterprise. So the gate is this:
+# the workflow only runs when a human presses "Run workflow" on main and types
+# the confirmation word. GitHub records who triggered every run.
+name: Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type "apply" to confirm. Anything else stops the run.
+        required: true
+        type: string
+
+permissions: {}
+
+# Never two applies at once, and never cancel one halfway through.
+concurrency:
+  group: terraform-apply
+  cancel-in-progress: false
+
+env:
+  TERRAFORM_VERSION: 1.16.3
+  AWS_REGION: ca-central-1
+
+jobs:
+  apply:
+    name: Terraform apply
+    runs-on: ubuntu-latest
+    # The apply role's trust policy only accepts refs/heads/main, so a run
+    # from another branch would fail at the credentials step anyway. Failing
+    # here gives a readable error instead.
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check the confirmation word
+        if: inputs.confirm != 'apply'
+        run: |
+          echo "Confirmation was '${{ inputs.confirm }}', expected 'apply'." >&2
+          exit 1
+
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Assume the apply role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/nightshift-ci-apply
+          role-session-name: nightshift-ci-apply-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init -input=false
+
+      # Plan and apply are two steps on purpose. `terraform apply` on its own
+      # would re-plan and apply whatever it found, which can differ from what
+      # was reviewed. Applying a saved plan file applies exactly that plan, or
+      # fails if the world moved underneath it.
+      - name: Terraform plan
+        working-directory: terraform
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Terraform apply
+        working-directory: terraform
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Outputs
+        working-directory: terraform
+        run: terraform output
