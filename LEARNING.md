@@ -428,6 +428,50 @@ Two things that looked like fixes and were not. File modification time is not th
 
 **The side benefit.** The job log printed the plan as `arn:aws:lambda:ca-central-1:***:function:nightshift-hello:1`. GitHub masked the account ID because it is stored as a repository secret, which was the point of storing it that way.
 
+### What the first CI apply caught
+
+The first run of the apply workflow failed too, for a different and more instructive reason:
+
+```
+Error: listing tags for CloudWatch Logs Log Group
+(arn:aws:logs:ca-central-1:***:log-group:/aws/lambda/nightshift-hello):
+AccessDeniedException: User: arn:aws:sts::***:assumed-role/nightshift-ci-apply/...
+is not authorized to perform: logs:ListTagsForResource
+```
+
+**The cause: one resource, two ARN shapes.** CloudWatch Logs writes a log group's ARN two ways. `arn:aws:logs:REGION:ACCOUNT:log-group:NAME` refers to the group itself, and `arn:aws:logs:REGION:ACCOUNT:log-group:NAME:*` reaches the log streams inside it. Which one an action expects depends on the action. `logs:CreateLogStream` and `logs:PutLogEvents` want the `:*` form; `logs:ListTagsForResource` and `logs:PutRetentionPolicy` want the bare form. The policy only had the `:*` form, so Terraform could create the group but not read its tags during refresh. The fix lists both.
+
+This is the cost of hand-scoped IAM, and it is worth being honest about it in an interview: least privilege is not free, and the bill is paid in exactly this kind of failure. The trade was made deliberately for the role that can write, and deliberately not made for the role that can only read.
+
+**The deny worked, and it was inconvenient in exactly the right way.** The fix is a change to `aws_iam_role_policy.ci_apply`, which is the apply role's own policy. The apply role is explicitly denied `iam:PutRolePolicy` on itself, so CI could not have deployed this fix even if asked. It had to be applied from the laptop:
+
+```
+terraform apply -target=aws_iam_role_policy.ci_apply
+```
+
+`-target` restricts an apply to one resource and its dependencies. Terraform prints a warning every time, because a targeted apply leaves the rest of the configuration unapplied and is easy to misuse as a way to avoid reading a plan. Here it is the right tool: the rule is that CI IAM changes are local and everything else goes through the pipeline, and `-target` is what expresses that rule in one command.
+
+**End to end, this is what the pipeline then did.** A `workflow_dispatch` run with the confirmation word assumed `nightshift-ci-apply`, planned, applied, published version 2 and moved the `live` alias to it. Verified afterwards:
+
+```
+aws lambda invoke --function-name nightshift-hello:live ...
+{"status": 200, "version": "2", "error": null}
+
+aws lambda get-function --function-name nightshift-hello:live --query Code.Location
+-> downloaded zip contains exactly ['app.py']
+
+terraform plan
+-> no differences
+```
+
+The negative test matters as much as the positive one. Triggering the same workflow with `confirm=nope` failed at the first step, before checkout and before any AWS credentials were requested:
+
+```
+Check the confirmation word: failure
+Run actions/checkout@v7: skipped
+Assume the apply role: skipped
+```
+
 ### M1 concepts and interview questions
 
 **1. Walk me through how your CI authenticates to AWS.**
