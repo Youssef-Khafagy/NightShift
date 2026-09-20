@@ -95,7 +95,8 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 ## Milestones (stop for owner review after each)
 - M0: account safety and cost plan (budgets, MFA, dev credentials, region, Lambda concurrency quota, COST.md, repo scaffold, pre-commit). Create nothing in AWS beyond budgets until COST.md is approved.
 - M1: Terraform skeleton, GitHub Actions OIDC pipeline, hello-world Lambda through an alias.
-- M2: the store, DSQL schema and migrations, DynamoDB, SQS with DLQ, flags, logging, tracing, rate-capped traffic generator.
+- M2a: packaging (shared deps layer), DSQL cluster, schema and migrations, DynamoDB cart table, SQS with DLQ, the four services working end to end.
+- M2b: SSM flags, correlation ID propagation, EMF metrics, tracing, topology parameter, rate-capped traffic generator, DPU cost-check script.
 - M3: versioned deploys, deployments table, rollback script, alarms, SNS paging, pause and destroy commands.
 - M4: chaos framework plus scenarios 1, 2, 4, 5, 11.
 - M5: agent v1 (read-only, journal, checkpointing, structured report).
@@ -120,6 +121,13 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Terraform S3 backend locking is `use_lockfile = true` (native, conditional writes) since Terraform 1.10. `dynamodb_table` is deprecated and will be removed.
 - Newest GA Lambda Python runtime is `python3.14` (3.15 is public preview, not for production). Functions run on arm64: cheaper per GB-second, same free allowance.
 - Lambda `logging_config { log_format = "JSON" }` gives structured logs with no library. Fields passed via `logger.info(..., extra={...})` land at the top level.
+- Aurora DSQL free tier (checked 2026-09-20): first 100,000 DPUs and 1 GB storage per month, then $8 per million DPUs and $0.33 per GB-month. Idle clusters scale to zero and incur no DPU charge. AWS benchmarks 100K DPU at roughly 700,000 TPC-C transactions.
+- DSQL hard limits (checked 2026-09-20): Repeatable Read only; 3,000 rows and 10 MiB modified per transaction; 5 minute maximum transaction; 60 minute maximum connection; 10,000 connections and 100 new connections/second per cluster; 24 indexes, 255 columns and 2 MiB rows per table; 10 schemas and 1,000 tables per database; one database named `postgres`; C collation; UTC.
+- DSQL compatibility (checked 2026-09-20): DDL and DML require separate transactions and one DDL per transaction; no `TRUNCATE` (use `DELETE`), no temp tables (use CTEs), no triggers, no PL/pgSQL (SQL functions only). Foreign keys, sequences (max 5,000) and views are supported. Use `CREATE INDEX ASYNC`.
+- DSQL auth: boto3 `dsql` client, `generate_db_connect_auth_token` for a custom database role and `generate_db_connect_admin_auth_token` for admin. Token expires in 15 minutes by default; an established connection survives token expiry. SSL required.
+- Powertools Tracer is a thin wrapper over the AWS X-Ray SDK and the Powertools docs say it was chosen over ADOT for cold start. Since the X-Ray SDK is unsupported from 2027-02-25, this project uses Powertools for Logger and Metrics only.
+- Lambda tracing options: active tracing alone gives 2 segments per trace with no SDK, at a fixed sampling rate of 1 request/second plus 5% of the rest, which cannot be configured. AWS also documents a manual OpenTelemetry path with a Simple Span Processor, an X-Ray UDP span exporter and an X-Ray Lambda propagator, requiring no collector layer.
+- An idle SQS-triggered Lambda long-polls at roughly 648K requests/month per queue, about two thirds of the 1M free allowance, for zero work.
 
 ## Current status (end of session 2026-09-20)
 M0 is complete. M1 is built, applied, and verified. Everything below is verified.
@@ -176,3 +184,7 @@ Later (tracked, not blocking): test that a budget email actually arrives before 
 - Approved 2026-09-20: the Terraform state bucket is created and owned by a bootstrap script, not by Terraform. Reason: Terraform cannot create its own backend, and a bucket it manages could be deleted by `terraform destroy` while state is being written to it.
 - Approved 2026-09-20: the CI plan role uses the AWS managed `ReadOnlyAccess` policy while the apply role is scoped by hand. Reason: a plan must read every resource type in the configuration and that set grows each milestone; a role that cannot write cannot break anything, and all data in the account is synthetic.
 - Approved 2026-09-20: the AWS account ID is a GitHub repository secret (`AWS_ACCOUNT_ID`) and workflows build ARNs from it. Reason: keeps the ID out of the repo, and GitHub masks secret values in job logs.
+- Approved 2026-09-20: M2 is split into M2a (data plane) and M2b (telemetry), each with its own owner review. Reason: M2 as originally scoped is about four times the size of M1, and a wrong turn should cost half a milestone rather than a whole one.
+- Approved 2026-09-20: tracing uses OpenTelemetry with the X-Ray UDP span exporter and the X-Ray Lambda propagator, set up manually, with no collector layer. Powertools is used for Logger and Metrics only. Reason: Powertools Tracer wraps the AWS X-Ray SDK, which is unsupported from 2027-02-25, inside this project's life; the ADOT managed layer is heavier and its ARN carries an AWS-owned account ID that the pre-commit hook blocks.
+- Approved 2026-09-20: Python dependencies ship in one shared Lambda layer built by a script from a pinned requirements file. Reason: function zips stay small and reviewable, deploys upload only our code, the layer ARN is ours so no foreign account ID enters the repo, and layers are worth knowing.
+- Approved 2026-09-20: the SQS event source mapping ships disabled and is enabled explicitly for a run. Reason: an idle triggered queue spends about two thirds of the free SQS allowance doing nothing, and this makes most of M3's pause command already built.
