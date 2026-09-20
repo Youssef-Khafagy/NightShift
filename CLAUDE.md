@@ -157,10 +157,16 @@ M1, done and verified 2026-09-20:
   1. `archive_file` with `source_dir` zipped `src/hello/__pycache__` from a local smoke test, so the artifact differed between laptop and runner and a stray `.pyc` shipped inside version 1. The module now builds the zip from an explicit `fileset` allowlist of `**/*.py` plus an `extra_files` variable. Ruled out as causes: file mtime (archive_file normalizes it) and `output_file_mode` (a no-op with content-based sources).
   2. The apply role granted CloudWatch Logs actions only on `log-group:NAME:*`. Actions on the group itself (`ListTagsForResource`, `PutRetentionPolicy`) need the bare `log-group:NAME` form. Both are now listed. This fix had to be applied locally with `-target`, because the apply role is denied `iam:PutRolePolicy` on itself, which is the deny working as designed.
 
-Next session, in order:
-1. Confirm the CI workflow passed on the M1 pull request (first real test of the OIDC plan role).
-2. Owner review of M1.
-3. Propose the M2 plan (the store: DSQL schema and migrations, DynamoDB cart, SQS with DLQ, flags, logging, tracing, rate-capped traffic generator). Wait for approval before building.
+M1 was reviewed and approved by the owner on 2026-09-20.
+
+M2a in progress (owner approved the plan 2026-09-20). Steps:
+1. **Done.** COST.md carries the re-verified DSQL, Lambda and X-Ray numbers, a DSQL cost model section, and the DynamoDB capacity ledger (16 of 25 RCU/WCU allocated through M5). Two corrections recorded: Lambda's X-Ray sampling rate is fixed and unconfigurable, and the Lambda free tier is identical for x86 and arm64 so arm64 does not stretch it.
+2. **Done.** `scripts/lambda_deps.py` (`lock` and `build`) plus `requirements/lambda-deps.in` and `lambda-deps.lock`. Shared deps layer: aws-lambda-powertools 3.35.0 and psycopg[binary] 3.3.6, 28.2 MiB unpacked and 7.7 MiB zipped, sha256 `f9bd9f58...`. Cross-built for cp314 aarch64 with `--only-binary=:all:` and both `manylinux_2_28_aarch64` and `manylinux2014_aarch64` platform tags. Deterministic zip verified by rebuilding, and `--require-hashes` verified by tampering with a hash and watching the build fail. No AWS resources created yet.
+3. Next: extend `lambda_service` for layers, env vars and tracing; add the layer resource; make CI build the layer before plan. First check of whether the CI runner reproduces the layer sha256.
+4. Then: Terraform for the DSQL cluster, DynamoDB cart table (5/5), SQS queue plus DLQ with the event source mapping disabled. **Show the plan and get an explicit yes before applying.**
+5. Then: migration runner and schema, and confirm the runtime's bundled boto3 exposes the `dsql` client before writing DSQL code.
+6. Then: the four services, deployed through the pipeline.
+7. Then: measure DPU per checkout and replace the estimate in COST.md before any load test.
 
 Later (tracked, not blocking): test that a budget email actually arrives before the Feb 2027 upgrade (COST.md upgrade plan).
 
