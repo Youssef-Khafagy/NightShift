@@ -213,3 +213,198 @@ By default a budget measures net cost, so credits and refunds are subtracted bef
 **5. Your pre-commit hooks already run gitleaks. Why bother running it again in CI?**
 
 Because a pre-commit hook is not a security control, it is a convenience. It only exists if someone ran `pre-commit install`, it lives in `.git/hooks` which is never cloned or pushed, and anyone can bypass it with `git commit --no-verify`. It is there because a two-second local failure is much cheaper than a two-minute CI failure. CI runs on the server on every pull request and cannot be skipped by the person making the change, so that is where the rule is actually enforced. The asymmetry justifies the duplication: a false block costs me a minute, while a secret that reaches a remote has to be assumed leaked and rotated, even in a private repo, because history is effectively permanent once pushed. The same logic covers the hook that blocks the AWS account ID.
+
+## M1: Terraform, GitHub OIDC, and the first Lambda
+
+### What M1 actually is (2026-09-20)
+
+Eleven AWS resources and one S3 bucket. None of them is interesting on its own. The point is the path: a change to a file in this repo can reach a running Lambda without anyone typing an AWS command, without a stored password, and without skipping a review.
+
+| Piece | Resource | Why it exists |
+|---|---|---|
+| State | S3 bucket `nightshift-tfstate-ca-central-1-2f0ad894` | Terraform remembers what it built |
+| Trust | `aws_iam_openid_connect_provider.github` | AWS agrees to believe tokens GitHub signs |
+| Read access | `nightshift-ci-plan` role + ReadOnlyAccess | Pull requests can plan |
+| Write access | `nightshift-ci-apply` role + scoped inline policy | Only a manual run on main can apply |
+| The workload | `nightshift-hello` function, `live` alias, function URL, exec role, log policy, log group | Something to deploy |
+
+### Terraform state, and why the bucket is not Terraform's
+
+**What state is.** Terraform is not reading your AWS account and diffing it against your files. It keeps a JSON file that records every resource it created and the real ID AWS gave it. `plan` compares three things: your configuration, that state file, and a refresh of the real resources. Without state, Terraform has no idea that `aws_lambda_function.this` in your file is the function called `nightshift-hello` in AWS, and it would try to create a second one.
+
+**Why the state file goes in S3.** On your laptop, state is a single file that only you have. If it is lost, Terraform forgets everything it owns and the next apply tries to recreate resources that already exist. If CI is going to run Terraform too, CI and your laptop need to read and write the same state. S3 gives both: durable, versioned, and reachable by an IAM role.
+
+**Locking.** Two applies at once would both read the old state, both act, and one would overwrite the other's record. Terraform prevents that with a lock. The old way was a DynamoDB table holding a lock row. The current way, and the only way in new code, is `use_lockfile = true`: Terraform writes a small `terraform.tfstate.tflock` object next to the state and relies on S3 conditional writes, which are atomic, so exactly one writer wins. DynamoDB locking is deprecated and will be removed. This also saves a table and its provisioned capacity, which matters when the whole project is on a capacity budget.
+
+**The chicken and the egg.** The backend has to exist before `terraform init` can use it, so Terraform cannot create the bucket that stores Terraform's state. `bootstrap/state/create-state-bucket.sh` creates it with the AWS CLI, once. There is a second reason to keep it outside Terraform: if Terraform managed the bucket, `terraform destroy` would try to delete the bucket it is writing its state to, halfway through. The script defaults to a dry run and prints every command before `--apply` runs it, the same pattern as the M0 budget files.
+
+**What the bucket has turned on, and why**
+
+| Setting | Reason |
+|---|---|
+| Versioning | State is the one file you cannot regenerate. A bad apply or a truncated write is recoverable from the previous version. |
+| Block all public access | State lists every resource, its configuration, and sometimes secrets. |
+| SSE-S3 (AES256) | Encryption at rest, free. A customer managed KMS key would cost money and is on the forbidden list. |
+| `BucketOwnerEnforced` ownership | Disables ACLs entirely, so access is decided only by IAM and the bucket policy. One mechanism instead of two. |
+| Deny non-TLS bucket policy | `aws:SecureTransport = false` is refused, so state never travels in plaintext. |
+| Lifecycle: expire noncurrent versions after 30 days | Versioning without expiry grows forever and is billed forever. |
+| Lifecycle: abort incomplete multipart uploads after 7 days | A failed large upload leaves parts that are billed until aborted. This is the classic invisible S3 charge. |
+
+### GitHub OIDC: logging in without a password
+
+**The problem.** CI needs AWS credentials. The obvious answer is to create an IAM user, generate an access key, and paste it into GitHub secrets. That key never expires, works from anywhere, and now exists in at least two places. If it leaks, you find out later.
+
+**How OIDC replaces it.** OpenID Connect is a standard for one system to prove an identity to another. The flow here:
+
+1. A workflow job asks GitHub for an OIDC token. That is what `permissions: id-token: write` grants.
+2. GitHub mints a short-lived JWT describing the run: which repo, which branch or event, which workflow. It signs it with GitHub's private key.
+3. The job calls `sts:AssumeRoleWithWebIdentity` with that token.
+4. AWS fetches GitHub's public keys, checks the signature, then checks the token's claims against the role's trust policy.
+5. STS returns temporary credentials that expire in an hour.
+
+Nothing is stored. The credential is created per run and dies with it.
+
+**The two claims that matter.** `aud` (audience) is who the token is for, `sts.amazonaws.com`. `sub` (subject) is who the token is about. The subject is the real access control, and getting it wrong is how people accidentally let any repository on GitHub assume their role.
+
+**Immutable subject claims.** GitHub changed this format for repositories created after 2026-07-15, which includes ours (created 2026-09-19). The old subject was `repo:OWNER/REPO:ref:refs/heads/main`. The new one is:
+
+```
+repo:Youssef-Khafagy@232406487/NightShift@1376738088:ref:refs/heads/main
+```
+
+The numbers are the account ID and the repository ID. They exist because names can be given up. If you rename your account or delete the repo, someone else can register the old name, and a trust policy matching the old string would then trust their repository. The numeric IDs are never reissued. The old format does not validate for these repositories at all, so a guide written before mid-2026 produces a role nobody can assume. Look the IDs up with:
+
+```
+gh api users/Youssef-Khafagy --jq .id
+gh api repos/Youssef-Khafagy/NightShift --jq .id
+```
+
+**Why the conditions use StringEquals, not StringLike.** It is tempting to write `repo:owner/repo:*`. That matches every branch, every tag, and every pull request, including `pull_request` runs from forks. The plan role lists exactly two subjects (`:pull_request` and `:ref:refs/heads/main`); the apply role lists exactly one (`:ref:refs/heads/main`). A trust policy with no subject condition at all would let any GitHub repository in the world assume the role, which is a well documented way people have lost accounts.
+
+**No thumbprint.** Older guides pin a certificate thumbprint like `6938fd4d...`. AWS now verifies GitHub's endpoint against its own library of trusted root certificate authorities and only falls back to thumbprints for providers using a private CA. When no thumbprint is supplied at creation, IAM retrieves one itself. Pinning one means every GitHub certificate rotation breaks deploys.
+
+### IAM: two roles, and why one is broad on purpose
+
+**Plan is read-only and uses the AWS managed `ReadOnlyAccess` policy.** This is deliberately broad, and it is worth being able to defend. A plan has to read every resource type the configuration touches, and that set grows with every milestone, so a hand-written read policy means a CI failure every time a new service appears. A role that cannot write cannot break anything. The real risk of a broad read role is data exposure, and everything in this account is synthetic. The role that can actually change the account is scoped by hand.
+
+**Apply is scoped by resource, not by service.** Lambda permissions apply only to `function:nightshift-*`, IAM permissions only to `role/nightshift-*`, logs only to `/aws/lambda/nightshift-*`, and S3 only to this project's prefix in the state bucket. The Lambda actions are listed one by one rather than `lambda:*`, so that a dangerous action added to the Lambda API next year does not silently land in this role.
+
+**Explicit deny beats allow, always.** IAM evaluates every applicable policy: if any statement denies, the request fails, no matter how many allow it. That makes deny the right tool for "never, under any circumstances":
+
+| Deny | Reason |
+|---|---|
+| Mutating the two CI roles and the OIDC provider | CI must not be able to widen its own permissions. Changing CI's IAM is a local apply by the owner. Get and List are still allowed, because Terraform reads these on every refresh. |
+| `iam:CreateUser`, `iam:CreateAccessKey`, login profiles | These create identities that outlive the workflow run. A compromised pipeline's first move is usually to mint a credential it can come back with. |
+| `organizations:*`, `account:*` | Joining an Organization auto-upgrades the account to the Paid plan, which removes the "cannot be charged" guarantee. |
+| `budgets:ModifyBudget`, `budgets:DeleteBudget`, `ce:*` | The cost alarms are the safety net. Nothing automated may touch them. |
+| `s3:DeleteBucket` and bucket-level settings on the state bucket | Terraform must never be able to delete or unprotect the bucket holding its own state. |
+
+### Versions, aliases, and why nothing points at $LATEST
+
+Every Lambda function has an unpublished `$LATEST` that changes whenever you update the code. `publish = true` makes Terraform also create an immutable numbered version on every code change. Version 1 is frozen forever.
+
+An alias is a named pointer to a version. `live` points at 1 today. A deploy is "publish version 2, move the alias". A rollback is "move the alias back to 1", which is one API call, does not rebuild anything, and is why M3 can have a rollback script at all. If callers invoked `$LATEST`, there would be nothing to roll back to and no way to say which code served a given request. The function's version appears in every log line for the same reason.
+
+Invoking the alias looks like this. `ExecutedVersion` is the proof that the alias resolved:
+
+```
+aws lambda invoke --function-name nightshift-hello:live \
+  --payload '{"headers":{"x-correlation-id":"m1-smoke-test"}}' out.json
+{"status": 200, "version": "1", "error": null}
+```
+
+**Function URLs.** A function URL is an HTTPS endpoint Lambda manages itself. It is free, where API Gateway and any load balancer are not, which is the whole reason it is in this design. `authorization_type = "AWS_IAM"` means every request must be SigV4-signed by a principal allowed to invoke this alias. The alternative, `NONE`, is a public endpoint anyone can invoke, which on a project whose first rule is $0 would be a stranger spending your free tier. Verified both ways:
+
+```
+curl $URL                          -> http 403
+curl --aws-sigv4 ... $URL          -> http 200
+```
+
+**arm64.** Graviton costs less per GB-second than x86_64 and the free allowance is measured in GB-seconds, so the same allowance goes further. Python has no compiled dependencies here, so there is no portability cost.
+
+**Reserved concurrency of 2.** Reserved concurrency is a hard ceiling on how many copies of this function can run at once. It is a blast radius control: a retry storm or a loop cannot spend the account's whole free allowance on one function. It is also why the M0 quota increase mattered, since reserving anything requires at least 100 unreserved concurrency to remain.
+
+**The log group is created by Terraform, not by Lambda.** If Lambda creates the group on first invocation, it is created with "never expire", and CloudWatch's free 5 GB per month covers storage as well as ingestion. Creating it in Terraform sets three-day retention from the start. It also means the execution role does not need `logs:CreateLogGroup`, which the AWS managed `AWSLambdaBasicExecutionRole` grants across the entire account. The role here can only write to its own group.
+
+**Structured logs for free.** `logging_config { log_format = "JSON" }` makes the runtime emit each log record as JSON. Combined with `logger.info("...", extra={...})`, fields land at the top level where Logs Insights can filter on them, with no library:
+
+```json
+{"timestamp": "2026-09-20T22:27:18Z", "level": "INFO", "message": "handled request",
+ "requestId": "c4407763-...", "service": "hello", "correlation_id": "m1-smoke-test",
+ "function_version": "1"}
+```
+
+### The pipeline
+
+**Two workflows, because plan and apply have different risk.**
+
+`ci.yml` runs on pull requests. Job one runs `pre-commit run --all-files`, which is the same config and the same pinned versions as the local git hook. One source of truth, and this copy cannot be skipped with `--no-verify`. Job two assumes the plan role and runs `terraform validate`, `tflint`, a `trivy config` scan, and `terraform plan`.
+
+`apply.yml` runs only on `workflow_dispatch`, only on main, and only when the person triggering it types `apply` into the confirmation box. That is the approval gate. GitHub environments with required reviewers would be the textbook answer, but they do not exist on GitHub Free for a private repo. GitHub records who triggered every run, so it is still auditable. What is lost is the coupling between a reviewed plan and the apply, which is a real gap with one maintainer and the reason M3 onwards keeps a deployments table.
+
+**Details worth knowing**
+
+| Detail | Reason |
+|---|---|
+| `permissions: {}` at the top, then per job | The default `GITHUB_TOKEN` can be broad. Starting from nothing and granting per job means a hostile dependency in one job cannot push code or create releases. |
+| `plan -lock=false` in CI | The plan role cannot write to the state bucket, and writing a lock object is a write. A read-only plan does not need a lock. |
+| Only the plan counts are posted as a PR comment | The full plan contains ARNs, which contain the account ID. GitHub masks secrets in job logs, so `secrets.AWS_ACCOUNT_ID` is redacted there, but bot comments are not masked and PR history survives the repo going public. |
+| `AWS_ACCOUNT_ID` as a secret, role names in the clear | The workflows build `arn:aws:iam::***:role/nightshift-ci-plan`. The account ID stays out of the repo and out of the logs; the role names stay readable. |
+| `concurrency` group on apply, `cancel-in-progress: false` | Never two applies at once, and never cancel one halfway through. |
+| Plan file passed to apply, not a bare `terraform apply` | `apply` on its own re-plans and applies whatever it finds, which may differ from what was reviewed. Applying a saved plan applies exactly that plan or fails. |
+
+**Why the first apply was local.** CI cannot create the roles CI needs in order to run. The owner ran `terraform apply` once from the laptop with the admin profile, and everything after that goes through the pipeline.
+
+### Commands used in M1
+
+| Command | What it does |
+|---|---|
+| `./bootstrap/state/create-state-bucket.sh` | Prints every AWS call it would make and exits. Default is dry run on purpose. |
+| `./bootstrap/state/create-state-bucket.sh --apply` | Creates and configures the state bucket. Safe to re-run: every step is idempotent. |
+| `terraform init` | Downloads providers, writes `.terraform.lock.hcl`, and connects to the backend. Needed again whenever providers or backend config change. |
+| `terraform validate` | Checks syntax and internal consistency. No AWS calls, no credentials needed. |
+| `terraform fmt -recursive` | Canonical formatting. Also a pre-commit hook, so a badly formatted file cannot be committed. |
+| `terraform plan -out=tfplan` | Shows what would change and saves that exact plan to a file. |
+| `terraform apply tfplan` | Applies the saved plan, or fails if reality moved. |
+| `terraform output -raw NAME` | Prints one output without quotes, for use in shell variables. |
+| `tflint --recursive` | Lints Terraform for things `validate` does not catch: deprecated syntax, unused declarations, invalid AWS values. Caught a real one here: the module had no `required_version` or provider constraints. |
+| `trivy config terraform` | Scans the Terraform for insecure configuration. Clean at every severity after the IAM actions were listed out instead of `lambda:*`. |
+| `gh secret set AWS_ACCOUNT_ID` | Stores the account ID as a repository secret so workflows can build ARNs and GitHub masks it in logs. |
+| `curl --aws-sigv4 "aws:amz:ca-central-1:lambda" --user "$KEY:$SECRET" -H "x-amz-security-token: $TOKEN"` | Signs a request the way the AWS SDKs do, to test an `AWS_IAM` function URL from the shell. |
+
+### How to verify M1
+
+```
+cd terraform && terraform plan          # expect: No changes
+aws lambda invoke --function-name nightshift-hello:live --payload '{}' out.json
+aws logs describe-log-groups --log-group-name-prefix /aws/lambda/nightshift-hello \
+  --query 'logGroups[0].retentionInDays'                      # expect: 3
+curl "$(terraform output -raw hello_function_url)"            # expect: http 403
+aws s3 ls s3://nightshift-tfstate-ca-central-1-2f0ad894/nightshift/
+```
+
+### Cost of M1
+
+$0.00 measurable. IAM roles, policies, the OIDC provider, Lambda aliases and function URLs are all free. The function is not invoked unless something invokes it, and 1M requests plus 400,000 GB-seconds per month are free. Logs are on three-day retention inside the 5 GB allowance. The one real charge is the state bucket: under 100 KB of state, a handful of requests per run, so roughly $0.001 a month and at worst $0.02. Actions minutes come out of the Free plan's 2,000 per month for private repos; a full CI run is a few minutes.
+
+### M1 concepts and interview questions
+
+**1. Walk me through how your CI authenticates to AWS.**
+
+GitHub Actions uses OIDC, so there are no AWS keys anywhere. The job asks GitHub for a short-lived signed JWT that describes the run, then calls `sts:AssumeRoleWithWebIdentity` with it. AWS validates the signature against GitHub's public keys and checks the token's claims against the role's trust policy: the audience must be `sts.amazonaws.com`, and the subject must exactly match one of the subjects I listed. STS returns credentials that expire in an hour. The subject condition is the actual access control, and my repository was created after July 2026 so it uses GitHub's immutable subject format, which embeds the numeric owner and repository IDs instead of names. That matters because names can be released and re-registered by someone else, while the IDs are never reused. I used `StringEquals` with an explicit list rather than a wildcard, because `repo:owner/repo:*` would also match every branch and every fork's pull request.
+
+**2. Your plan role has the AWS managed ReadOnlyAccess policy. Isn't that the opposite of least privilege?**
+
+It is broad, and it was a deliberate trade. A plan has to read every resource type in the configuration, and that set grows every milestone, so a hand-written read policy turns into a CI failure every time I add a service. What I weighed is that the role cannot write, so it cannot change or destroy anything; the remaining risk is reading data, and everything in this account is synthetic test data. The role that can actually change the account is the apply role, and that one is scoped by hand: Lambda only on `function:nightshift-*`, IAM only on `role/nightshift-*`, logs only on this project's log groups, S3 only on this project's state prefix, with the Lambda actions enumerated instead of `lambda:*`. If this were a real production account with customer data, I would scope the read role too and accept the maintenance.
+
+**3. What stops your pipeline from giving itself more permissions?**
+
+An explicit deny in the apply role covering every mutating IAM action on the two CI roles and on the OIDC provider. In IAM, an explicit deny always wins over any allow, so even though the role can create and modify roles named `nightshift-*`, those specific ARNs are carved back out. Get and List are still allowed because Terraform reads those resources on every refresh. The practical effect is that changing CI's own permissions cannot be done by CI: it has to be a local apply by me. The same deny statement blocks creating IAM users and access keys, anything under `organizations:` or `account:`, and modifying the budgets, because those are the account's cost and blast-radius guards.
+
+**4. How do you deploy and roll back a Lambda?**
+
+Every apply publishes an immutable numbered version, and a `live` alias points at one of them. Nothing ever invokes `$LATEST`. A deploy publishes a new version and moves the alias; a rollback moves the alias back to the previous version, which is a single API call and does not rebuild or redeploy anything. That is what makes a rollback fast enough to be the first thing an on-call agent tries, which is the entire premise of this project. It also gives me attribution: the function version is in every log line, so I can say which code served a given request. The alias is also what the function URL is attached to, so traffic follows the alias rather than a version.
+
+**5. Terraform state is in S3. What could go wrong, and what did you do about it?**
+
+Three things. Concurrent writes, handled with `use_lockfile = true`, which is S3 native locking using conditional writes; the old DynamoDB lock table is deprecated. Loss or corruption, handled with bucket versioning, so a bad state file can be rolled back to the previous version, plus a lifecycle rule that expires old versions after 30 days so it does not grow and bill forever. Exposure, since state contains every resource and sometimes secrets, handled with all public access blocked, ACLs disabled via BucketOwnerEnforced, default encryption, and a bucket policy that denies any request not over TLS. The bucket is created by a script rather than by Terraform for two reasons: Terraform cannot create its own backend before `init`, and if it managed the bucket then `terraform destroy` would try to delete the bucket it is writing state to.
