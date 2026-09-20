@@ -92,9 +92,10 @@ jobs:
           python -m pip install --upgrade pip
           python scripts/lambda_deps.py build
 
-      # Temporary: the runner and a local build disagree on the layer's
-      # contents. This hands over the per-file hashes so the difference can be
-      # diffed rather than guessed at.
+      # Kept after it earned its place. When a runner's layer stopped matching
+      # a local build, rolled-up digests could say that something differed but
+      # not what. Diffing per-file hashes named the one file in 468, and the
+      # layer changes again whenever a dependency does.
       - name: Upload the layer manifest
         uses: actions/upload-artifact@v5
         with:
