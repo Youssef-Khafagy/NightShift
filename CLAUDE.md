@@ -115,9 +115,14 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - GitHub environments do not exist on GitHub Free for private repos ("Users with GitHub Free plans can only configure environments for public repositories"), and required reviewers on a private repo need Enterprise even on Pro or Team. They are free on public repos; if the repo is made public, do not enable "prevent self-review" (single maintainer).
 - GitHub Actions on a private repo draws on the Free plan allowance of 2,000 minutes and 500 MB of artifact storage per month. Public repos get standard runners free with no minute cap. Both are $0; the private one has a ceiling to watch.
 - Groq free models allow 8K TPM and 200K TPD per model; Gemini per-model limits are only visible in AI Studio.
+- GitHub repos created after 2026-07-15 use immutable OIDC subject claims: `repo:OWNER@OWNER-ID/REPO@REPO-ID:ref:refs/heads/BRANCH`. Ours was created 2026-09-19, so the old `repo:OWNER/REPO:...` form does not validate. Owner ID 232406487, repo ID 1376738088.
+- IAM OIDC providers no longer need a thumbprint. AWS verifies GitHub's endpoint against its trusted root CAs and retrieves a thumbprint itself when none is given. Pinning one breaks deploys on certificate rotation.
+- Terraform S3 backend locking is `use_lockfile = true` (native, conditional writes) since Terraform 1.10. `dynamodb_table` is deprecated and will be removed.
+- Newest GA Lambda Python runtime is `python3.14` (3.15 is public preview, not for production). Functions run on arm64: cheaper per GB-second, same free allowance.
+- Lambda `logging_config { log_format = "JSON" }` gives structured logs with no library. Fields passed via `logger.info(..., extra={...})` land at the top level.
 
 ## Current status (end of session 2026-09-20)
-M0 is complete and awaiting owner review. Everything below is verified.
+M0 is complete. M1 is built, applied, and verified. Everything below is verified.
 
 Done:
 - AWS account: Free plan, ACTIVE, $100 credits, ends 2027-03-18. Root has MFA and no access keys. Daily identity is IAM user `youssef-admin` (MFA, no access keys, permissions only via group `nightshift-admins` with AdministratorAccess). CLI auth via `aws login --profile nightshift-admin`.
@@ -131,9 +136,20 @@ Done:
 
 Also done 2026-09-20: owner revoked the old GitHub token that was in `~/.git-credentials` and enabled "Block command line pushes that expose my email". M0 concepts and 5 interview questions written in LEARNING.md.
 
+M1, done and verified 2026-09-20:
+- State bucket `nightshift-tfstate-ca-central-1-2f0ad894` created by `bootstrap/state/create-state-bucket.sh` (versioned, public access blocked, SSE-S3, ACLs disabled, TLS-only policy, 30-day noncurrent expiry, 7-day incomplete-MPU abort). Not managed by Terraform, on purpose.
+- Terraform 1.16.3, AWS provider 6.65, backend S3 with `use_lockfile = true`. Root config in `terraform/`, one module in `terraform/modules/lambda_service/`.
+- GitHub OIDC provider plus roles `nightshift-ci-plan` (ReadOnlyAccess, assumable from pull requests and main) and `nightshift-ci-apply` (hand-scoped, main only, explicit denies on the CI roles, the OIDC provider, IAM user and key creation, Organizations, budgets, and the state bucket).
+- `nightshift-hello` Lambda: python3.14, arm64, reserved concurrency 2, published version 1, `live` alias, function URL with AWS_IAM auth, log group with 3-day retention created by Terraform.
+- Workflows `.github/workflows/ci.yml` (pre-commit, validate, tflint, trivy config, plan with `-lock=false`, PR comment shows counts only) and `apply.yml` (`workflow_dispatch` on main, confirmation word `apply`, saved plan file).
+- Repo secret `AWS_ACCOUNT_ID` set, so workflows build role ARNs and GitHub masks the ID in logs.
+- Verified: alias invoke returned ExecutedVersion 1; function URL 403 unsigned and 200 SigV4-signed; log retention 3; JSON log lines carry `correlation_id` and `function_version`; state object present in S3.
+- First apply was local by the owner, because CI cannot create the roles CI needs.
+
 Next session, in order:
-1. Owner review of M0.
-2. Propose the M1 plan (Terraform skeleton, S3 remote state with native locking, GitHub Actions OIDC, plan on PR plus manual `workflow_dispatch` apply, hello-world Lambda through a `live` alias). Wait for approval before building anything.
+1. Confirm the CI workflow passed on the M1 pull request (first real test of the OIDC plan role).
+2. Owner review of M1.
+3. Propose the M2 plan (the store: DSQL schema and migrations, DynamoDB cart, SQS with DLQ, flags, logging, tracing, rate-capped traffic generator). Wait for approval before building.
 
 Later (tracked, not blocking): test that a budget email actually arrives before the Feb 2027 upgrade (COST.md upgrade plan).
 
@@ -152,3 +168,8 @@ Later (tracked, not blocking): test that a budget email actually arrives before 
 - Approved 2026-09-19: git credentials via `gh auth setup-git`, plain-text `store` helper removed. Reason: no plain-text tokens on disk.
 - Approved 2026-09-20: the GitHub repo stays private for now and goes public by M8. Reason: owner is not ready to show the work; everything is still written as if public so nothing has to be rewritten later.
 - Approved 2026-09-20: the M1 apply gate is a manual `workflow_dispatch` job, not a GitHub environment with required reviewers. Reason: GitHub Free cannot create environments on private repos, and required reviewers on a private repo need Enterprise. Clicking Run workflow is the approval. Revisit when the repo goes public.
+- Approved 2026-09-20: Terraform remote state in an S3 bucket in our own account with `use_lockfile = true` (S3 native locking, which replaced the DynamoDB lock table in Terraform 1.10). Reason: realistic cost is about $0.001/month and worst case about $0.02, inside the $0.10 rule, and it keeps everything in one AWS account instead of adding a third-party service.
+- Approved 2026-09-20: M1 started (Terraform skeleton, S3 backend bootstrap, GitHub OIDC, hello-world Lambda through a `live` alias).
+- Approved 2026-09-20: the Terraform state bucket is created and owned by a bootstrap script, not by Terraform. Reason: Terraform cannot create its own backend, and a bucket it manages could be deleted by `terraform destroy` while state is being written to it.
+- Approved 2026-09-20: the CI plan role uses the AWS managed `ReadOnlyAccess` policy while the apply role is scoped by hand. Reason: a plan must read every resource type in the configuration and that set grows each milestone; a role that cannot write cannot break anything, and all data in the account is synthetic.
+- Approved 2026-09-20: the AWS account ID is a GitHub repository secret (`AWS_ACCOUNT_ID`) and workflows build ARNs from it. Reason: keeps the ID out of the repo, and GitHub masks secret values in job logs.

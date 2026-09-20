@@ -51,7 +51,7 @@ Not yet re-verified on a pricing page today (expected free, checked before first
 
 | Item | Cost | Plan |
 |---|---|---|
-| S3 bucket for Terraform state | No Always Free tier for new accounts. ca-central-1: $0.025/GB-month, $0.0055 per 1,000 PUT/LIST, $0.00044 per 1,000 GET | On the Free plan it is covered by credits, so $0.00. After upgrade: realistic ~$0.001/month (60 runs x ~6 requests, <1 MB state), worst case ~$0.02/month (400 runs, 100 kept versions). Under the $0.10 threshold but not literally $0. Decide in M1: S3 with native locking and a lifecycle rule on old versions, or HCP Terraform Free (no charge up to 500 managed resources). |
+| S3 bucket for Terraform state | No Always Free tier for new accounts. ca-central-1: $0.025/GB-month, $0.0055 per 1,000 PUT/LIST, $0.00044 per 1,000 GET | On the Free plan it is covered by credits, so $0.00. After upgrade: realistic ~$0.001/month (60 runs x ~6 requests, <1 MB state), worst case ~$0.02/month (400 runs, 100 kept versions). Under the $0.10 threshold but not literally $0. **Decided in M1 (2026-09-20): S3 in our own account** with `use_lockfile = true`, versioning, and a lifecycle rule expiring noncurrent versions after 30 days plus aborting incomplete multipart uploads after 7 days. HCP Terraform Free was the alternative; rejected because it adds a third-party account and teaches less AWS. Measured state size after the first apply: 57 KB. |
 
 ## Budgets (created 2026-09-19)
 
