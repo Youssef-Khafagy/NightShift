@@ -54,6 +54,7 @@ LOCK_FILE = REPO_ROOT / "requirements" / "lambda-deps.lock"
 BUILD_DIR = REPO_ROOT / "build"
 LAYER_ROOT = BUILD_DIR / "layer"
 LAYER_ZIP = BUILD_DIR / "nightshift-deps-layer.zip"
+MANIFEST = BUILD_DIR / "layer-manifest.txt"
 
 # Must match the runtime and architecture in terraform/modules/lambda_service.
 PYTHON_VERSION = "3.14"
@@ -180,6 +181,19 @@ def sorted_files(root: Path) -> list[str]:
     )
 
 
+def write_manifest(source_root: Path, out_path: Path) -> None:
+    """One line per file: sha256 and path, sorted.
+
+    Diffing two of these says exactly which files differ between machines,
+    which a single rolled-up digest cannot.
+    """
+    lines = [
+        f"{hashlib.sha256((source_root / rel).read_bytes()).hexdigest()}  {rel}"
+        for rel in sorted_files(source_root)
+    ]
+    out_path.write_text("\n".join(lines) + "\n")
+
+
 def content_digest(source_root: Path) -> str:
     """Hash names and contents only, ignoring how they get archived.
 
@@ -239,6 +253,7 @@ def cmd_build() -> None:
 
     pruned = prune(target)
     contents = content_digest(LAYER_ROOT)
+    write_manifest(LAYER_ROOT, MANIFEST)
     digest = write_deterministic_zip(LAYER_ROOT, LAYER_ZIP)
 
     unpacked = sum(p.stat().st_size for p in target.rglob("*") if p.is_file())
@@ -252,7 +267,9 @@ def cmd_build() -> None:
     )
     print(f"content sha256: {contents}")
     print(f"zip sha256:     {digest}")
-    print(f"\nWrote {LAYER_ZIP.relative_to(REPO_ROOT)}")
+    print(
+        f"\nWrote {LAYER_ZIP.relative_to(REPO_ROOT)} and {MANIFEST.relative_to(REPO_ROOT)}"
+    )
 
 
 def main() -> None:

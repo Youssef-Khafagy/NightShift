@@ -92,6 +92,16 @@ jobs:
           python -m pip install --upgrade pip
           python scripts/lambda_deps.py build
 
+      # Temporary: the runner and a local build disagree on the layer's
+      # contents. This hands over the per-file hashes so the difference can be
+      # diffed rather than guessed at.
+      - name: Upload the layer manifest
+        uses: actions/upload-artifact@v5
+        with:
+          name: layer-manifest
+          path: build/layer-manifest.txt
+          retention-days: 1
+
       - name: Terraform init
         working-directory: terraform
         run: terraform init -input=false
