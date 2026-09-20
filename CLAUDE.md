@@ -143,8 +143,11 @@ M1, done and verified 2026-09-20:
 - `nightshift-hello` Lambda: python3.14, arm64, reserved concurrency 2, published version 1, `live` alias, function URL with AWS_IAM auth, log group with 3-day retention created by Terraform.
 - Workflows `.github/workflows/ci.yml` (pre-commit, validate, tflint, trivy config, plan with `-lock=false`, PR comment shows counts only) and `apply.yml` (`workflow_dispatch` on main, confirmation word `apply`, saved plan file).
 - Repo secret `AWS_ACCOUNT_ID` set, so workflows build role ARNs and GitHub masks the ID in logs.
-- Verified: alias invoke returned ExecutedVersion 1; function URL 403 unsigned and 200 SigV4-signed; log retention 3; JSON log lines carry `correlation_id` and `function_version`; state object present in S3.
-- First apply was local by the owner, because CI cannot create the roles CI needs.
+- Verified: alias invoke returned ExecutedVersion 2; function URL 403 unsigned and 200 SigV4-signed; log retention 3; JSON log lines carry `correlation_id` and `function_version`; state object present in S3; `terraform plan` clean on both the laptop and the runner.
+- First apply was local by the owner, because CI cannot create the roles CI needs. PR #1 exercised the plan job; `apply.yml` then deployed version 2 and moved the `live` alias. A run with the wrong confirmation word failed before checkout and before credentials were requested.
+- Two bugs the pipeline caught, both fixed:
+  1. `archive_file` with `source_dir` zipped `src/hello/__pycache__` from a local smoke test, so the artifact differed between laptop and runner and a stray `.pyc` shipped inside version 1. The module now builds the zip from an explicit `fileset` allowlist of `**/*.py` plus an `extra_files` variable. Ruled out as causes: file mtime (archive_file normalizes it) and `output_file_mode` (a no-op with content-based sources).
+  2. The apply role granted CloudWatch Logs actions only on `log-group:NAME:*`. Actions on the group itself (`ListTagsForResource`, `PutRetentionPolicy`) need the bare `log-group:NAME` form. Both are now listed. This fix had to be applied locally with `-target`, because the apply role is denied `iam:PutRolePolicy` on itself, which is the deny working as designed.
 
 Next session, in order:
 1. Confirm the CI workflow passed on the M1 pull request (first real test of the OIDC plan role).
