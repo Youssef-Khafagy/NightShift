@@ -22,20 +22,19 @@ timestamp and mode 0644, and entries are written in sorted order.
 Mode 0644 is right for the bundled .so files too. dlopen needs the file
 readable, not executable, which is why system shared libraries are 0644.
 
-The archive is stored uncompressed. Compression was the last thing making
-builds non-reproducible: a GitHub runner and this laptop, installing byte
-identical wheels, produced zips with different sha256 values and identical
-sizes, which is the signature of a different zlib rather than different
-contents. Nothing in a zip records which deflate implementation wrote it, so
-there is nothing to pin. Storing the bytes removes the question. The layer is
-about 28 MiB, inside the 50 MiB upload limit, and Lambda unpacks it once per
-execution environment either way.
-
 Two digests are reported. The content digest covers file names and contents
 only, so it is independent of how the archive is written, and answers "did we
 install the same thing?". The zip digest is what Terraform hashes, and answers
 "will this deploy?". When two machines disagree, the first digest says whether
-to look at packaging or at archiving.
+to look at packaging or at archiving. That distinction earned its place: a
+runner and this laptop once produced zips with different hashes and identical
+sizes, which looked exactly like a zlib difference and was not. The content
+digest showed the installed files differed, and build/layer-manifest.txt
+named the single file responsible.
+
+Compression is on. Once the real cause was fixed, deflate reproduced byte for
+byte across machines, and the 20 MiB it saves is headroom against the 50 MiB
+upload limit that later dependencies will need.
 """
 
 from __future__ import annotations
@@ -238,12 +237,14 @@ def content_digest(source_root: Path) -> str:
 def write_deterministic_zip(source_root: Path, out_path: Path) -> str:
     """Zip source_root so the bytes depend only on the file contents."""
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(out_path, "w", zipfile.ZIP_STORED) as archive:
+    with zipfile.ZipFile(
+        out_path, "w", zipfile.ZIP_DEFLATED, compresslevel=9
+    ) as archive:
         for relative in sorted_files(source_root):
             info = zipfile.ZipInfo(relative, date_time=FIXED_TIMESTAMP)
             info.external_attr = FIXED_FILE_MODE << 16
             info.create_system = 3  # Unix, so the mode above is honoured
-            info.compress_type = zipfile.ZIP_STORED
+            info.compress_type = zipfile.ZIP_DEFLATED
             archive.writestr(info, (source_root / relative).read_bytes())
     return hashlib.sha256(out_path.read_bytes()).hexdigest()
 
