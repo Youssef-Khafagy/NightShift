@@ -2,6 +2,7 @@
 
 Status: APPROVED by owner on 2026-09-18 (Free plan, ca-central-1, IAM user with MFA plus `aws login`). Update it whenever a number is measured or a service is added.
 All allowances below were checked on 2026-09-18 against the sources listed at the bottom.
+Re-verified 2026-09-20 before starting M2a: Aurora DSQL, Lambda and X-Ray. See "Sources checked 2026-09-20".
 "Projected" numbers are estimates from stated assumptions, not measurements. They get replaced with measured numbers in M2 to M4.
 
 ## Account plan
@@ -30,22 +31,51 @@ Usage model for "Projected": one busy month = development plus one full benchmar
 
 | Service | Always Free allowance | Projected busy month | Headroom | Guardrails |
 |---|---|---|---|---|
-| Lambda | 1M requests and 400,000 GB-s per month | ~410K requests, ~60K GB-s | ~59% requests, ~85% GB-s | Share each incident across configs (separate injections per config would be ~1.5M requests, over the limit). Agent never sleeps inside Lambda while waiting on LLM rate limits; it checkpoints and reschedules. |
-| Aurora DSQL | 100,000 DPUs and 1 GB storage per month, Always Free on Free and Paid plans | ~20K DPUs, <0.1 GB | ~80% (weak estimate) | DSQL is NOT in AWS's list of services tracked by free tier usage alerts. A local cost-check script reads the DSQL DPU metric with GetMetricStatistics. Measure DPUs per checkout in M2 before any load test. |
+| Lambda | 1M requests and 400,000 GB-s per month, perpetual, **identical for x86 and arm64** (re-verified 2026-09-20) | ~410K requests, ~60K GB-s | ~59% requests, ~85% GB-s | Share each incident across configs (separate injections per config would be ~1.5M requests, over the limit). Agent never sleeps inside Lambda while waiting on LLM rate limits; it checkpoints and reschedules. **Open in M2a:** the GB-s estimate assumes 128 MB. Loading psycopg, Powertools and the OTel SDK may force 256 MB, which doubles GB-s. Measure before trusting the 85% headroom. |
+| Aurora DSQL | 100,000 DPUs and 1 GB storage per month, Always Free on Free and Paid plans (re-verified 2026-09-20). Beyond: $8 per million DPUs, $0.33 per GB-month | ~20K DPUs, <0.1 GB | ~80% (weak estimate) | DSQL is NOT in AWS's list of services tracked by free tier usage alerts. A local cost-check script reads the DSQL DPU metric with GetMetricStatistics. Measure DPUs per checkout in M2a before any load test. An idle cluster scales to zero and incurs no DPU charge, so leaving the cluster up between sessions is free as long as storage stays under 1 GB. |
 | DynamoDB | 25 RCU, 25 WCU (provisioned, Standard table class), 25 GB storage, per region | Planned total <= 20 RCU and 20 WCU across all tables and GSIs | >= 5 RCU/WCU | Provisioned mode only. No auto scaling: target tracking creates CloudWatch alarms that would use our alarm allowance. Capacity ledger kept in this file from M2. |
-| SQS | 1M requests per month (each 64 KB chunk is one request, a batch of up to 10 messages is one request) | ~110K with pause; ~760K if the trigger is left on 24/7 | ~89% with pause | Idle Lambda trigger polls with 5 long-poll connections. Estimate 5 x 3 per min x 43,200 min = ~648K requests/month per idle queue. Only one triggered queue; DLQ has no trigger; pause disables the trigger; standard (not provisioned) poller mode. Measure with NumberOfEmptyReceives in M2. |
+| SQS | 1M requests per month (each 64 KB chunk is one request, a batch of up to 10 messages is one request) | ~110K with the consumer disabled between runs; ~760K if the trigger is left on 24/7 | ~89% | Idle Lambda trigger polls with 5 long-poll connections. Estimate 5 x 3 per min x 43,200 min = ~648K requests/month per idle queue, for zero work. **Decided 2026-09-20:** the event source mapping ships `enabled = false` and is turned on only for a run. Only one triggered queue; DLQ has no trigger; standard (not provisioned) poller mode. Measure with NumberOfEmptyReceives in M2a. |
 | SNS | 1M requests, 1,000 email deliveries per month | ~220 emails | ~78% | Alarm actions only on ALARM transitions we care about. |
 | EventBridge | AWS service events (including alarm state changes) on the default bus are free; Scheduler 14M invocations/month | Hundreds | Large | No custom event buses or API destinations. |
 | CloudWatch metrics | 10 custom metrics; 1M API requests. GetMetricData, GetInsightRuleReport and GetMetricWidgetImage are ALWAYS charged | <= 6 custom metrics; <100K API requests | ~40% metrics, >90% API | Agent and dashboard use GetMetricStatistics, never GetMetricData. Fixed EMF dimension sets; watch Powertools default dimensions and the cold start metric. |
 | CloudWatch alarms | 10 alarm metrics (standard resolution, metrics listed directly) | <= 10 | 0 to 2 | A metric math alarm counts every metric it lists. No composite alarms ($0.50 each), no anomaly detection alarms (count as 3). No CloudWatch billing alarm; Budgets does that job. |
 | CloudWatch Logs | 5 GB/month combined: ingestion + archive storage + Logs Insights data scanned | ~3.5 GB | ~30% | Retention 3 days. Short log lines. Insights cost follows bytes scanned in the time range, NOT the result limit, so every query is one log group and a short window. Track scanned bytes per investigation. |
-| X-Ray | 100,000 traces recorded, 1M traces retrieved or scanned per month | ~65K recorded | ~35% | Explicit sampling rate. X-Ray SDK is in maintenance since 2026-02-25, end of support 2027-02-25; M2 picks the OpenTelemetry path that exports to X-Ray over UDP. Never enable Transaction Search or Application Signals (paid span ingestion). |
+| X-Ray | 100,000 traces recorded and 1M traces retrieved or scanned per month, perpetual (re-verified 2026-09-20) | ~65K recorded | ~35% | **Correction (2026-09-20):** Lambda's sampling rate is fixed at 1 request/second plus 5% of the remainder and **cannot be configured**, so the earlier "explicit sampling rate" guardrail was wrong. The lever is how many requests we send, not what fraction is sampled. X-Ray SDK is in maintenance since 2026-02-25, end of support 2027-02-25; M2b uses OpenTelemetry with the X-Ray UDP span exporter. Never enable Transaction Search or Application Signals (paid span ingestion). |
 | CloudTrail | 90-day management event history, viewing and LookupEvents at no charge | Hundreds of lookups | Large | Never create a trail, data events, Lake, or Insights. |
 | SSM Parameter Store | Standard parameters and standard throughput: no additional charge | Tens of thousands of reads | Free | Standard tier only. Higher throughput setting stays off (it makes standard parameters billable). |
 | KMS | 20,000 requests/month across all regions; AWS managed keys only | ~1K (SecureString decrypts for API keys) | ~95% | Feature flags are plain String, not SecureString. No customer managed keys. |
 | AWS Budgets | Monitoring and notifications free; first 2 action-enabled budgets free | 2 budgets, no actions | Free | No budget actions, no budget reports ($0.01 each). |
 
 Not yet re-verified on a pricing page today (expected free, checked before first use): IAM, STS, Service Quotas, Lambda function URLs (billed as normal Lambda requests).
+
+### Aurora DSQL cost model (checked 2026-09-20)
+
+A DPU is not a time unit. AWS counts three things in it: compute used to execute query logic such as joins, functions and aggregations; the I/O to read from and write to storage; and change data capture streaming if enabled. We do not enable CDC.
+
+Consequences for how the store is written:
+
+- Cost follows work done, not wall-clock time, so a cluster sitting idle overnight costs nothing beyond storage. There is no "turn the database off" step in the pause command.
+- A checkout that reads the whole inventory table to decrement one row costs far more DPU than one that reads a single row by primary key. Index discipline is a cost control here, not only a latency control.
+- Retries are not free. Every attempt of a transaction that hits `40001` and is retried bills its own DPU, so a contention storm costs real DPU. Scenario 7 (hot-row contention) is therefore a cost event as well as a latency event, and its runs must be short.
+- Storage is billed at $0.33 per GB-month with 1 GB free, and data is replicated across three Availability Zones at no extra charge. Synthetic order data must be pruned between benchmark passes to stay under 1 GB.
+
+Measurement plan for M2a, before any load test: run one checkout, read the cluster's DPU metric with `GetMetricStatistics`, and record DPU per checkout here. The 42-incident benchmark projection is then rebuilt from that measured number instead of the current estimate.
+
+### DynamoDB capacity ledger
+
+The free allowance is 25 RCU and 25 WCU **per region across the whole account**, and every global secondary index consumes its own capacity on top of its table. Provisioned mode only, no auto scaling. Every table added to this project gets a row here before it is created.
+
+| Table | Milestone | RCU | WCU | GSIs | Status |
+|---|---|---|---|---|---|
+| `nightshift-cart` | M2a | 5 | 5 | none | Planned |
+| `nightshift-deployments` | M3 | 1 | 1 | none | Planned |
+| `nightshift-investigations` | M5 | 5 | 5 | none | Planned |
+| `nightshift-journal` | M5 | 5 | 5 | none | Planned |
+| **Allocated** | | **16** | **16** | | |
+| **Free allowance** | | **25** | **25** | | |
+| **Unallocated** | | **9** | **9** | | |
+
+If a table needs a GSI later, its capacity comes out of the 9 unallocated, not out of thin air.
 
 ## Not Always Free
 
@@ -110,6 +140,17 @@ Free plan end date from the Billing console after sign-up: **2027-03-18** (accou
 | 2027-02-15 | NightShift upgrade HARD DEADLINE | If not upgraded yet, upgrade now or decide on purpose to let the account close. Before closing: export results, journals, and postmortems so the Vercel replay mode keeps working without AWS. |
 
 If credits ever drop by more than $1 in a month, treat it as an incident: find the cause before doing anything else.
+
+## Sources checked 2026-09-20 (before M2a)
+
+- Aurora DSQL pricing and free tier: https://aws.amazon.com/rds/aurora/dsql/pricing/
+- Aurora DSQL cluster quotas and database limits: https://docs.aws.amazon.com/aurora-dsql/latest/userguide/CHAP_quotas.html
+- Aurora DSQL PostgreSQL compatibility and migration: https://docs.aws.amazon.com/aurora-dsql/latest/userguide/working-with-postgresql-compatibility-unsupported-features.html
+- Lambda free tier, identical for x86 and arm64: https://aws.amazon.com/lambda/pricing/
+- Lambda Python tracing options and fixed sampling rate: https://docs.aws.amazon.com/lambda/latest/dg/python-tracing.html
+- X-Ray to OpenTelemetry migration, Lambda options: https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-migration.html
+- X-Ray free tier: https://aws.amazon.com/xray/pricing/
+- Powertools Tracer wraps the X-Ray SDK: https://docs.aws.amazon.com/powertools/python/latest/core/tracer/
 
 ## Sources (checked 2026-09-18)
 
