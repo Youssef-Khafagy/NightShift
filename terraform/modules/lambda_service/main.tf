@@ -67,6 +67,31 @@ resource "aws_iam_role_policy" "logs" {
   policy = data.aws_iam_policy_document.logs.json
 }
 
+# X-Ray has no resource-level permissions for these actions, so "*" is the
+# only option the service accepts. Granted only when tracing is on, rather
+# than attaching AWSXRayDaemonWriteAccess to every function by reflex.
+data "aws_iam_policy_document" "xray" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+      "xray:GetSamplingRules",
+      "xray:GetSamplingTargets",
+      "xray:GetSamplingStatisticSummaries",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "xray" {
+  count = var.tracing_mode == "Active" ? 1 : 0
+
+  name   = "xray"
+  role   = aws_iam_role.this.id
+  policy = data.aws_iam_policy_document.xray.json
+}
+
 # Created explicitly so retention is set from the start. If Lambda creates the
 # group on first invocation it defaults to "never expire", and the 5 GB/month
 # free allowance covers storage as well as ingestion.
@@ -94,6 +119,15 @@ resource "aws_lambda_function" "this" {
   memory_size = var.memory_size
   timeout     = var.timeout
 
+  layers = var.layer_arns
+
+  # Lambda's own sampling decides which invocations produce a trace. The rate
+  # is fixed at 1 request/second plus 5% of the remainder and cannot be
+  # configured, so the only lever on trace volume is how many requests we send.
+  tracing_config {
+    mode = var.tracing_mode
+  }
+
   # Publish an immutable version on every code change, so the alias has
   # something to point at and an old version stays available to roll back to.
   publish = true
@@ -116,6 +150,7 @@ resource "aws_lambda_function" "this" {
 
   depends_on = [
     aws_iam_role_policy.logs,
+    aws_iam_role_policy.xray,
     aws_cloudwatch_log_group.this,
   ]
 }

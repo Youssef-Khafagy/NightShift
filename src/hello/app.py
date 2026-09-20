@@ -1,16 +1,27 @@
-"""M1 smoke-test Lambda.
+"""M1 smoke test, now also the shared dependency layer's smoke test.
 
-Deliberately has no dependencies. Powertools arrives in M2 with the store;
-here the point is to prove the deploy path, not the application.
+Two jobs.
 
-The function returns JSON and echoes back a correlation ID, which is the one
-idea worth establishing early: every request carries an ID, every log line
-records it, and later the agent uses it to follow one request across
-services.
+The first is the one it has always had: prove the deploy path works, and
+carry a correlation ID, because every request in this system needs an ID that
+every log line records and the agent can follow across services later.
+
+The second arrived with M2a. The shared layer ships psycopg built for
+aarch64 and Amazon Linux, cross-built on an x86 laptop from wheels chosen by
+platform tag. Nothing about that is verified until the runtime actually
+imports it. This function reports what it can import and what version, so a
+wrong wheel shows up here rather than inside the checkout path later.
+
+It also answers a question the layer deliberately left open: the layer does
+not bundle boto3 because the runtime provides it, but Aurora DSQL's auth
+token methods only exist on a recent enough boto3. Rather than assume, this
+reports whether the runtime's boto3 exposes the dsql client at all and
+whether that client has the token method DSQL connections need.
 """
 
 from __future__ import annotations
 
+import importlib
 import json
 import logging
 import os
@@ -24,6 +35,67 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 CORRELATION_HEADER = "x-correlation-id"
+
+# Reported once per cold start, not per invocation. The answer cannot change
+# within an execution environment.
+_LAYER_REPORT: dict[str, Any] | None = None
+
+
+def _version_of(module_name: str) -> str:
+    """Import a module and report its version, or why it could not be imported."""
+    try:
+        module = importlib.import_module(module_name)
+    except Exception as exc:  # noqa: BLE001 - the error is the useful result
+        return f"import failed: {type(exc).__name__}: {exc}"
+    return str(getattr(module, "__version__", "imported, no __version__"))
+
+
+def _libpq_implementation() -> str:
+    """Force psycopg to bind libpq, which is what actually exercises the wheel.
+
+    Importing psycopg alone does not prove the compiled part loaded. Reading
+    psycopg.pq.__impl__ selects and loads an implementation, so a wheel built
+    for the wrong architecture fails here rather than at the first query.
+    """
+    try:
+        pq = importlib.import_module("psycopg.pq")
+        return f"{pq.__impl__} (libpq {'.'.join(str(n) for n in pq.version_pretty().split()[:1])})"
+    except Exception as exc:  # noqa: BLE001
+        return f"libpq binding failed: {type(exc).__name__}: {exc}"
+
+
+def _dsql_support() -> dict[str, Any]:
+    """Does the runtime's own boto3 know about Aurora DSQL?"""
+    try:
+        boto3 = importlib.import_module("boto3")
+        session = boto3.session.Session()
+        available = "dsql" in session.get_available_services()
+        if not available:
+            return {"dsql_client": False, "token_method": False}
+        client = session.client("dsql")
+        return {
+            "dsql_client": True,
+            "token_method": hasattr(client, "generate_db_connect_auth_token"),
+            "admin_token_method": hasattr(
+                client, "generate_db_connect_admin_auth_token"
+            ),
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def layer_report() -> dict[str, Any]:
+    global _LAYER_REPORT
+    if _LAYER_REPORT is None:
+        _LAYER_REPORT = {
+            "aws_lambda_powertools": _version_of("aws_lambda_powertools"),
+            "psycopg": _version_of("psycopg"),
+            "psycopg_libpq": _libpq_implementation(),
+            "boto3": _version_of("boto3"),
+            "botocore": _version_of("botocore"),
+            "dsql": _dsql_support(),
+        }
+    return _LAYER_REPORT
 
 
 def _correlation_id(event: dict[str, Any], request_id: str) -> str:
@@ -39,6 +111,7 @@ def _correlation_id(event: dict[str, Any], request_id: str) -> str:
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     request_id = getattr(context, "aws_request_id", "local")
     correlation_id = _correlation_id(event, request_id)
+    report = layer_report()
 
     logger.info(
         "handled request",
@@ -46,6 +119,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             "service": SERVICE_NAME,
             "correlation_id": correlation_id,
             "function_version": getattr(context, "function_version", "unknown"),
+            "layer": report,
         },
     )
 
@@ -54,6 +128,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         "service": SERVICE_NAME,
         "function_version": getattr(context, "function_version", "unknown"),
         "correlation_id": correlation_id,
+        "layer": report,
     }
 
     return {

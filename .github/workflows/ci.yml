@@ -76,6 +76,22 @@ jobs:
           role-session-name: nightshift-ci-plan-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # 3.12 matches the local development Python. The host version does not
+      # decide what gets installed, because the build script passes
+      # --python-version 3.14 for the target runtime, but keeping them the
+      # same removes one variable from the reproducibility question.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # The layer zip has to exist before Terraform can hash it. Building from
+      # the hash-pinned lock file means this produces the same bytes as a local
+      # build, which is what keeps the plan empty when nothing changed.
+      - name: Build the dependency layer
+        run: |
+          python -m pip install --upgrade pip
+          python scripts/lambda_deps.py build
+
       - name: Terraform init
         working-directory: terraform
         run: terraform init -input=false
