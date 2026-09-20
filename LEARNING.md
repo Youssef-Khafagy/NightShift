@@ -495,3 +495,87 @@ Every apply publishes an immutable numbered version, and a `live` alias points a
 **5. Terraform state is in S3. What could go wrong, and what did you do about it?**
 
 Three things. Concurrent writes, handled with `use_lockfile = true`, which is S3 native locking using conditional writes; the old DynamoDB lock table is deprecated. Loss or corruption, handled with bucket versioning, so a bad state file can be rolled back to the previous version, plus a lifecycle rule that expires old versions after 30 days so it does not grow and bill forever. Exposure, since state contains every resource and sometimes secrets, handled with all public access blocked, ACLs disabled via BucketOwnerEnforced, default encryption, and a bucket policy that denies any request not over TLS. The bucket is created by a script rather than by Terraform for two reasons: Terraform cannot create its own backend before `init`, and if it managed the bucket then `terraform destroy` would try to delete the bucket it is writing state to.
+
+## M2a: the store's data plane
+
+### Cost facts verified before building (2026-09-20)
+
+Nothing was created until COST.md carried today's numbers, per the cost rules. The three re-checks that mattered:
+
+Aurora DSQL gives 100,000 DPUs and 1 GB of storage free every month, then charges $8 per million DPUs and $0.33 per GB-month. An idle cluster scales to zero and costs nothing beyond storage, so there is no "switch the database off" step to build later.
+
+A DPU is not a unit of time. AWS counts query compute, the I/O to read and write storage, and change data capture streaming. Three things follow. A checkout that scans a table to change one row costs far more than one that reads by primary key, so indexing is a cost control here and not only a latency control. Every retried transaction bills its own DPU, which makes the hot-row contention scenario a cost event as well as a latency event. And synthetic orders have to be pruned between benchmark passes to stay under the 1 GB storage allowance.
+
+Two earlier claims turned out to be wrong and were corrected rather than quietly edited away. Lambda's X-Ray sampling rate is fixed at one request per second plus 5% of the rest and cannot be configured, so "explicit sampling rate" was never a lever this project had. And the Lambda free tier is 400,000 GB-seconds for both x86 and arm64, so arm64's lower price per GB-second buys nothing inside the free tier. See the correction note in the M1 section.
+
+### Packaging: why a layer, and why a lock file
+
+M1's function was a single file with no dependencies. M2a needs `psycopg` to talk to DSQL and Powertools for logging and metrics, which raises three questions that a hello-world never asks.
+
+**Where do dependencies live?** A Lambda layer is a zip that Lambda unpacks to `/opt` and puts on the import path. One shared layer serves all four services, so a deploy uploads only the handful of kilobytes of code that actually changed instead of 8 MB of wheels four times over. The layer is ours, built in our account, which also means no third-party layer ARN carrying someone else's account ID has to be smuggled past the pre-commit hook.
+
+**Which wheels?** Lambda runs Amazon Linux 2023 on arm64, and the laptop building the zip is x86 Ubuntu running Python 3.12 while the target is Python 3.14. pip can cross-build for another platform without Docker, as long as it is forbidden from compiling anything:
+
+```
+pip download -r lambda-deps.in \
+  --only-binary=:all: \
+  --python-version 3.14 --implementation cp \
+  --platform manylinux_2_28_aarch64 \
+  --platform manylinux2014_aarch64
+```
+
+`--only-binary=:all:` is what makes this safe. Without it pip would happily download a source tarball and build it against the local glibc and CPython, producing a wheel that cannot load on the runtime. The failure would appear at the first invocation, not at build time.
+
+The two platform tags are not interchangeable and this is the part that bites. `manylinux2014` means glibc 2.17; `manylinux_2_28` means glibc 2.28. Amazon Linux 2023 ships glibc 2.34, so it satisfies both, but a wheel tagged `manylinux_2_28_aarch64` is invisible to pip if you only pass `--platform manylinux2014_aarch64`. psycopg publishes exactly that tag, so asking for only the older tag would have failed to resolve at all. Listing both lets pip take the best match each package offers.
+
+**Which exact bytes?** Pinning `psycopg==3.3.6` pins a version, not a file. `scripts/lambda_deps.py lock` resolves the full transitive set for the target platform and records a sha256 for every wheel, and the build installs with `--require-hashes`. This is supply chain hygiene, and it is the same instinct as gitleaks in the pre-commit hook: make the bad outcome fail loudly rather than hoping it does not happen.
+
+It also buys determinism for free. Identical wheels in means identical files out, which is half of what M1's `__pycache__` bug was about.
+
+### Making the zip itself reproducible
+
+The other half is the zip. A zip entry records a modification time and a Unix mode, and both come from the filesystem, so the same files produce different bytes on different machines. The script writes the archive by hand: entries sorted by name, every timestamp fixed at the zip epoch of 1980-01-01, every mode fixed at 0644.
+
+0644 is the right mode for the bundled `libpq` shared objects too, which is worth knowing because it looks wrong. `dlopen` needs a shared library to be readable and mappable, not executable. That is why `/usr/lib/*.so` on any Linux system is 0644 and not 0755. The execute bit matters for `execve`, which is not how a `.so` is used.
+
+Verified by building twice:
+
+```
+build 1: f9bd9f5827cad5709ce3eaa91b68806d523e12313b33b51c3d06c71e4f1ee428
+build 2: f9bd9f5827cad5709ce3eaa91b68806d523e12313b33b51c3d06c71e4f1ee428
+```
+
+And by inspecting the archive: 469 entries, all under `python/`, exactly one distinct timestamp, exactly one distinct mode, zero `__pycache__` or `.pyc` entries.
+
+One variable is deliberately left open. zlib's deflate output for a given level is stable in practice but is not guaranteed across versions, so a CI runner with a different zlib could in principle produce different bytes from identical inputs. That will show up the same way M1's bug did, as a Terraform plan that is not empty, and the fix is already chosen: `ZIP_STORED`. The layer is 28 MiB unpacked and 7.7 MiB compressed, so an uncompressed archive still sits well inside the 50 MiB limit.
+
+### Testing the lock the way the hooks were tested
+
+A guard that has never been seen to fire is a guess. One hash in the lock file was replaced with 64 zeros and the build was run again:
+
+```
+ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE.
+If you have updated the package versions, please update the hashes.
+Otherwise, examine the package contents carefully; someone may have
+tampered with them.
+```
+
+The lock was restored and the build reproduced the same sha256 as before.
+
+### What is deliberately not in the layer
+
+`boto3` and `botocore`. The Lambda Python runtime already provides them, and bundling them would add roughly 20 MB to be unpacked on every cold start for no benefit. AWS no longer publishes a table of which SDK version each runtime carries; the documented way to find out is to print `boto3.__version__` from a deployed function.
+
+That leaves one open question, recorded in the requirements file rather than discovered later: Aurora DSQL's auth token methods live on a fairly recent boto3, so before the first DSQL code lands the runtime's bundled version has to be confirmed to expose the `dsql` client. If it does not, boto3 goes into the lock file and the layer grows.
+
+`aws-lambda-powertools` is installed without extras on purpose. The `[tracer]` extra pulls the AWS X-Ray SDK, which is unsupported from 2027-02-25 and is not the path this project took.
+
+### Commands
+
+| Command | What it does |
+|---|---|
+| `python3 -m venv .venv` | Ubuntu's system Python has no `pip` module, so a virtual environment is how the build scripts get one. CI gets pip from `actions/setup-python` instead. |
+| `.venv/bin/python scripts/lambda_deps.py lock` | Resolves `requirements/lambda-deps.in` for Python 3.14 on aarch64 and writes `lambda-deps.lock` with a sha256 per wheel. Run it only when a dependency changes. |
+| `.venv/bin/python scripts/lambda_deps.py build` | Installs the locked wheels into `build/layer/python/`, prunes bytecode and console scripts, and writes a deterministic `build/nightshift-deps-layer.zip`. |
+
+`build/` is gitignored. The lock file is committed, because it is the thing that makes a build reproducible.

@@ -1,0 +1,20 @@
+# Direct runtime dependencies shared by every NightShift Lambda.
+#
+# Versions are pinned here by hand. scripts/lambda_deps.py lock turns this
+# into lambda-deps.lock, which pins the transitive set as well and records a
+# sha256 for every wheel.
+#
+# boto3 is deliberately absent: the Lambda Python runtime provides it, and
+# bundling it would add roughly 20 MB to every cold start for no benefit.
+# Before the first DSQL code lands (step 4), confirm the runtime's bundled
+# boto3 is new enough to expose the `dsql` client. If it is not, add boto3
+# and botocore here and re-lock.
+
+# Logger and Metrics only. Tracer is not used: it wraps the AWS X-Ray SDK,
+# which is unsupported from 2027-02-25. Tracing uses OpenTelemetry in M2b.
+aws-lambda-powertools==3.35.0
+
+# PostgreSQL driver for Aurora DSQL. The [binary] extra pulls psycopg-binary,
+# which ships the compiled libpq as a wheel so nothing has to build on the
+# runner. Confirmed to have cp314 manylinux aarch64 wheels.
+psycopg[binary]==3.3.6
