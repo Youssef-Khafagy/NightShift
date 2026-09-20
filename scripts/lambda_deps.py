@@ -22,11 +22,20 @@ timestamp and mode 0644, and entries are written in sorted order.
 Mode 0644 is right for the bundled .so files too. dlopen needs the file
 readable, not executable, which is why system shared libraries are 0644.
 
-One variable is left: zlib's deflate output for a given compression level is
-stable in practice but is not guaranteed across versions. If a CI build ever
-disagrees with a local build despite identical wheels, that is the cause, and
-the fix is ZIP_STORED. The layer is about 28 MiB unpacked, so an uncompressed
-zip still fits well inside the 50 MiB limit.
+The archive is stored uncompressed. Compression was the last thing making
+builds non-reproducible: a GitHub runner and this laptop, installing byte
+identical wheels, produced zips with different sha256 values and identical
+sizes, which is the signature of a different zlib rather than different
+contents. Nothing in a zip records which deflate implementation wrote it, so
+there is nothing to pin. Storing the bytes removes the question. The layer is
+about 28 MiB, inside the 50 MiB upload limit, and Lambda unpacks it once per
+execution environment either way.
+
+Two digests are reported. The content digest covers file names and contents
+only, so it is independent of how the archive is written, and answers "did we
+install the same thing?". The zip digest is what Terraform hashes, and answers
+"will this deploy?". When two machines disagree, the first digest says whether
+to look at packaging or at archiving.
 """
 
 from __future__ import annotations
@@ -165,22 +174,35 @@ def prune(root: Path) -> int:
     return removed
 
 
+def sorted_files(root: Path) -> list[str]:
+    return sorted(
+        p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()
+    )
+
+
+def content_digest(source_root: Path) -> str:
+    """Hash names and contents only, ignoring how they get archived.
+
+    If this matches between two machines but the zip digest does not, the
+    installed files are identical and the archiver is the problem.
+    """
+    digest = hashlib.sha256()
+    for relative in sorted_files(source_root):
+        digest.update(relative.encode())
+        digest.update(b"\0")
+        digest.update(hashlib.sha256((source_root / relative).read_bytes()).digest())
+    return digest.hexdigest()
+
+
 def write_deterministic_zip(source_root: Path, out_path: Path) -> str:
     """Zip source_root so the bytes depend only on the file contents."""
-    files = sorted(
-        p.relative_to(source_root).as_posix()
-        for p in source_root.rglob("*")
-        if p.is_file()
-    )
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(
-        out_path, "w", zipfile.ZIP_DEFLATED, compresslevel=9
-    ) as archive:
-        for relative in files:
+    with zipfile.ZipFile(out_path, "w", zipfile.ZIP_STORED) as archive:
+        for relative in sorted_files(source_root):
             info = zipfile.ZipInfo(relative, date_time=FIXED_TIMESTAMP)
             info.external_attr = FIXED_FILE_MODE << 16
             info.create_system = 3  # Unix, so the mode above is honoured
-            info.compress_type = zipfile.ZIP_DEFLATED
+            info.compress_type = zipfile.ZIP_STORED
             archive.writestr(info, (source_root / relative).read_bytes())
     return hashlib.sha256(out_path.read_bytes()).hexdigest()
 
@@ -216,17 +238,20 @@ def cmd_build() -> None:
     )
 
     pruned = prune(target)
+    contents = content_digest(LAYER_ROOT)
     digest = write_deterministic_zip(LAYER_ROOT, LAYER_ZIP)
 
     unpacked = sum(p.stat().st_size for p in target.rglob("*") if p.is_file())
     print(f"\nPruned {pruned} build artefacts")
+    print(f"Files:          {len(sorted_files(LAYER_ROOT))}")
     print(
         f"Layer unpacked: {unpacked / 1024 / 1024:.1f} MiB (250 MiB limit, layers plus function)"
     )
     print(
         f"Layer zipped:   {LAYER_ZIP.stat().st_size / 1024 / 1024:.1f} MiB (50 MiB limit)"
     )
-    print(f"sha256:         {digest}")
+    print(f"content sha256: {contents}")
+    print(f"zip sha256:     {digest}")
     print(f"\nWrote {LAYER_ZIP.relative_to(REPO_ROOT)}")
 
 
