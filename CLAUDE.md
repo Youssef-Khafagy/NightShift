@@ -90,7 +90,7 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 ### 7. Infrastructure and CI/CD
 - Terraform for every AWS resource, one module per component. Remote state in S3 with native locking (verify cost).
 - PR checks: ruff, mypy, pytest with moto, terraform fmt and validate, tflint, checkov or trivy, gitleaks.
-- Main: terraform plan, manual approval via GitHub environment, apply, publish Lambda versions and shift aliases, record deployment.
+- Main: terraform plan runs automatically on PRs. Apply is a separate `workflow_dispatch` job the owner triggers by hand, which is the approval gate while the repo is private (GitHub Free cannot create environments on private repos). Apply then publishes Lambda versions, shifts aliases, and records the deployment. If the repo goes public, switch the gate to a GitHub environment with required reviewers.
 
 ## Milestones (stop for owner review after each)
 - M0: account safety and cost plan (budgets, MFA, dev credentials, region, Lambda concurrency quota, COST.md, repo scaffold, pre-commit). Create nothing in AWS beyond budgets until COST.md is approved.
@@ -111,28 +111,29 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Aurora DSQL now supports foreign keys, sequences, and identity columns. Still no temp tables, triggers, or PL/pgSQL; 3,000 rows per transaction; one DDL per transaction; DDL and DML in separate transactions; Repeatable Read only; use CREATE INDEX ASYNC.
 - DSQL is not tracked by free tier usage alerts; watch its DPU metric ourselves.
 - X-Ray SDK in maintenance since 2026-02-25, end of support 2027-02-25. Use OpenTelemetry exporting to X-Ray; never enable Transaction Search.
-- New accounts can have Lambda concurrency 10; reserved concurrency needs at least 100 unreserved.
-- GitHub environment required reviewers are free on public repos. Do not enable "prevent self-review" (single maintainer).
+- New accounts can have Lambda concurrency 10; reserved concurrency needs at least 100 unreserved. Ours was raised to 1000 on 2026-09-19.
+- GitHub environments do not exist on GitHub Free for private repos ("Users with GitHub Free plans can only configure environments for public repositories"), and required reviewers on a private repo need Enterprise even on Pro or Team. They are free on public repos; if the repo is made public, do not enable "prevent self-review" (single maintainer).
+- GitHub Actions on a private repo draws on the Free plan allowance of 2,000 minutes and 500 MB of artifact storage per month. Public repos get standard runners free with no minute cap. Both are $0; the private one has a ceiling to watch.
 - Groq free models allow 8K TPM and 200K TPD per model; Gemini per-model limits are only visible in AI Studio.
 
-## Current status (end of session 2026-09-19)
-M0 is nearly done. Everything below is verified.
+## Current status (end of session 2026-09-20)
+M0 is complete and awaiting owner review. Everything below is verified.
 
 Done:
 - AWS account: Free plan, ACTIVE, $100 credits, ends 2027-03-18. Root has MFA and no access keys. Daily identity is IAM user `youssef-admin` (MFA, no access keys, permissions only via group `nightshift-admins` with AdministratorAccess). CLI auth via `aws login --profile nightshift-admin`.
 - `~/.aws` is a real Linux directory (mode 700). It used to be a symlink to the Windows drive; the Windows copy of the login cache was deleted.
 - Budgets `nightshift-monthly-1usd` ($1, ACTUAL and FORECASTED at 100%) and `nightshift-tripwire` ($0.01, ACTUAL at 100%), both IncludeCredit=false and IncludeRefund=false. Definitions in `bootstrap/budgets/`.
-- Lambda concurrency in ca-central-1 is 10. Increase to 1000 requested 2026-09-19 (request id 968450523f244f2b9ed86e0b00f4e5ffhHKUEVOy), PENDING.
+- Lambda concurrency in ca-central-1 is **1000**. The increase from 10 was requested 2026-09-19 (request id 968450523f244f2b9ed86e0b00f4e5ffhHKUEVOy) and approved about 46 minutes later; status CASE_CLOSED, applied value verified with `get-service-quota`. Reserved concurrency is now usable (it needs at least 100 unreserved).
 - Repo scaffold: .gitignore, .gitattributes (LF), .env.example, README stub, pre-commit (pre-commit-hooks, gitleaks, ruff, no-aws-account-id, terraform fmt). gitleaks and the account ID hook both verified to block test input.
 - Git: repo-local author is the owner's noreply address. Global credential helper switched from plain-text `store` to `gh auth git-credential`; `~/.git-credentials` deleted.
-- GitHub repo `Youssef-Khafagy/NightShift` (public) created and `main` pushed.
+- GitHub repo `Youssef-Khafagy/NightShift` created **private** and `main` pushed. It goes public later (M8 at the latest), and the docs are already written as if public: no account ID, noreply commit email, no secrets.
 - LEARNING.md covers every command and console step so far.
 
+Also done 2026-09-20: owner revoked the old GitHub token that was in `~/.git-credentials` and enabled "Block command line pushes that expose my email". M0 concepts and 5 interview questions written in LEARNING.md.
+
 Next session, in order:
-1. Check the Lambda quota request: `aws service-quotas list-requested-service-quota-change-history --service-code lambda --region ca-central-1 --profile nightshift-admin`. Record the result.
-2. Confirm the owner revoked the old GitHub token that was in `~/.git-credentials` and turned on "Block command line pushes that expose my email".
-3. M0 wrap-up: summary, how to verify, cost impact ($0), M0 concepts plus 5 interview questions in LEARNING.md, commit and push.
-4. Owner review of M0, then propose the M1 plan (Terraform skeleton, remote state, GitHub Actions OIDC, hello-world Lambda through an alias). Wait for approval before building.
+1. Owner review of M0.
+2. Propose the M1 plan (Terraform skeleton, S3 remote state with native locking, GitHub Actions OIDC, plan on PR plus manual `workflow_dispatch` apply, hello-world Lambda through a `live` alias). Wait for approval before building anything.
 
 Later (tracked, not blocking): test that a budget email actually arrives before the Feb 2027 upgrade (COST.md upgrade plan).
 
@@ -143,9 +144,11 @@ Later (tracked, not blocking): test that a budget email actually arrives before 
 - Approved 2026-09-18: dev access is an IAM user with MFA plus `aws login`. Reason: Identity Center needs Organizations, which would force the Paid plan.
 - Approved 2026-09-18: COST.md.
 - Approved 2026-09-18: repo in the WSL filesystem at `~/code/NightShift`, Claude Code run from inside WSL. Reason: one environment for hooks and tools, and Linux tools on `/mnt/c` are slow.
-- Approved: alert email youssef.m.khafagy+nightshift@gmail.com; public GitHub repo under Youssef-Khafagy; $0.01 tripwire budget.
+- Approved: alert email youssef.m.khafagy+nightshift@gmail.com; GitHub repo under Youssef-Khafagy; $0.01 tripwire budget.
 - Approved 2026-09-19: LEARNING.md documents every command run and console step, not only code. Reason: owner must be able to explain all of it.
 - Approved 2026-09-19: budgets created via CLI from JSON in `bootstrap/budgets/` (Terraform starts in M1); Lambda concurrency increase to 1000 requested; `~/.aws` moved off the Windows drive. Reason: cost alarms before any resources, reserved concurrency needs >= 100 unreserved, refresh token must not sit on a 777 shared drive.
 - Approved 2026-09-19: no AI attribution in commits, PRs, or docs; owner is sole author via GitHub noreply email. Reason: owner's decision; noreply keeps the personal email out of public history.
-- Approved 2026-09-19: AWS account ID replaced with `<ACCOUNT_ID>` in docs and guarded by a pre-commit hook. Reason: public repo; IDs are not secret but give attackers a target.
+- Approved 2026-09-19: AWS account ID replaced with `<ACCOUNT_ID>` in docs and guarded by a pre-commit hook. Reason: the repo goes public eventually; IDs are not secret but give attackers a target, and history is permanent once pushed.
 - Approved 2026-09-19: git credentials via `gh auth setup-git`, plain-text `store` helper removed. Reason: no plain-text tokens on disk.
+- Approved 2026-09-20: the GitHub repo stays private for now and goes public by M8. Reason: owner is not ready to show the work; everything is still written as if public so nothing has to be rewritten later.
+- Approved 2026-09-20: the M1 apply gate is a manual `workflow_dispatch` job, not a GitHub environment with required reviewers. Reason: GitHub Free cannot create environments on private repos, and required reviewers on a private repo need Enterprise. Clicking Run workflow is the approval. Revisit when the repo goes public.

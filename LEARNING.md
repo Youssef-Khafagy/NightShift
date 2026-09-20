@@ -108,6 +108,8 @@ Both set `IncludeCredit=false` and `IncludeRefund=false`. The API default counts
 
 **Service quota request.** `aws service-quotas request-service-quota-increase --service-code lambda --quota-code L-B99A9384 --desired-value 1000` asked AWS to raise Lambda concurrency in ca-central-1 from 10 to 1,000. It returned status `PENDING`. A person or automated check at AWS reviews it, which can take days, and they may open a support case asking about the use case. Check it with `aws service-quotas list-requested-service-quota-change-history --service-code lambda`. Quotas are limits, not purchases, so raising one costs nothing. What costs money is actually using the capacity.
 
+**Outcome (checked 2026-09-20).** Approved. The history shows `Status: CASE_CLOSED` with `LastUpdated` 2026-09-19 01:14, about 46 minutes after the request. `CASE_CLOSED` is not the same as "granted", it only means AWS finished with the support case, so the applied value has to be read separately: `aws service-quotas get-service-quota --service-code lambda --quota-code L-B99A9384` now returns `1000.0`. Two related commands worth knowing apart: `get-service-quota` returns the value applied to this account, and `get-aws-default-service-quota` returns the default for the service, so comparing them tells you whether an account has been adjusted. Reserved concurrency is now usable, because reserving any amount requires at least 100 unreserved concurrency to remain, which was impossible at a limit of 10.
+
 ### Repo scaffold (2026-09-19)
 
 **Commands**
@@ -164,6 +166,50 @@ Both set `IncludeCredit=false` and `IncludeRefund=false`. The API default counts
 
 **Rewriting history before the first push.** The real ID was already in a local commit, and changing the file in a new commit would still leave it in history. Once pushed, history is effectively permanent: forks, clones, and GitHub's caches keep it. Before any push, rewriting is free. `git update-ref -d refs/heads/main` deletes the branch pointer, so the next commit starts a new history, while the files on disk stay as they are. `git rm -r --cached .` unstages everything without touching the files. Then the commits are made again, one group at a time. The old commits are no longer on any branch, and git deletes them during a later cleanup. After a push you would need a history-rewriting tool plus a force push, and you would still have to assume the data leaked.
 
+### Keeping the repo private, and what it costs you (2026-09-20)
+
+The repo was created private. That is a product decision, not a technical one, but it changes two things in GitHub Actions, so it is worth knowing before M1 is designed around the wrong assumption.
+
+**Environments and approval gates.** A GitHub *environment* is a named deployment target (`production`, `staging`) that a workflow job can reference. Its useful feature here is a protection rule called *required reviewers*: the job pauses and a named human has to press Approve before it runs. That is exactly the shape of "show me the Terraform plan, then let me decide". The catch is the plan tiers. GitHub's docs say "Users with GitHub Free plans can only configure environments for public repositories", and required reviewers on a *private* repo need Enterprise, not just Pro or Team. So on a private repo with a free account, the environment gate does not exist at any price we will pay.
+
+**The replacement: `workflow_dispatch`.** A workflow with a `workflow_dispatch` trigger only runs when someone presses "Run workflow" in the Actions tab (or calls the API). So the pipeline splits in two. Plan runs automatically on every pull request and posts the Terraform plan. Apply is a separate manually triggered workflow. The human pressing the button *is* the approval, and it is still auditable: GitHub records who triggered every run. What is lost compared to a real environment gate is the coupling. The gate is not attached to a specific reviewed plan, so nothing stops someone from dispatching apply without reading the plan first. With one maintainer that is an acceptable trade, and the fix when the repo goes public is to move the apply job behind an environment.
+
+**Actions minutes.** Public repos get GitHub-hosted standard runners with no minute cap. Private repos draw on the Free plan allowance of 2,000 minutes and 500 MB of artifact storage per month. Both are $0, but the private one has a ceiling, so CI should stay quick and should not run on every push to every branch.
+
+**Why the docs are still written as if the repo were public.** No account ID, the noreply commit email, secret scanning in hooks and CI. Making a repo public is one click, and at that moment the whole history becomes readable at once. Nothing about "it is private right now" makes a committed secret safe, because the commit outlives the setting.
+
 ### M0 concepts and interview questions
 
-Added at the end of M0.
+**The idea M0 is built on: put the limits in place before there is anything to limit.** Nothing was created in AWS except billing alarms. Every guard rail (budgets, MFA, no access keys, a forbidden-service list, a concurrency cap, secret scanning) exists before the first resource. That ordering is the point. A cost guard added after the bill arrives is not a guard, it is a receipt.
+
+**Layers of credential risk.** Root can do anything including closing the account and cannot be restricted, so it gets MFA and is then left alone. An IAM user with MFA is the daily identity, but a user is still a long-lived identity, so it holds no access keys. `aws login` exchanges an MFA-backed browser sign-in for credentials that expire, which is why the session in this repo went stale between sessions. That expiry is the feature: a leaked file from yesterday is worthless today.
+
+**Free tier is not one thing.** Always Free allowances renew every month forever. Twelve-month free tier and the $100 of Free plan credits both run out. The design may only depend on the first kind. Credits are treated as a safety net for a mistake, never as budget.
+
+**Budgets are a backstop, not a control.** Billing data lags by hours, so a budget email tells you a charge already happened. Nothing in AWS stops spending when a budget fires. The real controls are the choices upstream: only Always Free services, no service that bills per hour of existence, traffic generated on demand instead of continuously, and a destroy command.
+
+**Quotas cut the blast radius.** The account's Lambda concurrent executions limit is 10. That is small enough that a runaway loop cannot invoke thousands of functions in parallel. It is also low enough to block reserved concurrency, which needs at least 100 unreserved, which is why the increase to 1,000 was requested. A quota is a ceiling, not a purchase: raising it costs nothing, using it costs money.
+
+**Two places to catch a secret, for two different reasons.** Pre-commit hooks are fast and local, so they fail in two seconds instead of two minutes. But they live in `.git/hooks`, which is never cloned, and `git commit --no-verify` skips them. CI cannot be skipped. The hook is convenience, CI is enforcement, and you want both because the cost of the two outcomes is not symmetric: a blocked commit costs a minute, a pushed secret has to be treated as leaked and rotated.
+
+**Interview questions**
+
+**1. You claim this project runs on AWS for $0.00 a month. How do you actually guarantee that, and how would you know if you were wrong?**
+
+Nothing is guaranteed by a single control, so it is layered. Design first: only services with an Always Free allowance, checked against the pricing page and written into COST.md with the allowance, the projected usage and the headroom. An explicit forbidden list for anything that bills for merely existing, which is most of the expensive ones: EC2, NAT Gateway, load balancers, RDS, Fargate, OpenSearch, Secrets Manager, customer managed KMS keys. Nothing runs continuously, traffic is generated locally on demand and rate-capped, and there is a pause command that takes idle usage to near zero plus a destroy command. Then detection: a $1 monthly budget on actual and forecast spend, and a $0.01 tripwire on actual spend, because in a design that is supposed to be entirely free, the first cent is the signal, not the first dollar. Both budgets exclude credits so a charge is visible even when credits absorb it. I would know I was wrong from the tripwire email, and because billing data lags by hours, the budget is the backstop and the design constraints are the actual control.
+
+**2. Why are there no AWS access keys on your laptop?**
+
+An access key is a long-lived credential with no expiry that works from anywhere in the world. If it ends up in a commit, a backup, a screen share or a malicious dependency that reads `~/.aws`, the attacker has my permissions until I notice and rotate. Instead the IAM user has MFA and no keys, and `aws login` performs a browser sign-in that returns short-lived credentials cached on disk. They expire, so a stolen copy has a short useful life. The usual best answer is IAM Identity Center, and I would use it at work, but it requires AWS Organizations, and joining an Organization auto-upgrades an account off the Free plan, which would let this account be charged. So the constraint picked the design, and I can say exactly what I gave up.
+
+**3. You have a $1 budget and a $0.01 budget. Isn't the $1 one enough?**
+
+They answer different questions. The $1 budget watches actual and forecast spend, so it catches a slow drift: something small billing every day that would add up. The $0.01 budget on actual spend answers a yes or no question instead: has anything charged me at all? For a system designed to be entirely inside Always Free, any non-zero charge means a design error, not a usage spike, and I want to hear about it the day it starts rather than when it approaches a dollar. The $1 budget also covers the case where the tripwire fires and I misjudge it.
+
+**4. You set `IncludeCredit=false` on both budgets. What does that flag do and why was the default wrong for you?**
+
+By default a budget measures net cost, so credits and refunds are subtracted before the number is compared to the threshold. This account has $100 of Free plan credits. With the default, a service could charge me every day and the credits would absorb it, net spend would stay at $0, and neither budget would ever fire. I would find out when the credits ran out. `IncludeCredit=false` makes the budget measure the gross charge, so it fires on the charge itself and the credits are what they should be: a safety net behind the alarm, not a way to silence it. `IncludeRefund=false` is the same reasoning for refunds.
+
+**5. Your pre-commit hooks already run gitleaks. Why bother running it again in CI?**
+
+Because a pre-commit hook is not a security control, it is a convenience. It only exists if someone ran `pre-commit install`, it lives in `.git/hooks` which is never cloned or pushed, and anyone can bypass it with `git commit --no-verify`. It is there because a two-second local failure is much cheaper than a two-minute CI failure. CI runs on the server on every pull request and cannot be skipped by the person making the change, so that is where the rule is actually enforced. The asymmetry justifies the duplication: a false block costs me a minute, while a secret that reaches a remote has to be assumed leaked and rotated, even in a private repo, because history is effectively permanent once pushed. The same logic covers the hook that blocks the AWS account ID.

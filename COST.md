@@ -53,13 +53,22 @@ Not yet re-verified on a pricing page today (expected free, checked before first
 |---|---|---|
 | S3 bucket for Terraform state | No Always Free tier for new accounts. ca-central-1: $0.025/GB-month, $0.0055 per 1,000 PUT/LIST, $0.00044 per 1,000 GET | On the Free plan it is covered by credits, so $0.00. After upgrade: realistic ~$0.001/month (60 runs x ~6 requests, <1 MB state), worst case ~$0.02/month (400 runs, 100 kept versions). Under the $0.10 threshold but not literally $0. Decide in M1: S3 with native locking and a lifecycle rule on old versions, or HCP Terraform Free (no charge up to 500 managed resources). |
 
-## Budgets we will create in M0 (after your yes on exact commands)
+## Budgets (created 2026-09-19)
 
 1. `nightshift-monthly-1usd`: $1/month cost budget. Email at 100% ACTUAL and 100% FORECASTED.
 2. `nightshift-tripwire`: $0.01/month cost budget. Email at 100% ACTUAL.
 
 Both set `IncludeCredit=false` (the API default is true). With credits included, credits would absorb every charge during the Free plan, net cost would stay at $0, and neither budget would ever fire. Excluding credits means any usage outside Always Free triggers an email, which is what we want.
 Alerts go to youssef.m.khafagy+nightshift@gmail.com. Free tier usage alerts (85% of any tracked allowance) are on by default for standalone accounts and go to the root email; we point them at the same address in Billing preferences.
+
+## Other free allowances (not AWS)
+
+| Thing | Free allowance | Projected usage | Headroom |
+|---|---|---|---|
+| GitHub Actions, private repo | 2,000 minutes/month, 500 MB artifact storage | CI on pull requests only, target under 5 minutes per run, so well under 400 minutes/month | Large. Public repos have no minute cap, so this ceiling disappears if the repo is made public. |
+| Vercel Hobby (M8 dashboard) | Hobby plan, non-commercial | One Next.js project, replay mode from static JSON | Verify current Hobby limits before M8 |
+
+Overage on GitHub Actions is only possible with a payment method on file and spending limit raised above $0. The default spending limit on the Free plan is $0, so jobs stop instead of billing.
 
 ## LLM providers (free tiers, not AWS)
 
