@@ -254,7 +254,15 @@ data "aws_iam_policy_document" "ci_apply" {
       "logs:UntagResource",
       "logs:ListTagsForResource",
     ]
-    resources = ["${local.project_logs}:*"]
+    # CloudWatch Logs has two ARN shapes for the same log group. Actions that
+    # act on the group itself (ListTagsForResource, PutRetentionPolicy) expect
+    # "log-group:NAME". Actions that reach the streams inside it expect
+    # "log-group:NAME:*". Granting only the second form fails the first set,
+    # which is what broke the first CI apply.
+    resources = [
+      local.project_logs,
+      "${local.project_logs}:*",
+    ]
   }
 
   statement {
