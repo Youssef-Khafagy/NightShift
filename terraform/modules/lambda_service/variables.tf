@@ -10,8 +10,14 @@ variable "description" {
 }
 
 variable "source_dir" {
-  description = "Directory containing the function's Python source. Zipped as-is, no build step."
+  description = "Directory containing the function's Python source. Every .py file under it is zipped, and nothing else unless listed in extra_files."
   type        = string
+}
+
+variable "extra_files" {
+  description = "Non-Python files, relative to source_dir, that also belong in the zip. Text files only: they are read with file()."
+  type        = list(string)
+  default     = []
 }
 
 variable "handler" {

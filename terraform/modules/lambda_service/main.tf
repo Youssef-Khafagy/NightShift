@@ -2,13 +2,31 @@
 # alias. Nothing ever points at $LATEST, so a deploy is "move the alias" and
 # a rollback is "move it back".
 
-# The zip is built from the source directory at plan time. output_base64sha256
-# is what tells Lambda the code changed: without it, Terraform would see the
-# same filename and skip the update.
+# The zip is built at plan time. output_base64sha256 is what tells Lambda the
+# code changed: without it, Terraform would see the same filename and skip the
+# update.
+#
+# Files are listed explicitly rather than zipping the whole directory with
+# source_dir. Zipping a directory ships whatever happens to be sitting in it,
+# which on a developer machine means __pycache__ and .pyc files. That is both
+# a leak of local junk into a deployed artifact and a source of drift: the
+# same commit produces a different zip on a laptop than on a clean CI runner,
+# so every CI plan wants to redeploy. An allowlist makes the artifact depend
+# only on what is committed.
 data "archive_file" "this" {
   type        = "zip"
-  source_dir  = var.source_dir
   output_path = "${path.root}/.build/${var.name}.zip"
+
+  dynamic "source" {
+    for_each = toset(concat([
+      for f in fileset(var.source_dir, "**/*.py") : f
+    ], var.extra_files))
+
+    content {
+      content  = file("${var.source_dir}/${source.value}")
+      filename = source.value
+    }
+  }
 }
 
 data "aws_iam_policy_document" "assume_role" {

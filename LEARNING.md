@@ -387,6 +387,47 @@ aws s3 ls s3://nightshift-tfstate-ca-central-1-2f0ad894/nightshift/
 
 $0.00 measurable. IAM roles, policies, the OIDC provider, Lambda aliases and function URLs are all free. The function is not invoked unless something invokes it, and 1M requests plus 400,000 GB-seconds per month are free. Logs are on three-day retention inside the 5 GB allowance. The one real charge is the state bucket: under 100 KB of state, a handful of requests per run, so roughly $0.001 a month and at worst $0.02. Actions minutes come out of the Free plan's 2,000 per month for private repos; a full CI run is a few minutes.
 
+### What the first CI run caught
+
+The pipeline's first real job found a bug on its first try, which is the best argument for building it before the interesting code.
+
+The plan job should have reported no changes, because the infrastructure had just been applied from the same commit. It reported `Plan: 0 to add, 2 to change, 0 to destroy`, and the difference was `source_code_hash` on the Lambda:
+
+```
+~ source_code_hash = "5SG0UQSTGUG74L1nbQanvYVRPTPGk+VYGZos1vR4ykA="
+                  -> "WtqeoBI37UPsSWbApdxX4fgljLqp6avYm+PC6RrmcO8="
+```
+
+Same commit, same Terraform, different zip. The cause: the module used `archive_file` with `source_dir`, which zips whatever is in that directory. Running the handler locally to smoke-test it had created `src/hello/__pycache__/app.cpython-312.pyc`, and that file went into the deployed artifact. A clean CI checkout has no `__pycache__`, so its zip differed.
+
+Two separate problems in one symptom:
+
+1. **A junk file shipped to production.** Version 1 of the function contains a bytecode file compiled by the local Python 3.12 for a runtime that runs 3.14. Harmless here. In a project with a virtualenv, local credentials or a `.env` in the source directory, it would not be.
+2. **Drift on every run.** The artifact depended on the machine, so CI would have wanted to redeploy the function forever, and "the plan is not empty" would have stopped meaning anything.
+
+`.gitignore` did not help, because `archive_file` reads the filesystem, not git.
+
+**The fix is an allowlist, not an exclude list.** `excludes = ["__pycache__/**"]` would have fixed this one case and nothing else. Instead the module lists the files it wants:
+
+```hcl
+dynamic "source" {
+  for_each = toset(concat([
+    for f in fileset(var.source_dir, "**/*.py") : f
+  ], var.extra_files))
+
+  content {
+    content  = file("${var.source_dir}/${source.value}")
+    filename = source.value
+  }
+}
+```
+
+Now the artifact contains exactly the committed Python files, with a fixed 1980 timestamp, so the same commit produces the same bytes on any machine. It is the same principle as the IAM policy two sections up: name what is allowed, because a denylist only covers the cases you thought of.
+
+Two things that looked like fixes and were not. File modification time is not the cause: `archive_file` already normalizes it, confirmed by backdating the source file and getting an identical plan. `output_file_mode = "0644"` is a no-op with content-based sources, confirmed by comparing the checksum with and without it, so it was removed rather than left in with a comment claiming otherwise.
+
+**The side benefit.** The job log printed the plan as `arn:aws:lambda:ca-central-1:***:function:nightshift-hello:1`. GitHub masked the account ID because it is stored as a repository secret, which was the point of storing it that way.
+
 ### M1 concepts and interview questions
 
 **1. Walk me through how your CI authenticates to AWS.**
