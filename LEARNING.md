@@ -320,7 +320,9 @@ curl $URL                          -> http 403
 curl --aws-sigv4 ... $URL          -> http 200
 ```
 
-**arm64.** Graviton costs less per GB-second than x86_64 and the free allowance is measured in GB-seconds, so the same allowance goes further. Python has no compiled dependencies here, so there is no portability cost.
+**arm64.** Graviton costs less per GB-second than x86_64 beyond the free tier. Python has no compiled dependencies in M1, so there is no portability cost yet.
+
+> **Correction, 2026-09-20.** The original version of this note said the lower arm64 price makes the free allowance "go further". That is wrong, and it is the kind of claim an interviewer would push on. The Lambda free tier is 1 million requests and 400,000 GB-seconds per month and is **identical for both architectures**, re-verified on the pricing page. A GB-second is a GB-second; a lower price per GB-second buys nothing extra inside an allowance denominated in GB-seconds. The real arguments for arm64 are that it is cheaper once the free tier is exhausted, and that better price-performance can mean the same work finishes in fewer GB-seconds. The second one is a claim about speed, and this project has not measured it. The "no portability cost" half also has a shelf life: from M2a the functions depend on psycopg, which means every wheel has to be an aarch64 build.
 
 **Reserved concurrency of 2.** Reserved concurrency is a hard ceiling on how many copies of this function can run at once. It is a blast radius control: a retry storm or a loop cannot spend the account's whole free allowance on one function. It is also why the M0 quota increase mattered, since reserving anything requires at least 100 unreserved concurrency to remain.
 

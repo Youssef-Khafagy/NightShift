@@ -82,8 +82,10 @@ resource "aws_lambda_function" "this" {
   handler       = var.handler
   runtime       = var.runtime
 
-  # arm64 (Graviton) is cheaper per GB-second than x86_64 and the free
-  # allowance is measured in GB-seconds, so it stretches further.
+  # arm64 (Graviton) is cheaper per GB-second than x86_64 once past the free
+  # tier. The free allowance itself is the same for both architectures, so
+  # this does not buy extra free capacity. Every dependency must ship an
+  # aarch64 wheel.
   architectures = ["arm64"]
 
   filename         = data.archive_file.this.output_path
