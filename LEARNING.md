@@ -669,3 +669,86 @@ That leaves one open question, recorded in the requirements file rather than dis
 | `.venv/bin/python scripts/lambda_deps.py build` | Installs the locked wheels into `build/layer/python/`, prunes bytecode and console scripts, and writes a deterministic `build/nightshift-deps-layer.zip`. |
 
 `build/` is gitignored. The lock file is committed, because it is the thing that makes a build reproducible.
+
+### The data plane, and the free tier's opinions about it
+
+Three stores, each picked partly for what it does and partly for what it costs.
+
+**Aurora DSQL for orders.** PostgreSQL compatible, no instance to pay for, no VPC to put it in, and an idle cluster scales to zero so it costs nothing between sessions. What it is not is ordinary PostgreSQL, and the differences shape the code that comes next: Repeatable Read is the only isolation level, concurrency control is optimistic so conflicting transactions fail at commit with SQLSTATE 40001 rather than blocking, DDL and DML need separate transactions with one DDL each, and there are no triggers, no PL/pgSQL and no temp tables.
+
+**DynamoDB for carts.** A cart is one document, read and written by key, which is what DynamoDB is cheapest and simplest at. It also gives the chaos framework a second store whose failure modes look nothing like a SQL database's.
+
+**SQS between checkout and payment.** Checkout writes the order and returns; payment happens asynchronously. That split is not architectural decoration, it is what makes several later scenarios stageable at all. A poison message, a retry storm and a growing oldest-message age are only interesting when there is a queue in the middle.
+
+**Provisioned, not on-demand.** DynamoDB's free allowance is 25 RCU and 25 WCU per region, and it applies only to provisioned capacity. On-demand has no free capacity tier at all, so the mode that looks cheaper and more serverless would have been the one that costs money from the first request. The cart table takes 5 and 5, and COST.md carries a ledger so the total across every table and index stays under 25.
+
+**TTL instead of a cleanup job.** Carts expire. Setting `ttl { attribute_name = "expires_at" }` makes DynamoDB delete them, and those deletes do not consume write capacity. A scheduled Lambda doing the same work would burn both invocations and WCU.
+
+### Queue settings that are not arbitrary
+
+| Setting | Value | Why |
+|---|---|---|
+| Visibility timeout | 180 s | AWS guidance is at least six times the consumer's timeout, and the worker gets 30 s. Too short and a slow-but-succeeding message is redelivered and processed twice. |
+| `maxReceiveCount` | 3 | Low enough that a poison message reaches the DLQ quickly, high enough to ride out a transient failure. |
+| DLQ retention | 14 days | The maximum. A message only lands here after repeated failure, and the point is that a human, or later the agent, can still look at it. |
+| Redrive allow policy | one source queue | Without it, any queue in the account could redrive into this DLQ. A dead letter queue holding messages from an unknown sender is worse than not having one. |
+
+### Encryption, and the scanner earning its keep
+
+The trivy config scan failed the build on `AWS-0096`, queue not encrypted, at HIGH. That is a real finding and the fix was free: `sqs_managed_sse_enabled = true` uses SSE-SQS with an AWS managed key at no charge. The alternative that most tutorials reach for, `kms_master_key_id` with a customer managed key, is billed per request and is on this project's forbidden list. Same outcome for the scanner, very different bill.
+
+It is worth noticing the shape of that: the secure option was also the free one, and the insecure default was simply nobody having set anything.
+
+A side note on reading tool output. The first run looked clean because the check was written as `trivy ... | tail -6; echo $?`, and `$?` in a pipeline is the *last* command's status, so it reported `tail`'s success rather than trivy's failure. The scan had found both queues and said so. A guard whose exit code you read wrong is not a guard.
+
+### Service-linked roles, learned the hard way
+
+The apply failed on the cluster, after the table and both queues had already been created:
+
+```
+AccessDeniedException: Insufficient permissions to create service-linked role.
+Add the iam:CreateServiceLinkedRole permission to your IAM policy.
+```
+
+**What a service-linked role is.** Some AWS services need to make calls on your behalf, for example to publish metrics or manage infrastructure they own. Rather than asking you to build a role with the right trust policy, the service defines one, and creating your first resource of that type creates the role automatically. It lives under the reserved path `/aws-service-role/`, you cannot edit its permissions, and you can only delete it once every resource that uses it is gone.
+
+**Why it broke here and not for DynamoDB or SQS.** Those services do not use one. DSQL does, so `CreateCluster` implicitly needs `iam:CreateServiceLinkedRole`, which an IAM policy scoped to `role/nightshift-*` was never going to grant.
+
+**How it was scoped.** Two independent limits rather than one:
+
+```hcl
+actions   = ["iam:CreateServiceLinkedRole"]
+resources = ["arn:aws:iam::${account}:role/aws-service-role/dsql.amazonaws.com/*"]
+
+condition {
+  test     = "StringEquals"
+  variable = "iam:AWSServiceName"
+  values   = ["dsql.amazonaws.com"]
+}
+```
+
+The resource confines it to the reserved path, and the condition pins the service, so this grant cannot mint a service-linked role for anything else. A bare `iam:CreateServiceLinkedRole` on `*` would let the pipeline create roles for any AWS service that has one, which is a much larger door than it looks.
+
+This is also a small argument for scoping by path and condition rather than by name. The role turned out to be called `AWSServiceRoleForAuroraDsql`, not the `AWSServiceRoleForDSQL` that guessing would have produced, and a name-based policy would have failed for a second, more confusing reason.
+
+### Verifying a value the API does not give you
+
+DSQL exposes no endpoint attribute. The hostname has to be built from the generated cluster identifier:
+
+```
+<identifier>.dsql.<region>.on.aws
+```
+
+That is a construction, not a fact the provider returned, so it was checked rather than assumed:
+
+```
+$ getent hosts yjudav....dsql.ca-central-1.on.aws
+2600:1f11:e4a:df04:5cea:87a4:9c0d:bf2c   yjudav....dsql.ca-central-1.on.aws
+
+$ python3 -c "import socket; socket.create_connection((EP, 5432), timeout=10)"
+connected to port 5432
+```
+
+Note the AAAA record: DSQL resolved to IPv6 here. Worth remembering if anything later runs somewhere without IPv6 egress.
+
+The rest was checked the same way rather than trusted from `terraform apply` output: cluster `ACTIVE` with `AWS_OWNED_KMS_KEY`, table `ACTIVE` at 5 and 5 with TTL `ENABLED` on `expires_at`, and the queue reporting `VisibilityTimeout 180`, `maxReceiveCount 3` pointing at the DLQ, and `SqsManagedSseEnabled true`.
