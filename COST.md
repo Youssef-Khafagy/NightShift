@@ -32,7 +32,7 @@ Usage model for "Projected": one busy month = development plus one full benchmar
 | Service | Always Free allowance | Projected busy month | Headroom | Guardrails |
 |---|---|---|---|---|
 | Lambda | 1M requests and 400,000 GB-s per month, perpetual, **identical for x86 and arm64** (re-verified 2026-09-20) | ~410K requests, ~60K GB-s | ~59% requests, ~85% GB-s | Share each incident across configs (separate injections per config would be ~1.5M requests, over the limit). Agent never sleeps inside Lambda while waiting on LLM rate limits; it checkpoints and reschedules. **Measured 2026-09-20, resolved:** 128 MB holds. Importing Powertools, psycopg and boto3 and building a DSQL client costs 11,910 ms at 128 MB when done lazily inside the handler, but 712 ms at the same 128 MB when done at module scope during init. Memory was not the lever; where the imports run was. See the memory sweep below. |
-| Aurora DSQL | 100,000 DPUs and 1 GB storage per month, Always Free on Free and Paid plans (re-verified 2026-09-20). Beyond: $8 per million DPUs, $0.33 per GB-month | ~20K DPUs, <0.1 GB | ~80% (weak estimate) | DSQL is NOT in AWS's list of services tracked by free tier usage alerts. A local cost-check script reads the DSQL DPU metric with GetMetricStatistics. Measure DPUs per checkout in M2a before any load test. An idle cluster scales to zero and incurs no DPU charge, so leaving the cluster up between sessions is free as long as storage stays under 1 GB. |
+| Aurora DSQL | 100,000 DPUs and 1 GB storage per month, Always Free on Free and Paid plans (re-verified 2026-09-20). Beyond: $8 per million DPUs, $0.33 per GB-month | ~20K DPUs, <0.1 GB | ~80% (weak estimate) | DSQL is NOT in AWS's list of services tracked by free tier usage alerts. `scripts/measure_dpu.py` reads the DPU metrics with GetMetricStatistics. **Measured 2026-09-21:** compute DPU is transaction open time, one DPU per transaction-second, so this allowance is really about 27.8 hours of open transaction time per month. A transaction left open until DSQL kills it costs 315 DPU. DPU per checkout still to be measured on the fixed code, and the projection above still rests on the old estimate until it is. An idle cluster scales to zero and incurs no DPU charge, so leaving the cluster up between sessions is free as long as storage stays under 1 GB. |
 | DynamoDB | 25 RCU, 25 WCU (provisioned, Standard table class), 25 GB storage, per region | Planned total <= 20 RCU and 20 WCU across all tables and GSIs | >= 5 RCU/WCU | Provisioned mode only. No auto scaling: target tracking creates CloudWatch alarms that would use our alarm allowance. Capacity ledger kept in this file from M2. |
 | SQS | 1M requests per month (each 64 KB chunk is one request, a batch of up to 10 messages is one request) | ~110K with the consumer disabled between runs; ~760K if the trigger is left on 24/7 | ~89% | Idle Lambda trigger polls with 5 long-poll connections. Estimate 5 x 3 per min x 43,200 min = ~648K requests/month per idle queue, for zero work. **Decided 2026-09-20:** the event source mapping ships `enabled = false` and is turned on only for a run. Only one triggered queue; DLQ has no trigger; standard (not provisioned) poller mode. Measure with NumberOfEmptyReceives in M2a. |
 | SNS | 1M requests, 1,000 email deliveries per month | ~220 emails | ~78% | Alarm actions only on ALARM transitions we care about. |
@@ -59,7 +59,80 @@ Consequences for how the store is written:
 - Retries are not free. Every attempt of a transaction that hits `40001` and is retried bills its own DPU, so a contention storm costs real DPU. Scenario 7 (hot-row contention) is therefore a cost event as well as a latency event, and its runs must be short.
 - Storage is billed at $0.33 per GB-month with 1 GB free, and data is replicated across three Availability Zones at no extra charge. Synthetic order data must be pruned between benchmark passes to stay under 1 GB.
 
-Measurement plan for M2a, before any load test: run one checkout, read the cluster's DPU metric with `GetMetricStatistics`, and record DPU per checkout here. The 42-incident benchmark projection is then rebuilt from that measured number instead of the current estimate.
+### What a DPU actually bills (measured 2026-09-21)
+
+The model above treats a DPU as a unit of work. It is mostly a unit of time.
+
+`ComputeDPU` equals `ComputeTime` in milliseconds divided by 1000 in every
+datapoint this cluster has published. To find out what that time is a measure
+of, two phases ran against an otherwise idle cluster, separated so their
+one-minute metric buckets could not blend:
+
+| Phase | Transactions | Query work | ComputeTime | ComputeDPU |
+|---|---|---|---|---|
+| committed immediately | 7 | `SELECT 1` each | 209 ms | 0.209 |
+| one held open 60 s | 2 | `SELECT 1` | 60,062 ms | 60.062 |
+
+Identical query work. The only difference was sixty seconds of staying open,
+and it cost 287 times more. 60.062 DPU for 60.000 seconds held is **one DPU per
+transaction-second, accurate to 0.1 percent**.
+
+What follows from that:
+
+- The 100,000 DPU monthly allowance is about **27.8 hours of open transaction
+  time**. That is the number to budget against, and it is a very different
+  quantity from "100,000 units of work".
+- Read and write DPU are real but small at this scale. The held transaction
+  billed 0.00375 ReadDPU against 60.06 ComputeDPU.
+- Holding a transaction open across a network call bills that call's latency as
+  database compute. Scenario 4 (slow dependency) is therefore a DSQL cost event
+  as well as a latency event, for a reason that has nothing to do with queries.
+- Leaving a transaction open when a Lambda returns bills until something ends
+  it. Lambda freezes the execution environment with the transaction still open
+  on the server, so nothing ends it until DSQL's cap does.
+- DSQL reports a transaction's compute in the metric bucket after the one it
+  finished in, so any window read has to be padded at both ends.
+
+The observed cap is about 315 seconds, not the documented 5 minutes. Recorded
+as measured rather than explained.
+
+### The 1,590 DPU that went missing (found 2026-09-21)
+
+Reading the cluster's history before measuring anything turned up six minutes
+of unexplained compute: 126, 204 and four of almost exactly 315 DPU. Each of
+the 315s was a single read-only transaction that had read 104 bytes. Nothing
+that reads 104 bytes burns 315 seconds of CPU, which is what first suggested
+that compute was being billed by time.
+
+The cause was in our code, not in DSQL. `dsql.connect` defaulted to
+`autocommit=False`, and psycopg opens a transaction on the first statement and
+holds it until someone commits. Four paths never did:
+
+1. `orders`, the idempotency replay: rolled back the failed checkout, then ran
+   a `SELECT` that was left open.
+2. `fulfillment`, order not found: returned with the lookup still open.
+3. `fulfillment`, order already settled: the same.
+4. `fulfillment`, the normal path: held the lookup open **across the call to the
+   payment provider**, billing the payment provider's latency as DSQL compute.
+
+The 126 and 204 DPU minutes are leaks that a later invocation on the same
+execution environment happened to close early. The four 315s are leaks that
+nothing came back for. Total waste: **1,590 DPU, 1.6 percent of a month's free
+allowance, from about six requests.** `smoke_checkout.py` triggered the orders
+one on every run.
+
+Fixed 2026-09-21 by making `autocommit=True` the default, wrapping the one
+genuinely multi-statement operation in `with conn.transaction():`, and ending
+the fulfilment lookup before the payment call. A lone statement is now its own
+transaction and ends immediately, so the expensive mistake is no longer the
+default. The lesson generalises past DSQL: the cost signal found a real bug
+that no test caught, because the bug had no functional symptom at all.
+
+### Still outstanding
+
+DPU per checkout, measured on the fixed code with `scripts/measure_dpu.py`. The
+42-incident benchmark projection is rebuilt from that number, and the `~20K
+DPUs` in the table above stays marked weak until then.
 
 ### Lambda memory and where imports run (measured 2026-09-20)
 
