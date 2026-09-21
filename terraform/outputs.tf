@@ -72,3 +72,18 @@ output "orders_execution_role_arn" {
   description = "Execution role for orders-service, mapped to the orders_service database role by scripts/grant_db_roles.py."
   value       = module.orders.execution_role_arn
 }
+
+output "payments_function_name" {
+  description = "Mock payment provider. Invoked through the Lambda API, no function URL."
+  value       = module.payments.function_name
+}
+
+output "fulfillment_function_name" {
+  description = "SQS consumer that charges placed orders."
+  value       = module.fulfillment.function_name
+}
+
+output "fulfillment_execution_role_arn" {
+  description = "Execution role mapped to the fulfillment_service database role."
+  value       = module.fulfillment.execution_role_arn
+}
