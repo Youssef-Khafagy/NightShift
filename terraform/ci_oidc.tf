@@ -243,6 +243,24 @@ data "aws_iam_policy_document" "ci_apply" {
     resources = [local.project_clusters]
   }
 
+  # Creating the first DSQL cluster also creates Aurora DSQL's service-linked
+  # role, so CreateCluster fails with AccessDenied without this. Scoped two
+  # ways: the resource is confined to the reserved aws-service-role path, and
+  # the condition pins the service, so this cannot mint a service-linked role
+  # for anything other than DSQL.
+  statement {
+    sid       = "CreateDsqlServiceLinkedRole"
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:aws:iam::${local.account_id}:role/aws-service-role/dsql.amazonaws.com/*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["dsql.amazonaws.com"]
+    }
+  }
+
   statement {
     sid       = "ListDsqlClusters"
     effect    = "Allow"
