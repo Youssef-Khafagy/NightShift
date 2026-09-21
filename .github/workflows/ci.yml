@@ -53,6 +53,38 @@ jobs:
       - name: Run pre-commit
         run: pre-commit run --all-files --show-diff-on-failure
 
+  tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.12 is the local development Python, where these are written and
+        # run. 3.14 is what Lambda actually executes. A test that only ever
+        # runs on one of them cannot see the gap between them.
+        python-version: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements/dev.txt
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/dev.txt
+
+      # No AWS credentials are configured for this job, on purpose. The tests
+      # fake the database and use moto for SQS, so a test that reached for a
+      # real account should fail loudly rather than quietly succeed.
+      - name: Run tests
+        run: pytest tests/ -q
+
   terraform:
     name: Terraform plan
     runs-on: ubuntu-latest
