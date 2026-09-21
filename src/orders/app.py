@@ -291,5 +291,11 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         logger.warning("checkout rejected", extra={"reason": str(exc)})
         return _response(409, {"error": str(exc)}, correlation_id)
     except signed_http.RemoteCallError as exc:
-        logger.error("cart-service call failed", extra={"status": exc.status})
+        # The body matters as much as the status. A 403 from a signature
+        # mismatch and a 403 from an IAM denial are the same number and
+        # entirely different problems.
+        logger.error(
+            "cart-service call failed",
+            extra={"status": exc.status, "body": exc.body[:300]},
+        )
         return _response(502, {"error": "cart-service unavailable"}, correlation_id)

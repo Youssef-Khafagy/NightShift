@@ -15,6 +15,7 @@ surface.
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any
 
@@ -56,16 +57,18 @@ def request_json(
     problem, and a timeout shorter than the caller's own is what keeps a
     slow dependency visible as a timeout rather than as a caller that hangs.
     """
-    body = json.dumps(payload) if payload is not None else ""
-    request = AWSRequest(
-        method=method,
-        url=url,
-        data=body,
-        headers={
-            "content-type": "application/json",
-            CORRELATION_HEADER: correlation_id,
-        },
-    )
+    # Only sign what is actually sent. A GET carries no body, so it gets no
+    # content-type: SigV4 signs the headers it is given, and any header an
+    # HTTP client adds, drops or rewrites afterwards invalidates the
+    # signature. Sending content-type on a bodyless request is exactly the
+    # kind of header a client feels free to tidy up.
+    headers = {CORRELATION_HEADER: correlation_id}
+    body = None
+    if payload is not None:
+        body = json.dumps(payload)
+        headers["content-type"] = "application/json"
+
+    request = AWSRequest(method=method, url=url, data=body, headers=headers)
 
     # get_frozen_credentials() each call, because the execution role's
     # credentials rotate and a cached copy would eventually be rejected.
@@ -73,8 +76,25 @@ def request_json(
         request
     )
 
+    prepared = request.prepare()
+
+    if os.environ.get("SIGNED_HTTP_DEBUG") == "1":
+        frozen = _credentials.get_frozen_credentials()
+        logging.getLogger().warning(
+            "signed request debug",
+            extra={
+                "url": url,
+                "method": method,
+                "region": _region,
+                "access_key_prefix": frozen.access_key[:5],
+                "has_session_token": bool(frozen.token),
+                "header_names": sorted(prepared.headers.keys()),
+                "auth_prefix": str(prepared.headers.get("Authorization", ""))[:80],
+            },
+        )
+
     session = URLLib3Session(timeout=timeout)
-    response = session.send(request.prepare())
+    response = session.send(prepared)
     text = response.text
 
     if response.status_code >= 400:

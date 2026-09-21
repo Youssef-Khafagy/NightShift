@@ -38,7 +38,11 @@ from common import dsql
 # justifiable by pointing at a line of the service's code.
 ROLE_GRANTS: dict[str, list[str]] = {
     "orders_service": [
-        "GRANT USAGE ON SCHEMA public TO orders_service",
+        # No "GRANT USAGE ON SCHEMA public". DSQL treats the public schema
+        # as a system entity and rejects the statement with
+        # FeatureNotSupported. It is also unnecessary: PostgreSQL grants
+        # USAGE on public to PUBLIC by default, so every role already has it.
+        #
         # Reads the catalogue to price the order.
         "GRANT SELECT ON products TO orders_service",
         # Reads stock and takes it. No DELETE: checkout never removes stock
