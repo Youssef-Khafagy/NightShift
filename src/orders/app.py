@@ -108,10 +108,16 @@ def place_order(
     idempotency_key: str,
     items: list[dict[str, Any]],
 ) -> int:
-    """The whole checkout, in one transaction. Returns the order total."""
+    """The whole checkout, in one transaction. Returns the order total.
+
+    The transaction is explicit because the connection runs with autocommit on,
+    so without this block each statement below would commit on its own and a
+    failure halfway through would leave inventory decremented for an order that
+    was never written. Leaving the block commits; raising out of it rolls back.
+    """
     product_ids = [i["product_id"] for i in items]
 
-    with conn.cursor() as cur:
+    with conn.transaction(), conn.cursor() as cur:
         cur.execute(
             """
             SELECT p.product_id, p.price_cents, i.quantity
@@ -187,7 +193,6 @@ def place_order(
             (idempotency_key, order_id),
         )
 
-    conn.commit()
     return total
 
 
@@ -227,15 +232,16 @@ def checkout(
             )
             return {"order_id": order_id, "total_cents": total, "replayed": False}
         except psycopg.errors.UniqueViolation:
-            conn.rollback()
+            # No rollback here. Raising out of place_order's transaction block
+            # already rolled it back, and this read is its own transaction that
+            # ends the moment it returns. An earlier version rolled back and
+            # then left this SELECT open, which cost 315 DPU every time the
+            # execution environment froze afterwards.
             replayed = existing_order(conn, idempotency_key)
             logger.info(
                 "duplicate checkout", extra={"idempotency_key": idempotency_key}
             )
             return {"order_id": replayed, "replayed": True}
-        except Exception:
-            conn.rollback()
-            raise
 
     def on_retry(attempt_number: int, delay: float, exc: BaseException) -> None:
         logger.warning(

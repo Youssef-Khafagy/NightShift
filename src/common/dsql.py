@@ -170,14 +170,28 @@ def connect(
     region: str | None = None,
     *,
     role: str = ADMIN_ROLE,
-    autocommit: bool = False,
+    autocommit: bool = True,
 ) -> psycopg.Connection:
     """Open a connection to the cluster.
 
-    autocommit matters more here than in most PostgreSQL code. DSQL refuses to
-    mix DDL and DML in one transaction and allows only one DDL statement per
-    transaction, so the migration runner runs DDL with autocommit on, where
-    each statement is its own transaction.
+    autocommit defaults to on, which is the opposite of psycopg's default and
+    of most PostgreSQL code. Two reasons, one correctness and one money.
+
+    DSQL refuses to mix DDL and DML in one transaction and allows only one DDL
+    statement per transaction, so the migration runner needs every statement to
+    be its own transaction.
+
+    The money reason is the stronger one. DSQL bills compute by how long a
+    transaction stays open, not by how much CPU it burns: measured 2026-09-21,
+    one DPU per transaction-second. With autocommit off, psycopg opens a
+    transaction on the first statement and holds it until someone commits, so a
+    handler that runs one SELECT and returns leaves a transaction open. Lambda
+    then freezes the execution environment with it still open and DSQL bills it
+    until the 5 minute cap kills it, at 315 DPU a time. That happened here: see
+    the DSQL cost model in COST.md. With autocommit on, a lone statement is its
+    own transaction and ends immediately, and code that needs several
+    statements to be atomic says so with `with conn.transaction():`. The
+    expensive mistake stops being the default.
     """
     endpoint = endpoint or endpoint_from_env()
     region = region or os.environ.get("AWS_REGION") or "ca-central-1"
