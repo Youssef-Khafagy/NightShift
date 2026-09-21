@@ -26,10 +26,31 @@ from botocore.httpsession import URLLib3Session
 
 from .context import CORRELATION_HEADER
 
-# Built once per execution environment, during init, where the CPU is.
 _session = boto3.Session()
-_credentials = _session.get_credentials()
 _region = os.environ.get("AWS_REGION", "ca-central-1")
+
+
+def frozen_credentials():
+    """Resolve credentials per request, not once per execution environment.
+
+    This looks like a missed optimisation and is not. Lambda supplies the
+    execution role's credentials in environment variables and refreshes those
+    variables when the credentials rotate. A Credentials object captured at
+    import keeps the values it was built with, so once an execution
+    environment lives long enough to see a rotation, every request it signs
+    is rejected with AccessDeniedException.
+
+    The symptom is why this was hard to find: alternating success and
+    failure, because Lambda spreads requests across several warm environments
+    and only the older ones hold stale credentials. Every deploy appeared to
+    fix it, because deploying replaces all of them.
+
+    Reading the environment each time costs nothing and is always current.
+    The boto3 fallback is for running outside Lambda, where these variables
+    are not set and credentials come from a profile.
+    """
+    return _session.get_credentials().get_frozen_credentials()
+
 
 # A function URL is signed as the "lambda" service.
 SIGNING_SERVICE = "lambda"
@@ -70,16 +91,12 @@ def request_json(
 
     request = AWSRequest(method=method, url=url, data=body, headers=headers)
 
-    # get_frozen_credentials() each call, because the execution role's
-    # credentials rotate and a cached copy would eventually be rejected.
-    SigV4Auth(_credentials.get_frozen_credentials(), SIGNING_SERVICE, _region).add_auth(
-        request
-    )
+    SigV4Auth(frozen_credentials(), SIGNING_SERVICE, _region).add_auth(request)
 
     prepared = request.prepare()
 
     if os.environ.get("SIGNED_HTTP_DEBUG") == "1":
-        frozen = _credentials.get_frozen_credentials()
+        frozen = frozen_credentials()
         logging.getLogger().warning(
             "signed request debug",
             extra={
@@ -98,6 +115,16 @@ def request_json(
     text = response.text
 
     if response.status_code >= 400:
+        if os.environ.get("SIGNED_HTTP_DEBUG") == "1":
+            logging.getLogger().warning(
+                "signed request rejected",
+                extra={
+                    "status": response.status_code,
+                    "response_headers": dict(response.headers),
+                    "signed_headers": sorted(prepared.headers.keys()),
+                    "host": prepared.url,
+                },
+            )
         raise RemoteCallError(response.status_code, text)
 
     return json.loads(text) if text else {}

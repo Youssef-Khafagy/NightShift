@@ -93,3 +93,14 @@ jobs:
       - name: Outputs
         working-directory: terraform
         run: terraform output
+
+      # A green apply means the infrastructure matches the configuration. It
+      # says nothing about whether a customer can buy anything, and the gap
+      # between those two is where the interesting failures live. This buys a
+      # real cart, checks out against the real database, and fails the job if
+      # it does not get a 201, so a change that breaks checkout cannot sit on
+      # main unnoticed.
+      - name: Smoke test checkout
+        run: |
+          python -m pip install --quiet boto3
+          python scripts/smoke_checkout.py

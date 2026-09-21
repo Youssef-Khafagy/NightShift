@@ -309,6 +309,17 @@ data "aws_iam_policy_document" "ci_apply" {
     resources = [local.project_queues]
   }
 
+  # The post-deploy smoke test buys something through the real function URLs,
+  # so the apply role has to be able to call them. Invoking is not a change,
+  # but it is the one thing this role does that reaches the running system
+  # rather than its configuration.
+  statement {
+    sid       = "InvokeProjectFunctionUrls"
+    effect    = "Allow"
+    actions   = ["lambda:InvokeFunctionUrl"]
+    resources = [local.project_functions, "${local.project_functions}:*"]
+  }
+
   statement {
     sid    = "LambdaAccountReads"
     effect = "Allow"

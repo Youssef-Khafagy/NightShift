@@ -261,9 +261,42 @@ def checkout(
     return result
 
 
+def _selftest(correlation_id: str) -> dict[str, Any]:
+    """Temporary: can this function sign a call to any IAM-auth URL at all?
+
+    Calls hello-service, which has the same AWS_IAM function URL and no
+    relationship to checkout. If this succeeds while the cart call fails, the
+    problem is specific to cart. If both fail, signing from inside Lambda is
+    the problem.
+    """
+    results = {}
+    for label, url in (
+        ("hello", os.environ.get("HELLO_URL")),
+        ("cart", CART_SERVICE_URL),
+    ):
+        if not url:
+            results[label] = "no url configured"
+            continue
+        try:
+            signed_http.get_json(
+                url.rstrip("/"), correlation_id=correlation_id, timeout=5.0
+            )
+            results[label] = "ok"
+        except signed_http.RemoteCallError as exc:
+            results[label] = f"{exc.status}: {exc.body[:80]}"
+        except Exception as exc:  # noqa: BLE001
+            results[label] = f"{type(exc).__name__}: {exc}"
+    return results
+
+
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     request_id = getattr(context, "aws_request_id", "local")
     headers = event.get("headers")
+
+    if event.get("rawPath") == "/selftest":
+        cid = correlation_id_from_headers(headers, request_id)
+        return _response(200, {"selftest": _selftest(cid)}, cid)
+
     correlation_id = correlation_id_from_headers(headers, request_id)
     logger.append_keys(correlation_id=correlation_id)
 
