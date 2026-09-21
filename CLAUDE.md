@@ -136,15 +136,16 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Lambda tracing options: active tracing alone gives 2 segments per trace with no SDK, at a fixed sampling rate of 1 request/second plus 5% of the rest, which cannot be configured. AWS also documents a manual OpenTelemetry path with a Simple Span Processor, an X-Ray UDP span exporter and an X-Ray Lambda propagator, requiring no collector layer.
 - An idle SQS-triggered Lambda long-polls at roughly 648K requests/month per queue, about two thirds of the 1M free allowance, for zero work.
 
-## Current status (end of session 2026-09-21)
-M0 and M1 complete. M2a complete except step 7. Everything below is verified.
+## Current status (end of the second 2026-09-21 session)
+M0 and M1 complete. **M2a complete, including step 7. Ready for owner review.** Everything below is verified.
 
-**Shut down cleanly at the end of the 2026-09-21 session. Nothing is polling or scheduled:**
-- The only event source mapping is `nightshift-fulfillment` on `nightshift-placed-orders`, state `Disabled`.
+**Shut down cleanly. Nothing is polling or scheduled:**
+- The only event source mapping is `nightshift-fulfillment` on `nightshift-placed-orders`, state `Disabled`. It was enabled twice during the fulfilment measurement and disabled again both times, through Terraform rather than the CLI, so state never drifted.
 - No EventBridge rules exist. No provisioned concurrency on any function. Every function has reserved concurrency 2.
-- Both queues are empty. DSQL holds 19 paid orders and 38 line items, far under the 1 GB free storage, and an idle cluster costs nothing.
-- Both budgets still armed with `IncludeCredit=false`. Month-to-date spend $0.00.
-- `terraform plan` clean, working tree clean, local and origin both at `d40e0ca`.
+- Both queues are empty, DLQ included. DSQL holds 100 paid orders and 200 line items, far under the 1 GB free storage, and an idle cluster costs nothing.
+- Both budgets still armed with `IncludeCredit=false`. Month-to-date spend $0.00, confirmed with Cost Explorer.
+- `terraform plan` clean, working tree clean, local and origin in sync on `main`.
+- This session spent about **80 DPU** of the 100,000 monthly allowance, 0.08%, across the billing-model experiment (60), three checkout batches, two drains and one smoke test.
 
 Done:
 - AWS account: Free plan, ACTIVE, $100 credits, ends 2027-03-18. Root has MFA and no access keys. Daily identity is IAM user `youssef-admin` (MFA, no access keys, permissions only via group `nightshift-admins` with AdministratorAccess). CLI auth via `aws login --profile nightshift-admin`.
@@ -194,11 +195,12 @@ M2a in progress (owner approved the plan 2026-09-20). Steps:
    - Then rebuild the benchmark projection in COST.md from the measured number, and record whether retries and unindexed reads move it materially.
    - Also still open from step 3: whether Lambda bills init duration for on-demand invocations. COST.md assumes it does, which is the conservative reading.
    - **Done 2026-09-21, before measuring:** reading the cluster's existing DPU history first turned up six minutes of unexplained compute. `ComputeDPU` is `ComputeTime` divided by 1000, and a controlled experiment (7 transactions committed at once against 1 held open 60 s, identical query work) measured **one DPU per transaction-second, within 0.1%**. The free allowance is therefore about 27.8 hours of open transaction time per month, not 100,000 units of work. That exposed four leaked transactions in our own code (`autocommit=False` plus paths that never committed), which had cost 1,590 DPU with no functional symptom at all. Fixed; see COST.md and LEARNING.md.
-   - **Measured 2026-09-21 on the deployed fix:** **0.1189 DPU per checkout** marginal plus 0.639 DPU fixed per batch, from batches of 5 and 25 against an idle cluster with a 0.000 baseline. Raw data in `results/dpu-per-checkout.json`. Cost is about half compute and 43% write, so transaction duration is the first cost control and index discipline the second. The benchmark projection is rebuilt at **~19,000 DPU per pass, ~81% headroom**.
-   - Two batch sizes determine a line exactly, so there is no error estimate and a non-linearity would not show. A third batch size would fix it for about 2 DPU.
+   - **Measured 2026-09-21 on the deployed fix**, from batches of 5, 25 and 50 against an idle cluster with a 0.000 baseline: **0.1366 DPU per checkout** marginal plus 0.425 DPU fixed per batch. Raw data in `results/dpu-per-checkout.json` and `results/dpu-fulfilment.json`.
+   - **Fulfilment measured the same day** by enabling the consumer, draining 31 orders and then 50, and disabling it again: **0.0768 DPU per order**, with no measurable fixed cost. Both drain sizes agreed to four decimal places.
+   - Full order lifecycle **0.2134 DPU**. Benchmark projection rebuilt at **~21,500 DPU per pass, ~78% headroom**, with no estimated components left.
+   - The third batch size earned its place: it moved the marginal cost up 15% from the two-point answer, in the direction that matters, since that term is multiplied by 100,800. Largest residual is 3.1%.
+   - **Write DPU is quantised in units of 0.05**, so a tiny write costs the same as a slightly larger one. Argues for fewer, fuller write transactions.
    - The fix was confirmed in billing data, not only in tests: the apply run's smoke test cost 1.12 DPU across 13 transactions with no delayed spike, against roughly 316 DPU for the same test before the fix.
-   - **One estimate left:** the fulfilment worker's share, about 0.07 DPU per order. Its event source mapping ships disabled so it was not running during the measurement. Measure it the next time the consumer is enabled.
-   - **State left behind:** 31 messages on `nightshift-placed-orders` (30 from the measurement, 1 from the smoke test), DLQ empty, about 50 orders in DSQL. Messages on a queue cost nothing; draining them needs the consumer enabled.
 8. Then: M2a owner review, then propose M2b (SSM flags, correlation ID propagation end to end, EMF metrics, tracing, topology parameter, rate-capped traffic generator, DPU cost-check script).
 
 Later (tracked, not blocking): test that a budget email actually arrives before the Feb 2027 upgrade (COST.md upgrade plan).

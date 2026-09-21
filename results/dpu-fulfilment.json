@@ -1,0 +1,35 @@
+{
+  "measured_at": "2026-09-21T23:49:01.155483+00:00",
+  "cluster_id": "yjudavfkl4mpd2pctljs55z3sa",
+  "drain_a": {
+    "orders": 31,
+    "TotalDPU": 2.3794970419921873,
+    "ReadDPU": 0.29286804199218763,
+    "WriteDPU": 1.5499999999999998,
+    "ComputeDPU": 0.536629,
+    "TotalTransactions": 69.0,
+    "OccConflicts": 0
+  },
+  "drain_b": {
+    "orders": 50,
+    "TotalDPU": 3.838694083984375,
+    "ReadDPU": 0.49573608398437513,
+    "WriteDPU": 2.4999999999999996,
+    "ComputeDPU": 0.8429580000000001,
+    "TotalTransactions": 108.0,
+    "OccConflicts": 0
+  },
+  "checkout_batch_50": {
+    "size": 50,
+    "TotalDPU": 7.356346203125,
+    "ReadDPU": 0.597158203125,
+    "WriteDPU": 2.9999999999999996,
+    "ComputeDPU": 3.759188,
+    "TotalTransactions": 71.0,
+    "OccConflicts": 0
+  },
+  "dpu_per_order_fulfilment": 0.0767998443153783,
+  "dpu_fixed_per_drain": -0.0012981317845404128,
+  "dpu_per_checkout_three_point": 0.13661290756755892,
+  "dpu_fixed_per_batch_three_point": 0.4247463063364494
+}
