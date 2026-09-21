@@ -25,6 +25,7 @@ import importlib
 import json
 import logging
 import os
+import time
 from typing import Any
 
 SERVICE_NAME = os.environ.get("SERVICE_NAME", "hello")
@@ -39,6 +40,21 @@ CORRELATION_HEADER = "x-correlation-id"
 # Reported once per cold start, not per invocation. The answer cannot change
 # within an execution environment.
 _LAYER_REPORT: dict[str, Any] | None = None
+
+
+def _timed(label: str, work: Any, into: dict[str, float]) -> Any:
+    """Run work(), record how long it took, and return its result.
+
+    The timings are the point, not decoration. At 128 MB a function gets about
+    a twelfth of a vCPU, so imports that are instant on a laptop are not, and
+    the first version of this probe hit a 5 second timeout without saying
+    which import was responsible.
+    """
+    started = time.perf_counter()
+    try:
+        return work()
+    finally:
+        into[label] = round((time.perf_counter() - started) * 1000, 1)
 
 
 def _version_of(module_name: str) -> str:
@@ -87,14 +103,19 @@ def _dsql_support() -> dict[str, Any]:
 def layer_report() -> dict[str, Any]:
     global _LAYER_REPORT
     if _LAYER_REPORT is None:
-        _LAYER_REPORT = {
-            "aws_lambda_powertools": _version_of("aws_lambda_powertools"),
-            "psycopg": _version_of("psycopg"),
-            "psycopg_libpq": _libpq_implementation(),
-            "boto3": _version_of("boto3"),
+        ms: dict[str, float] = {}
+        report = {
+            "aws_lambda_powertools": _timed(
+                "powertools_ms", lambda: _version_of("aws_lambda_powertools"), ms
+            ),
+            "psycopg": _timed("psycopg_ms", lambda: _version_of("psycopg"), ms),
+            "psycopg_libpq": _timed("libpq_ms", _libpq_implementation, ms),
+            "boto3": _timed("boto3_ms", lambda: _version_of("boto3"), ms),
             "botocore": _version_of("botocore"),
-            "dsql": _dsql_support(),
+            "dsql": _timed("dsql_client_ms", _dsql_support, ms),
         }
+        report["timings_ms"] = ms
+        _LAYER_REPORT = report
     return _LAYER_REPORT
 
 
