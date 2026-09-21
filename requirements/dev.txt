@@ -1,0 +1,15 @@
+# Local tooling only. Never shipped to Lambda.
+#
+# The Lambda runtime dependencies live in lambda-deps.in / lambda-deps.lock and
+# are cross-built for aarch64. These are the x86 builds the laptop needs to run
+# the migration runner and tests against the real cluster.
+psycopg[binary]==3.3.6
+
+# The [crt] extra is needed to read the credentials that `aws login` writes.
+# The AWS CLI bundles it; plain boto3 does not, and without it every call
+# fails with MissingDependencyException. Lambda does not need it, because a
+# function gets credentials from its execution role, not from a login cache.
+boto3
+botocore[crt]
+
+pytest

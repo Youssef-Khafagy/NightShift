@@ -752,3 +752,95 @@ connected to port 5432
 Note the AAAA record: DSQL resolved to IPv6 here. Worth remembering if anything later runs somewhere without IPv6 egress.
 
 The rest was checked the same way rather than trusted from `terraform apply` output: cluster `ACTIVE` with `AWS_OWNED_KMS_KEY`, table `ACTIVE` at 5 and 5 with TTL `ENABLED` on `expires_at`, and the queue reporting `VisibilityTimeout 180`, `maxReceiveCount 3` pointing at the DLQ, and `SqsManagedSseEnabled true`.
+
+### Connecting to DSQL, and three things that are not in the tutorial
+
+**The password is not a password.** DSQL authenticates with an IAM auth token used in the password field. `generate_db_connect_admin_auth_token` makes no network call: boto3 signs a request with the caller's credentials and hands back the signed string. Nothing is stored, so there is nothing to rotate or leak. Tokens expire in 15 minutes by default, but an established connection outlives its token, so it only has to be valid at connect time. Authorisation happens on connect, against `dsql:DbConnectAdmin` for the `admin` role or `dsql:DbConnect` for any other database role.
+
+**`aws login` credentials need an extra package.** The first connection attempt died with `MissingDependencyException: ... requires botocore[crt]`. The AWS CLI bundles the CRT extra; plain boto3 does not, and the credential provider that reads what `aws login` writes depends on it. This is a local development problem only. A Lambda gets credentials from its execution role, so the runtime never touches that provider, which is why `requirements/dev.txt` carries it and the Lambda layer does not.
+
+**`sslrootcert="system"` does not work with the psycopg binary wheel.** The obvious way to say "use the operating system's trusted roots" produced:
+
+```
+SSL error: certificate verify failed
+```
+
+which reads like the server's fault. It is not. `psycopg-binary` ships its own OpenSSL, and that build's compiled-in CA directory is not where Ubuntu keeps certificates. The fix is to name the bundle, so the helper picks the first path that exists:
+
+```
+/etc/ssl/certs/ca-certificates.crt   Debian and Ubuntu
+/etc/pki/tls/certs/ca-bundle.crt     Amazon Linux, which is what Lambda runs
+```
+
+`sslmode=verify-full` is kept rather than downgraded to `require`. `require` encrypts but does not check that the certificate matches the hostname, so it protects against passive eavesdropping and not against being pointed at a different server.
+
+One more observation from the same failure: the endpoint resolved to IPv6, WSL2 has no IPv6 route, and libpq tried the AAAA record, failed, and fell back to the A record. Everything worked, slightly slower. Worth remembering anywhere without IPv6 egress.
+
+### The rule that breaks migration tooling
+
+DSQL will not mix DDL and DML in one transaction, and allows exactly one DDL statement per transaction. Those two sentences remove the foundation every migration tool is built on: **you cannot change the schema and record that you changed it in the same transaction.**
+
+In ordinary PostgreSQL, a migration runner wraps the DDL and the `INSERT INTO schema_migrations` together, so either both happen or neither does. Here the insert is necessarily a separate transaction. A crash in the gap leaves a schema that is ahead of its own bookkeeping, and the next run tries to apply a migration that is already applied.
+
+There is no way to close that window, so the design accepts it and makes the bad case harmless:
+
+| Decision | Reason |
+|---|---|
+| Every migration uses `IF NOT EXISTS` | Re-applying is a no-op rather than an error |
+| Exactly one statement per file, enforced | A file can never be half applied, and the DSQL rule is checked rather than remembered |
+| Files are checksummed | Editing an applied migration is how databases silently diverge between machines |
+
+That is the general lesson: when a constraint removes a guarantee you are used to, the useful move is usually to make the failure survivable rather than to fight for the guarantee.
+
+### Testing the guards instead of trusting them
+
+Three guards, three deliberate attempts to trip them.
+
+Editing a migration that had already run:
+
+```
+These migrations have already been applied but their files have changed
+since: 0003_orders
+Applied migrations are history. Add a new migration instead of editing one
+that has run.
+```
+
+Putting two statements in one file:
+
+```
+0099_two.sql contains 2 statements.
+DSQL allows one DDL statement per transaction, so each migration file must
+hold exactly one. Split it.
+```
+
+And running the whole thing twice, where the second run printed `Nothing to do.`
+
+### A mistake worth recording
+
+The first version of the runner called `ensure_bookkeeping()` before checking which mode it was in, so the command documented as "show what would run, change nothing" created the `schema_migrations` table on a fresh cluster. Harmless in effect, wrong in principle, and exactly the kind of thing that erodes trust in a dry run.
+
+The fix was to make only `--apply` create anything, including the runner's own table, which meant `applied_versions()` had to tolerate the table not existing:
+
+```sql
+SELECT to_regclass('public.schema_migrations')
+```
+
+`to_regclass` returns NULL instead of raising when the relation is absent, so the check needs no exception handling and no `information_schema` join.
+
+The broader point: a dry run that writes is worse than no dry run, because it teaches you to trust a claim that is not true.
+
+### Why the schema looks the way it does
+
+| Choice | Reason |
+|---|---|
+| UUID primary keys, generated by the application | DSQL distributes data by primary key. Sequential keys concentrate writes on one range; random ones spread them. Scenario 7 stages hot-row contention deliberately, and that is only a meaningful test if the default is not already contended. |
+| `inventory` split from `products` | Opposite access patterns. A product row is read constantly and written almost never; a stock row is written on every checkout. Merged, two unrelated purchases of the same product would rewrite the same row and, under optimistic concurrency, conflict at commit. |
+| `order_items` keyed on `(order_id, product_id)` | A product can appear at most once per order, enforced by the database rather than by checkout remembering to. |
+| `unit_price_cents` copied onto the line item | An order records what was charged, not what the product costs today. |
+| `idempotency_keys` as its own table, key as the primary key | A primary key is the one uniqueness guarantee every distributed SQL engine supports. Using a `UNIQUE` constraint on a column of `orders` would have made the design depend on whether DSQL supports unique secondary indexes, which it did not need to. |
+
+### Retrying serialization failures
+
+DSQL uses optimistic concurrency control. Conflicting transactions do not block each other; both proceed and the loser fails at commit with SQLSTATE `40001`. Retrying is not an optimisation, it is how the system expects to be used, so `retry_on_conflict` lives in the shared module from the start rather than being added to checkout later.
+
+The jitter matters more than the backoff. Without it, every transaction that lost the same conflict waits the same interval and retries at the same instant, so one contended row becomes a synchronised stampede that keeps colliding. Picking the delay uniformly from `[0, delay)` spreads the retries out. The `on_retry` hook exists so every retry can be logged, which CLAUDE.md requires and which the agent will later need as evidence.
