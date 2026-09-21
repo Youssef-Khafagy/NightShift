@@ -58,6 +58,30 @@ variable "cart_write_capacity" {
   default     = 5
 }
 
+variable "queue_consumer_enabled" {
+  description = "Whether the placed-orders event source mapping polls. Default false: an idle triggered queue spends about two thirds of the free SQS allowance doing nothing. Turn on for a run, off afterwards."
+  type        = bool
+  default     = false
+}
+
+variable "payment_latency_ms" {
+  description = "Base latency the mock payment provider adds to every charge."
+  type        = string
+  default     = "40"
+}
+
+variable "payment_latency_jitter_ms" {
+  description = "Extra random latency on top of payment_latency_ms."
+  type        = string
+  default     = "20"
+}
+
+variable "payment_error_rate" {
+  description = "Fraction of charges the mock provider fails, 0 to 1."
+  type        = string
+  default     = "0"
+}
+
 variable "log_retention_days" {
   description = "CloudWatch Logs retention. Kept short on purpose: the free allowance of 5 GB per month covers ingestion, storage and Logs Insights scans combined."
   type        = number
