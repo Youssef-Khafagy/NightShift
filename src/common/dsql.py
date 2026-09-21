@@ -87,6 +87,41 @@ def auth_token(endpoint: str, region: str, *, admin: bool = False) -> str:
     return client.generate_db_connect_auth_token(Hostname=endpoint, Region=region)
 
 
+_shared: psycopg.Connection | None = None
+
+
+def shared_connection(**kwargs) -> psycopg.Connection:
+    """One connection per execution environment, reopened if it has died.
+
+    Opening a connection costs a TLS handshake and a signed token, so doing it
+    per request would dominate a checkout that otherwise takes milliseconds.
+    Lambda keeps an execution environment alive between invocations, so a
+    module-level connection is reused for free.
+
+    It cannot be assumed immortal. DSQL closes connections after 60 minutes
+    regardless of what the client wants, and an idle environment can be frozen
+    for longer than the far side is willing to wait, so callers must be able to
+    reset and retry once.
+    """
+    global _shared
+    if _shared is None or _shared.closed:
+        _shared = connect(**kwargs)
+    return _shared
+
+
+def reset_connection() -> None:
+    global _shared
+    if _shared is not None:
+        try:
+            _shared.close()
+        except Exception:  # noqa: BLE001, S110
+            # Closing a connection that is already gone is the normal case
+            # here, and there is nothing to do about it. Swallowing this is
+            # deliberate: the caller is discarding the connection anyway.
+            pass
+    _shared = None
+
+
 def is_conflict(exc: BaseException) -> bool:
     """Is this the optimistic concurrency error DSQL raises at commit?
 
