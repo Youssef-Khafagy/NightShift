@@ -37,6 +37,14 @@ PAYMENT_TIMEOUT_SECONDS = float(os.environ.get("PAYMENT_TIMEOUT_SECONDS", "3.0")
 
 
 def order_total(conn: psycopg.Connection, order_id: str) -> int | None:
+    """Read the order's total, or None if it is gone, or -1 if it is settled.
+
+    One statement on an autocommit connection, so the transaction is over
+    before this returns. That matters because the caller then invokes the
+    payment provider, which is slow on purpose in one of the chaos scenarios.
+    Holding this read open across that call would bill the payment provider's
+    latency as DSQL compute time.
+    """
     with conn.cursor() as cur:
         cur.execute(
             "SELECT total_cents, status FROM orders WHERE order_id = %s", (order_id,)
@@ -48,7 +56,13 @@ def order_total(conn: psycopg.Connection, order_id: str) -> int | None:
 
 
 def mark_paid(conn: psycopg.Connection, order_id: str) -> bool:
-    """Returns True if this call is what moved the order to paid."""
+    """Returns True if this call is what moved the order to paid.
+
+    No explicit transaction block: this is a single statement on an autocommit
+    connection, so it is already atomic and already committed when execute
+    returns. Wrapping one statement in `with conn.transaction():` would only
+    add round trips and widen the window DSQL bills for.
+    """
 
     def attempt() -> bool:
         with conn.cursor() as cur:
@@ -61,9 +75,7 @@ def mark_paid(conn: psycopg.Connection, order_id: str) -> bool:
                 """,
                 (order_id,),
             )
-            changed = cur.rowcount == 1
-        conn.commit()
-        return changed
+            return cur.rowcount == 1
 
     def on_retry(attempt_number: int, delay: float, exc: BaseException) -> None:
         logger.warning(
@@ -71,11 +83,7 @@ def mark_paid(conn: psycopg.Connection, order_id: str) -> bool:
             extra={"attempt": attempt_number, "delay_ms": round(delay * 1000, 1)},
         )
 
-    try:
-        return dsql.retry_on_conflict(attempt, on_retry=on_retry)
-    except Exception:
-        conn.rollback()
-        raise
+    return dsql.retry_on_conflict(attempt, on_retry=on_retry)
 
 
 def process(record: dict[str, Any]) -> None:

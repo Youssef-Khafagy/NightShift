@@ -13,3 +13,14 @@ boto3
 botocore[crt]
 
 pytest
+
+# The unit tests import the handlers, which import Powertools at module scope.
+# Pinned to the same version the Lambda layer ships, so a test never passes
+# against a library the deployed code does not have.
+aws-lambda-powertools==3.35.0
+
+# moto fakes SQS in process, so the tests exercise the real boto3 call path
+# (message attributes included) without an AWS account or a network. Pinned
+# because an unpinned test double that changes behaviour breaks CI for
+# reasons that have nothing to do with the change under review.
+moto[sqs]==5.2.3
