@@ -119,6 +119,8 @@ module "orders" {
     CART_SERVICE_URL        = module.cart.function_url
     PLACED_ORDERS_QUEUE_URL = aws_sqs_queue.placed_orders.url
     CART_TIMEOUT_SECONDS    = "2.0"
+    SIGNED_HTTP_DEBUG       = "1"
+    HELLO_URL               = module.hello.function_url
     POWERTOOLS_SERVICE_NAME = "orders"
     POWERTOOLS_LOG_LEVEL    = "INFO"
   }
@@ -126,4 +128,27 @@ module "orders" {
   extra_policy_json   = data.aws_iam_policy_document.orders.json
   log_retention_days  = var.log_retention_days
   create_function_url = true
+}
+
+# cart-service's resource policy, naming orders-service as an allowed caller.
+#
+# An identity policy on the caller is not sufficient for a Lambda function
+# URL, despite the IAM simulator reporting "allowed" and despite granting the
+# role lambda:* on *. Without this, every call is rejected before cart's
+# handler runs, with "Forbidden. For troubleshooting Function URL
+# authorization issues".
+#
+# Be careful testing this by removing it: Lambda caches the authorization
+# decision, so calls keep succeeding for a while afterwards. A removal that
+# looks harmless for the first minute is not evidence.
+#
+# The auth type condition belongs here, on the resource, where it stops the
+# grant applying if the URL is ever switched to NONE.
+resource "aws_lambda_permission" "orders_invokes_cart" {
+  statement_id           = "AllowOrdersServiceToInvokeCartUrl"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = module.cart.function_name
+  qualifier              = "live"
+  principal              = module.orders.execution_role_arn
+  function_url_auth_type = "AWS_IAM"
 }

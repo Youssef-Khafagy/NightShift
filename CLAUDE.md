@@ -29,6 +29,12 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Traffic is generated locally, on demand, rate-capped, never 24/7. Compute Lambda invocations and SQS requests per benchmark run before running it.
 - Three commands must exist: deploy, pause (idle usage near zero), destroy.
 
+## Verifying permissions and other cached decisions
+- Never conclude that a permission, grant or policy is unnecessary because removing it did not break anything within a minute. Lambda and IAM cache authorization decisions in both directions: an allow keeps working after the grant is deleted, and a deny keeps failing after the grant is added. A fast negative result is not evidence.
+- Verify with `aws iam simulate-principal-policy` (pass `--resource-policy` and any needed `--context-entries`), or by polling for longer than the cache TTL, at least several minutes. Prefer the simulator, because it answers immediately and does not depend on guessing a TTL.
+- The same caution applies to any "I removed X and it still works" conclusion about IAM, resource policies, or service-linked roles.
+- When a result is intermittent, stop changing things. Alternating success and failure means requests are landing on different execution environments or different cached decisions, and every change made during that window will look like it worked or failed at random.
+
 ## Safety and workflow rules
 - Never use root credentials. Local dev uses IAM Identity Center or a least-privilege IAM user with MFA. CI uses GitHub OIDC only, no long-lived keys.
 - Never run `terraform apply`, `terraform destroy`, or any AWS write command without showing the plan and getting an explicit yes from the owner.
