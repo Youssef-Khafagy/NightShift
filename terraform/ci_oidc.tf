@@ -320,6 +320,34 @@ data "aws_iam_policy_document" "ci_apply" {
     resources = [local.project_functions, "${local.project_functions}:*"]
   }
 
+  # Event source mappings. Their ARNs contain a UUID generated at creation,
+  # so there is nothing to scope the resource to; the condition pins them to
+  # this project's functions instead.
+  statement {
+    sid    = "ProjectEventSourceMappings"
+    effect = "Allow"
+    actions = [
+      "lambda:CreateEventSourceMapping",
+      "lambda:UpdateEventSourceMapping",
+      "lambda:DeleteEventSourceMapping",
+      "lambda:GetEventSourceMapping",
+    ]
+    resources = ["*"]
+
+    condition {
+      test     = "ArnLike"
+      variable = "lambda:FunctionArn"
+      values   = [local.project_functions]
+    }
+  }
+
+  statement {
+    sid       = "ListEventSourceMappings"
+    effect    = "Allow"
+    actions   = ["lambda:ListEventSourceMappings"]
+    resources = ["*"]
+  }
+
   statement {
     sid    = "LambdaAccountReads"
     effect = "Allow"

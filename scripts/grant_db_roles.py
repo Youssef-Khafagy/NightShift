@@ -54,6 +54,12 @@ ROLE_GRANTS: dict[str, list[str]] = {
         "GRANT INSERT ON order_items TO orders_service",
         "GRANT SELECT, INSERT ON idempotency_keys TO orders_service",
     ],
+    "fulfillment_service": [
+        # Reads the order to price the charge and to check it is still
+        # unpaid, then moves it to paid. Nothing else: fulfilment never
+        # touches stock, never creates orders, and never sees the catalogue.
+        "GRANT SELECT, UPDATE ON orders TO fulfillment_service",
+    ],
 }
 
 
@@ -93,7 +99,10 @@ def main() -> None:
     args = parser.parse_args()
 
     # Which execution role each database role is mapped to.
-    role_to_arn = {"orders_service": terraform_output("orders_execution_role_arn")}
+    role_to_arn = {
+        "orders_service": terraform_output("orders_execution_role_arn"),
+        "fulfillment_service": terraform_output("fulfillment_execution_role_arn"),
+    }
 
     endpoint = os.environ.get("DSQL_ENDPOINT") or terraform_output("dsql_endpoint")
     region = os.environ.get("AWS_REGION", "ca-central-1")
