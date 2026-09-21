@@ -77,17 +77,23 @@ data "aws_iam_policy_document" "orders" {
   # authorised by an identity policy alone, so cart-service needs no
   # resource policy. Both ARN forms are listed because the call goes to the
   # alias, and the unqualified form is what some SDK paths present.
+  #
+  # There is deliberately no lambda:FunctionUrlAuthType condition here.
+  # Adding one is the usual advice, and on an identity policy it silently
+  # broke every call with 403: `aws iam simulate-principal-policy` returned
+  # "allowed" when the key was supplied and "implicitDeny" when it was not,
+  # which is what the real request looks like. A condition on a key that is
+  # not in the request context is not a tighter Allow, it is a deny.
+  #
+  # The condition belongs on a resource policy, where it stops someone
+  # flipping a function URL to NONE auth. Here the resource ARNs already
+  # confine this to cart-service, and the auth type is set by Terraform on
+  # the URL itself, not chosen by the caller.
   statement {
     sid       = "CallCartService"
     effect    = "Allow"
     actions   = ["lambda:InvokeFunctionUrl"]
     resources = [local.cart_function_arn, "${local.cart_function_arn}:*"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "lambda:FunctionUrlAuthType"
-      values   = ["AWS_IAM"]
-    }
   }
 }
 
