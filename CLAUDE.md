@@ -136,8 +136,15 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Lambda tracing options: active tracing alone gives 2 segments per trace with no SDK, at a fixed sampling rate of 1 request/second plus 5% of the rest, which cannot be configured. AWS also documents a manual OpenTelemetry path with a Simple Span Processor, an X-Ray UDP span exporter and an X-Ray Lambda propagator, requiring no collector layer.
 - An idle SQS-triggered Lambda long-polls at roughly 648K requests/month per queue, about two thirds of the 1M free allowance, for zero work.
 
-## Current status (end of session 2026-09-20)
-M0 is complete. M1 is built, applied, and verified. Everything below is verified.
+## Current status (end of session 2026-09-21)
+M0 and M1 complete. M2a complete except step 7. Everything below is verified.
+
+**Shut down cleanly at the end of the 2026-09-21 session. Nothing is polling or scheduled:**
+- The only event source mapping is `nightshift-fulfillment` on `nightshift-placed-orders`, state `Disabled`.
+- No EventBridge rules exist. No provisioned concurrency on any function. Every function has reserved concurrency 2.
+- Both queues are empty. DSQL holds 19 paid orders and 38 line items, far under the 1 GB free storage, and an idle cluster costs nothing.
+- Both budgets still armed with `IncludeCredit=false`. Month-to-date spend $0.00.
+- `terraform plan` clean, working tree clean, local and origin both at `d40e0ca`.
 
 Done:
 - AWS account: Free plan, ACTIVE, $100 credits, ends 2027-03-18. Root has MFA and no access keys. Daily identity is IAM user `youssef-admin` (MFA, no access keys, permissions only via group `nightshift-admins` with AdministratorAccess). CLI auth via `aws login --profile nightshift-admin`.
@@ -181,7 +188,12 @@ M2a in progress (owner approved the plan 2026-09-20). Steps:
    - The apply workflow ends with `scripts/smoke_checkout.py` and fails the job if checkout does not return 201.
 6b. **Done.** payment-provider (latency and error rate from env config, no function URL) and fulfillment-worker (SQS consumer, partial batch failure reporting, no function URL). Event source mapping ships `enabled = false`; set `-var="queue_consumer_enabled=true"` for a run. Database role `fulfillment_service` has SELECT and UPDATE on `orders` only. Verified: enabling the mapping drained 19 queued orders from `placed` to `paid` in under 15 seconds, disabling returned it to `Disabled` with a clean plan, and a synthetic batch of three with one unparseable body returned exactly `{"batchItemFailures": [{"itemIdentifier": "bad-1"}]}`.
    - The CI apply role needed `lambda:TagResource` on `arn:...:event-source-mapping:*` separately, because `default_tags` tags the mapping and that is a different resource type. Its create/update/delete actions take an `ArnLike` condition on `lambda:FunctionArn`; `TagResource` does not, because that key is not in its request context.
-7. Next: measure DPU per checkout and replace the estimate in COST.md before any load test. Then M2a review.
+7. **Next session starts here.** Measure DPU per checkout and replace the estimate in COST.md before any load test.
+   - Why it matters: COST.md's DSQL projection (~20K of 100,000 DPUs per busy month) is an estimate, explicitly marked weak. The 42-incident benchmark plan depends on it, and DSQL is not covered by AWS free tier usage alerts, so nothing will warn us if it is wrong.
+   - How: read the cluster's DPU metric with `GetMetricStatistics` (never `GetMetricData`, which is always billed) over a window with a known number of checkouts, and divide. `scripts/smoke_checkout.py` is a convenient known-cost unit of work.
+   - Then rebuild the benchmark projection in COST.md from the measured number, and record whether retries and unindexed reads move it materially.
+   - Also still open from step 3: whether Lambda bills init duration for on-demand invocations. COST.md assumes it does, which is the conservative reading.
+8. Then: M2a owner review, then propose M2b (SSM flags, correlation ID propagation end to end, EMF metrics, tracing, topology parameter, rate-capped traffic generator, DPU cost-check script).
 7. Then: measure DPU per checkout and replace the estimate in COST.md before any load test.
 
 Later (tracked, not blocking): test that a budget email actually arrives before the Feb 2027 upgrade (COST.md upgrade plan).
