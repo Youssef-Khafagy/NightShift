@@ -593,6 +593,52 @@ zip sha256:     53aec68892722b82a9f8870bcd633bb2bef222df64a9ce99ae74cccc80f96f48
 
 **What to take from this.** Two habits did the work. Measure a difference at the level where you can act on it, which meant adding a digest that separates packaging from archiving and then a manifest that names files. And be suspicious of a fix that works without explaining the evidence: uncompressed archives would have made the symptom go away while leaving a machine-dependent file inside the artifact, ready to cause something stranger later.
 
+### The timeout that taught the most
+
+The layer probe's first real invocation died: `Task timed out after 5.00 seconds`. The platform report said `initDurationMs: 110.7` and `maxMemoryUsedMB: 77` of 128, and no application log line was written at all. So module load was fast, memory was not exhausted, and the time went somewhere inside the handler before the first log statement. That pointed at the imports, which were lazy, inside a function.
+
+**Step one: make the measurement fit the question.** The probe was changed to time each import individually. A timeout tells you the total was too big; it does not tell you which part. At 128 MB:
+
+| Step | Time |
+|---|---|
+| Powertools | 1,737 ms |
+| psycopg | 5,757 ms |
+| boto3 | 2,755 ms |
+| Build a DSQL client | 1,661 ms |
+| **Total** | **11,910 ms** |
+
+Nearly twelve seconds against a five second timeout. The obvious reading is "128 MB is too small", because Lambda allocates CPU in proportion to memory, so a 128 MB function gets roughly a twelfth of a vCPU.
+
+**Step two: check the obvious reading before acting on it.** Sweeping memory gave a clean curve, and a surprise:
+
+| Memory | Import time | GB-seconds |
+|---|---|---|
+| 128 MB | 11,910 ms | 1.49 |
+| 512 MB | 2,770 ms | 1.39 |
+| 1,024 MB | 1,387 ms | 1.39 |
+
+CPU scales almost exactly linearly with memory, so the *same work costs the same GB-seconds at every size*. That is worth internalising, because the instinct that "more memory costs more" is only half right. For CPU-bound work, more memory buys latency at roughly no extra cost. For time spent waiting on a network call or a database, duration does not shrink, so a bigger function is simply more expensive. Which kind of work a function does decides whether raising memory is free or wasteful.
+
+**Step three: the actual fix was not memory at all.** Lambda splits an invocation into an init phase, which runs module-level code, and the handler. During init, Lambda gives the execution environment more CPU than the configured memory would normally buy. The probe was doing its imports lazily inside the handler, which is exactly where that boost does not apply.
+
+Moving the identical imports to module scope, at the same 128 MB:
+
+| Step | Lazy in handler | At module scope |
+|---|---|---|
+| Powertools | 1,737 ms | 109 ms |
+| psycopg | 5,757 ms | 312 ms |
+| boto3 | 2,755 ms | 133 ms |
+| DSQL client | 1,661 ms | 158 ms |
+| **Total** | **11,910 ms** | **712 ms** |
+
+Sixteen times faster, same memory, no money. Raising memory to 1,024 MB would have bought a 1,387 ms handler-phase import; moving the code up a few lines bought 712 ms and left the function at 128 MB.
+
+**The rule this turns into.** Every service imports its dependencies and constructs its AWS clients and database connections at module scope, never on first use inside the handler. It is now in CLAUDE.md as an architecture note rather than something each new service has to rediscover. The same reasoning is why connection reuse across invocations matters: anything built during init is paid for once per execution environment rather than once per request.
+
+**What the probe answered on the way.** psycopg reported `binary, libpq 180006`, which is the check that mattered. `import psycopg` alone would have succeeded even if the compiled driver had failed and psycopg had fallen back to a pure-Python implementation, and that silent downgrade would have shown up much later as mysterious slowness. It also reported the runtime carrying boto3 1.42.97 with the `dsql` client and both auth token methods, which settled the open question about whether the layer needed to bundle boto3. It does not.
+
+**One thing deliberately left unproven.** Whether init duration is billed for on-demand invocations. The platform report lines did not surface in CloudWatch in time to check, so COST.md records it as unverified and assumes the conservative answer, that it is billed. Guessing in the optimistic direction on a project whose first rule is $0.00 is not a habit worth forming.
+
 ### Testing the lock the way the hooks were tested
 
 A guard that has never been seen to fire is a guess. One hash in the lock file was replaced with 64 zeros and the build was run again:
