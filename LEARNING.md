@@ -961,3 +961,72 @@ So the trigger is turned on for a run and off afterwards, which also means most 
 Creating the mapping failed first time on `lambda:TagResource`, because `default_tags` tags the mapping too, and a mapping is a different resource type with an ARN of `event-source-mapping:<uuid>`. The function-scoped grant did not cover it.
 
 Scoping that grant needed care. The create, update and delete actions take an `ArnLike` condition on `lambda:FunctionArn`, which works because that key is in the request context for them. `TagResource` gets no such condition, because the key is not present for it, and by now the rule is established: a condition on a key that is not in the request context is a deny, not a tighter allow.
+
+### Reading the bill before running the load test
+
+Step 7 of M2a was supposed to be arithmetic: run some checkouts, read the DPU metric, divide. COST.md carried an estimate of roughly 20,000 DPUs per busy month against a 100,000 DPU allowance, marked weak, and the whole 42-incident benchmark plan rested on it. DSQL is not covered by AWS free tier usage alerts, so if the estimate were wrong, nothing outside this repo would say so.
+
+Before measuring anything it was worth looking at what the cluster had already billed. That is where it stopped being arithmetic.
+
+**The number that did not fit.** Six minutes in the previous session's history carried far more compute than their neighbours: 126 DPU, 204 DPU, and four of almost exactly 315 DPU. Each of the 315s was one read-only transaction that had read **104 bytes**. That is the whole clue. No amount of CPU work reads 104 bytes, so whatever `ComputeDPU` counts, it is not work. Checking the two metrics against each other made it concrete: `ComputeDPU` is exactly `ComputeTime` in milliseconds over 1000, in every datapoint the cluster has ever published.
+
+**Designing an experiment that can be wrong.** The inference was strong but it was still an inference, and COST.md is meant to hold measurements. The tempting experiment is to hold a transaction open and see what it bills. That alone proves nothing: a large number would be consistent with "time is billed" and also with "this cluster bills a lot for something". What makes it an experiment is the control. Two phases, identical query work, differing in one variable:
+
+| Phase | Transactions | Query work | ComputeTime | ComputeDPU |
+|---|---|---|---|---|
+| committed immediately | 7 | `SELECT 1` each | 209 ms | 0.209 |
+| one held open 60 s | 2 | `SELECT 1` | 60,062 ms | 60.062 |
+
+Sixty seconds of doing nothing cost 287 times more than the same query committed at once. 60.062 DPU for 60.000 seconds is one DPU per transaction-second, within a tenth of a percent.
+
+This changes the mental model of the free allowance. It is not 100,000 units of work. It is about **27.8 hours of open transaction time per month**, and a transaction is expensive for being open, not for being busy.
+
+**The bug the bill found.** With the billing model understood, the 315s had an obvious shape: a transaction opened, left open, and eventually killed by DSQL's cap. The cause was ours. `dsql.connect` defaulted to `autocommit=False`, which is psycopg's default and the one most PostgreSQL code wants, and psycopg opens a transaction on the first statement and holds it until someone commits. Four code paths never did. The orders service rolled back a failed checkout and then ran a lookup it left open. The fulfilment worker left its lookup open on both early returns, and on the normal path held it open **across the call to the payment provider**.
+
+Then Lambda freezes the execution environment with the transaction still open on the server, and nothing closes it until DSQL's cap does, 315 seconds later. About six requests wasted 1,590 DPU, 1.6 percent of a month.
+
+The part worth remembering is that this bug had **no functional symptom whatsoever**. Every request returned the right status code. The smoke test passed. `terraform plan` was clean. Nothing was slow, nothing errored, nothing appeared in the logs. It was visible only in a billing metric, and only to someone who looked at a number they did not expect and refused to move on. For a project about an on-call agent, that is the whole thesis in one incident: the signal that matters is often not the one that pages you.
+
+**Why the fix is a default, not four patches.** Adding `conn.rollback()` after each of the four reads would have worked today and failed the next time someone added a fifth read. Flipping the default to `autocommit=True` makes the leak structurally impossible: a lone statement is its own transaction and ends the moment it returns. Code that genuinely needs several statements to be atomic now has to say so, and checkout does:
+
+```python
+with conn.transaction(), conn.cursor() as cur:
+    ...  # price the cart, decrement inventory, write the order, claim the key
+```
+
+Leaving that block commits, raising out of it rolls back, and the `UniqueViolation` that a replayed idempotency key triggers rolls the whole thing back before anything is charged. The general principle: when a mistake is both easy to make and invisible when made, change the default rather than remembering harder.
+
+The inverse also matters. `mark_paid` is one `UPDATE`, so it gets no transaction block at all. On an autocommit connection a single statement is already atomic and already committed when `execute` returns, and wrapping it would add round trips and widen the window being billed for. Transactions are not free here in a way they are not free in ordinary PostgreSQL.
+
+**A smaller lesson about CloudWatch.** DSQL reports a transaction's compute in the bucket *after* the one it finished in. The held transaction ended at 16:52:53 and was reported in the bucket starting 16:53:00. A window read with one minute of padding would have caught it by seven seconds, which is not a margin to build a measurement on, so `measure_dpu.py` pads two minutes at the end.
+
+**What the measurement script does differently.** It runs batches of different sizes and fits a line through them, rather than running one batch and dividing. One batch size cannot separate the cost of a checkout from the cost of a batch happening at all, and the two behave differently in a benchmark: a fixed per-batch cost amortises over a long run, a per-checkout cost does not. The slope is what the projection needs.
+
+### Testing for a bug that has no symptom
+
+The transaction leak returned correct status codes, wrote correct rows, logged nothing unusual and passed the smoke test. No assertion about a response could have caught it. The assertion has to be about the connection: **after this handler returns, is a transaction still open?**
+
+That needs a fake database connection, and a fake is where this kind of test usually goes wrong. A fake that reports "idle" unconditionally makes every test in the file pass, including against the broken code, and the suite becomes a decoration that costs CI minutes. So the fake models psycopg's actual state machine, including the part that caused the bug: with autocommit off, the first statement opens a transaction and it stays open until someone commits.
+
+Two habits kept it honest.
+
+**The harness proves it can fail.** The first two tests in the file do nothing but check the fake itself: autocommit off plus one lone statement must report `INTRANS`, and autocommit on must report `IDLE`. If those two ever stop distinguishing the cases, every assertion after them is worthless and the file says so out loud.
+
+**The tests are wired to the real default, not to a convention.** The handler tests do not hard-code `autocommit=True`. They read the actual default off `dsql.connect`'s signature and build the fake with it. Flipping that default back in `src/common/dsql.py` is enough to make them fail, which means the test is attached to the fix rather than to a description of the fix.
+
+Then the whole thing was checked the only way that really counts: the three fixed source files were reverted to the commit before the fix and the suite was run again. **Nine of fifteen failed**, including every one of the four leaked paths and the payment-provider assertion.
+
+The six that still passed are the most interesting part. The successful checkout, the successful fulfilment and the queue publication all passed against the broken code, because the happy paths *did* commit. The leaks were only ever on the replay path and the two early returns. That is the whole reason the bug survived: the smoke test walks the happy path, and the happy path was fine. A suite that only covers what usually happens would have shipped this bug just as confidently.
+
+**The sharpest test in the file** does not check the end state at all. It records `conn.info.transaction_status` at the moment the payment provider is invoked and asserts it is `IDLE`:
+
+```python
+assert calls == [TransactionStatus.IDLE], (
+    "a transaction was open while waiting on the payment provider, "
+    "so its latency is being billed as DSQL compute time"
+)
+```
+
+That encodes a cost rule as an executable constraint: never hold a database transaction across a network call. Scenario 4 deliberately makes that provider slow, so without this rule a latency incident silently becomes a billing incident.
+
+**Two smaller things.** All four services have their handler at `app.py`, because that is what each deployment zip contains, so importing them normally would collide on the name `app`. The tests load each one by path under its own module name, which is what Lambda effectively does anyway. And `conftest.py` sets obviously fake AWS credentials before anything imports boto3, so a test that escapes its mock fails with an authentication error instead of quietly creating something real in an account whose first rule is that it costs nothing. Unsetting `AWS_PROFILE` matters there too: botocore reads an empty one as a profile literally named `""` and raises `ProfileNotFound`.
