@@ -62,6 +62,23 @@ variable "log_retention_days" {
   default     = 3
 }
 
+variable "layer_arns" {
+  description = "Layer version ARNs to attach. Layers are unpacked to /opt and their python/ directory joins the import path."
+  type        = list(string)
+  default     = []
+}
+
+variable "tracing_mode" {
+  description = "X-Ray tracing. \"Active\" makes Lambda emit a trace segment for every sampled invocation and grants the function X-Ray write permission. \"PassThrough\" only continues a trace someone upstream already started."
+  type        = string
+  default     = "PassThrough"
+
+  validation {
+    condition     = contains(["Active", "PassThrough"], var.tracing_mode)
+    error_message = "tracing_mode must be Active or PassThrough."
+  }
+}
+
 variable "create_function_url" {
   description = "Whether to attach a function URL. Always AWS_IAM auth: a NONE auth URL is a public endpoint anyone can invoke."
   type        = bool
