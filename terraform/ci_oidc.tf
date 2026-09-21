@@ -341,6 +341,22 @@ data "aws_iam_policy_document" "ci_apply" {
     }
   }
 
+  # default_tags puts tags on the mapping too, and tagging is a separate
+  # action against a separate resource type whose ARN is
+  # event-source-mapping:<uuid>. No condition here: lambda:FunctionArn is not
+  # in the request context for TagResource, and a condition on a key that is
+  # not present is a deny rather than a tighter allow.
+  statement {
+    sid    = "TagEventSourceMappings"
+    effect = "Allow"
+    actions = [
+      "lambda:TagResource",
+      "lambda:UntagResource",
+      "lambda:ListTags",
+    ]
+    resources = ["arn:aws:lambda:${local.region}:${local.account_id}:event-source-mapping:*"]
+  }
+
   statement {
     sid       = "ListEventSourceMappings"
     effect    = "Allow"
