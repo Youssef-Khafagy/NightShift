@@ -32,7 +32,7 @@ Usage model for "Projected": one busy month = development plus one full benchmar
 | Service | Always Free allowance | Projected busy month | Headroom | Guardrails |
 |---|---|---|---|---|
 | Lambda | 1M requests and 400,000 GB-s per month, perpetual, **identical for x86 and arm64** (re-verified 2026-09-20) | ~410K requests, ~60K GB-s | ~59% requests, ~85% GB-s | Share each incident across configs (separate injections per config would be ~1.5M requests, over the limit). Agent never sleeps inside Lambda while waiting on LLM rate limits; it checkpoints and reschedules. **Measured 2026-09-20, resolved:** 128 MB holds. Importing Powertools, psycopg and boto3 and building a DSQL client costs 11,910 ms at 128 MB when done lazily inside the handler, but 712 ms at the same 128 MB when done at module scope during init. Memory was not the lever; where the imports run was. See the memory sweep below. |
-| Aurora DSQL | 100,000 DPUs and 1 GB storage per month, Always Free on Free and Paid plans (re-verified 2026-09-20). Beyond: $8 per million DPUs, $0.33 per GB-month | ~20K DPUs, <0.1 GB | ~80% (weak estimate) | DSQL is NOT in AWS's list of services tracked by free tier usage alerts. `scripts/measure_dpu.py` reads the DPU metrics with GetMetricStatistics. **Measured 2026-09-21:** compute DPU is transaction open time, one DPU per transaction-second, so this allowance is really about 27.8 hours of open transaction time per month. A transaction left open until DSQL kills it costs 315 DPU. DPU per checkout still to be measured on the fixed code, and the projection above still rests on the old estimate until it is. An idle cluster scales to zero and incurs no DPU charge, so leaving the cluster up between sessions is free as long as storage stays under 1 GB. |
+| Aurora DSQL | 100,000 DPUs and 1 GB storage per month, Always Free on Free and Paid plans (re-verified 2026-09-20). Beyond: $8 per million DPUs, $0.33 per GB-month | ~19K DPUs, <0.1 GB | ~81% (measured 2026-09-21) | DSQL is NOT in AWS's list of services tracked by free tier usage alerts. `scripts/measure_dpu.py` reads the DPU metrics with GetMetricStatistics. **Measured 2026-09-21:** compute DPU is transaction open time, one DPU per transaction-second, so this allowance is really about 27.8 hours of open transaction time per month. A transaction left open until DSQL kills it costs 315 DPU. A checkout costs **0.1189 DPU**. The projection is built from that number; the fulfilment half of the order lifecycle is still estimated, see the cost model below. An idle cluster scales to zero and incurs no DPU charge, so leaving the cluster up between sessions is free as long as storage stays under 1 GB. |
 | DynamoDB | 25 RCU, 25 WCU (provisioned, Standard table class), 25 GB storage, per region | Planned total <= 20 RCU and 20 WCU across all tables and GSIs | >= 5 RCU/WCU | Provisioned mode only. No auto scaling: target tracking creates CloudWatch alarms that would use our alarm allowance. Capacity ledger kept in this file from M2. |
 | SQS | 1M requests per month (each 64 KB chunk is one request, a batch of up to 10 messages is one request) | ~110K with the consumer disabled between runs; ~760K if the trigger is left on 24/7 | ~89% | Idle Lambda trigger polls with 5 long-poll connections. Estimate 5 x 3 per min x 43,200 min = ~648K requests/month per idle queue, for zero work. **Decided 2026-09-20:** the event source mapping ships `enabled = false` and is turned on only for a run. Only one triggered queue; DLQ has no trigger; standard (not provisioned) poller mode. Measure with NumberOfEmptyReceives in M2a. |
 | SNS | 1M requests, 1,000 email deliveries per month | ~220 emails | ~78% | Alarm actions only on ALARM transitions we care about. |
@@ -128,11 +128,73 @@ transaction and ends immediately, so the expensive mistake is no longer the
 default. The lesson generalises past DSQL: the cost signal found a real bug
 that no test caught, because the bug had no functional symptom at all.
 
-### Still outstanding
+### DPU per checkout (measured 2026-09-21)
 
-DPU per checkout, measured on the fixed code with `scripts/measure_dpu.py`. The
-42-incident benchmark projection is rebuilt from that number, and the `~20K
-DPUs` in the table above stays marked weak until then.
+Run with `scripts/measure_dpu.py --batch 5 --batch 25` against the fixed code
+on an idle cluster. Baseline over the preceding ten minutes was 0.000 DPU, so
+nothing else was contributing. Raw output in `results/dpu-per-checkout.json`.
+
+| Batch | Total DPU | read | write | compute | Transactions | Conflicts | DPU each |
+|---|---|---|---|---|---|---|---|
+| 5 | 1.234 | 0.222 | 0.400 | 0.612 | 13 | 0 | 0.247 |
+| 25 | 3.613 | 0.289 | 1.550 | 1.774 | 37 | 0 | 0.145 |
+
+**0.1189 DPU per checkout** marginal, plus **0.639 DPU fixed** per batch. At
+that rate the monthly allowance buys about **840,000 checkouts**.
+
+Two things the split shows. The fixed cost is real but small, and it is the
+connection setup that a fresh execution environment pays; it amortises over a
+run and should not be multiplied by the request count. And the cost is roughly
+half compute and 43% write at batch 25, so this workload is not dominated by
+reads, which is why index discipline is the second cost control here and
+transaction duration is the first.
+
+**Caveat, stated plainly:** two batch sizes determine a line exactly, so this
+separates fixed from marginal cost but produces no error estimate and could
+not reveal a non-linearity. A third batch size would fix that and costs about
+2 DPU.
+
+Latency, incidentally: 1,521 ms per checkout in the first batch against 442 ms
+in the second. That is Lambda cold start, not the database.
+
+### The benchmark projection, rebuilt
+
+A pass is 14 scenarios x 3 runs = 42 incidents, at 2 requests/s for 20 minutes
+each, so 2,400 requests per incident and **100,800 checkouts** per pass.
+
+| Component | DPU | Basis |
+|---|---|---|
+| Checkout | 11,985 | measured, 100,800 x 0.1189 |
+| Fulfilment | ~7,000 | **estimated**, see below |
+| Per-batch fixed | ~30 | measured, 42 x 0.639 |
+| **Total** | **~19,000** | ~19% of the allowance, ~81% headroom |
+
+The fulfilment number is an estimate, not a measurement, and it is the one
+weak figure left. The worker's event source mapping ships disabled, so it was
+not running during the measurement and the orders stayed in `placed`. It does
+two short transactions per order, one single-row read and one single-row
+update. Using the 0.03 DPU that a short committed transaction cost in the
+billing-model experiment, plus about 0.01 for the single row written, gives
+roughly 0.07 DPU per order. Measure it properly the next time the consumer is
+enabled, which is M3's pause and resume work.
+
+### What the leak would have cost a benchmark pass
+
+Worth recording, because it is the argument for why the cost signal mattered.
+
+During a sustained run most leaked transactions would have been closed early
+by the next invocation on the same execution environment, so the steady-state
+damage was bounded. The danger was at the tail. When traffic stops, every warm
+environment freezes holding its transaction open and bills to the cap. With
+reserved concurrency 2 on each of the two functions that touch DSQL, that is
+up to 4 leaked transactions per incident:
+
+    42 incidents x 4 environments x 315 DPU = ~53,000 DPU
+
+Over half the monthly allowance, from the ends of runs alone, on top of the
+19,000 of real work. The $0 guarantee would have failed on the first full
+benchmark pass, and the only warning would have been the bill, because DSQL is
+not covered by free tier usage alerts.
 
 ### Lambda memory and where imports run (measured 2026-09-20)
 
