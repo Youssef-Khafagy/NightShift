@@ -844,3 +844,71 @@ The broader point: a dry run that writes is worse than no dry run, because it te
 DSQL uses optimistic concurrency control. Conflicting transactions do not block each other; both proceed and the loser fails at commit with SQLSTATE `40001`. Retrying is not an optimisation, it is how the system expects to be used, so `retry_on_conflict` lives in the shared module from the start rather than being added to checkout later.
 
 The jitter matters more than the backoff. Without it, every transaction that lost the same conflict waits the same interval and retries at the same instant, so one contended row becomes a synchronised stampede that keeps colliding. Picking the delay uniformly from `[0, delay)` spreads the retries out. The `on_retry` hook exists so every retry can be logged, which CLAUDE.md requires and which the agent will later need as evidence.
+
+### Checkout, and one transaction that has to be right
+
+Checkout is the only place in this project where being wrong costs money, so it is worth walking through what the transaction does and why each part is there.
+
+```
+price the cart -> take the stock -> write the order -> write the lines -> record the idempotency key -> commit
+```
+
+**The stock check happens twice, on purpose.** The `SELECT` that prices the cart also reads quantities, but DSQL runs at Repeatable Read, so that snapshot cannot see a concurrent purchase. Checking `quantity >= wanted` in Python against it would be theatre. What actually prevents overselling is the `UPDATE`:
+
+```sql
+UPDATE inventory SET quantity = quantity - %s, updated_at = now()
+WHERE product_id = %s AND quantity >= %s
+```
+
+followed by checking `cur.rowcount != 1`. If someone else took the last unit, the predicate fails, no row updates, and the transaction aborts. The earlier check is only there to produce a good error message in the common case.
+
+**The idempotency key is inserted last.** It is the primary key of its own table, so a duplicate request collides there, after the order and lines are already staged, and the entire transaction rolls back. The handler then reads back the original order and returns it with `replayed: true` and a 200 rather than a 201. Inserting it first would work too, but doing it last means the collision happens when everything else has already succeeded, which keeps the failure path to a single rollback.
+
+**Publishing to SQS happens after the commit.** Inside the transaction it would be a message for an order that might still roll back, and consumers would chase orders that do not exist. After the commit, a crash in the gap loses a message instead, which leaves an order stuck in `placed` that can be found and replayed. Losing work you can find is better than inventing work that never happened.
+
+**Retries are logged, not swallowed.** `retry_on_conflict` takes an `on_retry` hook, and orders logs every serialization conflict with the attempt number and the delay. A rising retry count is the earliest visible symptom of the hot-row contention scenario, and an agent that cannot see retries would have to infer contention from latency alone.
+
+### A long failure, and what it cost
+
+orders-service could not call cart-service. Every attempt returned 403 with `Forbidden. For troubleshooting Function URL authorization issues`, and cart's handler never ran, so the rejection happened at the function URL's auth layer.
+
+What was tried, in order, and what each ruled out:
+
+| Attempt | Result |
+|---|---|
+| Identity policy allowing `lambda:InvokeFunctionUrl` on cart | Denied |
+| `aws iam simulate-principal-policy` | Reported **allowed**, with and without the resource policy |
+| Granting the role `lambda:*` on `*`, waiting 75 seconds | Denied |
+| Resource policy on cart naming the orders role | Denied |
+| Resource policy without the `FunctionUrlAuthType` condition | Denied |
+| Resolving credentials per request instead of once per environment | Denied |
+| The same code, same URL, from a laptop | **200** |
+
+The one real bug found along the way was genuine: `content-type` was being signed on bodyless GETs, and a client that drops that header for a request with no body invalidates the signature. That was worth fixing. It was not the cause.
+
+**What made this take so long was reading fast results as evidence.** Twice, something looked fixed because a test passed within seconds of a change, and both times the pass came from a cached decision or from a deploy having replaced every warm execution environment. One of those wrong conclusions, that a resource policy was unnecessary, was committed to main and broke checkout. The rule now in CLAUDE.md exists because of this: Lambda and IAM cache authorization in both directions, so neither a fast pass nor a fast fail means anything, and when results alternate, the correct move is to stop changing things rather than to keep trying fixes.
+
+**The eventual shape of the answer.** A request signed by an IAM **role** is rejected at these function URLs; the identical request signed by an IAM **user** succeeds. That held for the orders execution role and again, independently, for the GitHub Actions role when the smoke test first ran. It was not root-caused.
+
+**The decision.** Internal service-to-service calls now go through the Lambda Invoke API. This is not a workaround dressed up as a design: an internal call has no reason to leave AWS, traverse the internet and come back, and boto3 signs correctly without sixty lines of hand-written SigV4 in the repository. What is kept is the dependency's shape. `service_client.call` sends a function-URL-shaped event, so cart has one handler whether it is reached from outside or from orders, and the caller still sets a read timeout, so a slow dependency still surfaces as a timeout rather than an unbounded wait. That matters for the scenarios in M4.
+
+Function URLs remain the external entry point, where they work.
+
+### The smoke test that should have existed first
+
+`terraform apply` succeeding means the infrastructure matches the configuration. It says nothing about whether a customer can buy anything, and this milestone produced a long period where every plan and apply was green while every checkout returned 502.
+
+So the apply workflow now ends by buying something:
+
+```
+ok   store a cart -> 200
+ok   checkout -> 201
+ok   total is 30700 cents
+ok   replayed idempotency key -> 200
+ok   replay returned the original order
+ok   checkout without an idempotency key -> 400
+```
+
+It checks the total, because a cart priced wrongly is worse than one that fails. It checks that a replayed idempotency key returns the *same order id*, because idempotency that returns 200 with a new order is a double charge. And it fails the job, so a change that breaks checkout cannot sit on main unnoticed.
+
+The first time it ran in CI it failed, correctly, and told us something new: the GitHub Actions role hit the same 403 the orders role did. A test that fails on its first run for a real reason is a test worth having.

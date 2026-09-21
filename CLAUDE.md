@@ -175,7 +175,11 @@ M2a in progress (owner approved the plan 2026-09-20). Steps:
    - Local dev needs `requirements/dev.txt` in `.venv`, including `botocore[crt]`, which `aws login` credentials require and plain boto3 lacks. Lambda does not need it.
    - `sslrootcert="system"` fails with the psycopg binary wheel because it ships its own OpenSSL; the helper names the bundle path instead.
    - DSQL forbids DDL and DML in one transaction, so a migration cannot be recorded atomically with its own application. Migrations are therefore idempotent, one statement per file, and checksummed.
-6. Then: the four services, deployed through the pipeline.
+6. **6a done.** cart-service (DynamoDB, function URL) and orders-service (checkout, DSQL, SQS). Shared code in `src/common` is zipped into each artifact under `common/` by the module's `shared_source_dir`. Database role `orders_service` created by `scripts/grant_db_roles.py` with SELECT/UPDATE only on the five tables it touches, never `admin`. Verified end to end: 201 with the correct total, replayed idempotency key returns the original order with 200, missing key returns 400, stock decremented exactly, SQS message carries the `correlationId` attribute.
+   - **Internal calls use the Lambda Invoke API, not function URLs.** A request signed by an IAM role was rejected at a function URL with 403 while the identical request signed by an IAM user succeeded; this happened for both the orders execution role and the GitHub Actions role and was never root-caused. Function URLs remain the external entry point. `service_client.call` sends a function-URL-shaped event so callees keep one handler, and the caller sets a read timeout so a slow dependency surfaces as a timeout.
+   - `GRANT USAGE ON SCHEMA public` fails on DSQL with FeatureNotSupported; `public` is a system entity and PostgreSQL grants USAGE on it to PUBLIC anyway.
+   - The apply workflow ends with `scripts/smoke_checkout.py` and fails the job if checkout does not return 201.
+6b. Next: payment-provider (mock, configurable latency and errors) and fulfillment-worker (SQS consumer, partial batch failure reporting), with the event source mapping shipping disabled.
 7. Then: measure DPU per checkout and replace the estimate in COST.md before any load test.
 
 Later (tracked, not blocking): test that a budget email actually arrives before the Feb 2027 upgrade (COST.md upgrade plan).
