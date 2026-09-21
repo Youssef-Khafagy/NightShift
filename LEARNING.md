@@ -1001,3 +1001,32 @@ The inverse also matters. `mark_paid` is one `UPDATE`, so it gets no transaction
 **A smaller lesson about CloudWatch.** DSQL reports a transaction's compute in the bucket *after* the one it finished in. The held transaction ended at 16:52:53 and was reported in the bucket starting 16:53:00. A window read with one minute of padding would have caught it by seven seconds, which is not a margin to build a measurement on, so `measure_dpu.py` pads two minutes at the end.
 
 **What the measurement script does differently.** It runs batches of different sizes and fits a line through them, rather than running one batch and dividing. One batch size cannot separate the cost of a checkout from the cost of a batch happening at all, and the two behave differently in a benchmark: a fixed per-batch cost amortises over a long run, a per-checkout cost does not. The slope is what the projection needs.
+
+### Testing for a bug that has no symptom
+
+The transaction leak returned correct status codes, wrote correct rows, logged nothing unusual and passed the smoke test. No assertion about a response could have caught it. The assertion has to be about the connection: **after this handler returns, is a transaction still open?**
+
+That needs a fake database connection, and a fake is where this kind of test usually goes wrong. A fake that reports "idle" unconditionally makes every test in the file pass, including against the broken code, and the suite becomes a decoration that costs CI minutes. So the fake models psycopg's actual state machine, including the part that caused the bug: with autocommit off, the first statement opens a transaction and it stays open until someone commits.
+
+Two habits kept it honest.
+
+**The harness proves it can fail.** The first two tests in the file do nothing but check the fake itself: autocommit off plus one lone statement must report `INTRANS`, and autocommit on must report `IDLE`. If those two ever stop distinguishing the cases, every assertion after them is worthless and the file says so out loud.
+
+**The tests are wired to the real default, not to a convention.** The handler tests do not hard-code `autocommit=True`. They read the actual default off `dsql.connect`'s signature and build the fake with it. Flipping that default back in `src/common/dsql.py` is enough to make them fail, which means the test is attached to the fix rather than to a description of the fix.
+
+Then the whole thing was checked the only way that really counts: the three fixed source files were reverted to the commit before the fix and the suite was run again. **Nine of fifteen failed**, including every one of the four leaked paths and the payment-provider assertion.
+
+The six that still passed are the most interesting part. The successful checkout, the successful fulfilment and the queue publication all passed against the broken code, because the happy paths *did* commit. The leaks were only ever on the replay path and the two early returns. That is the whole reason the bug survived: the smoke test walks the happy path, and the happy path was fine. A suite that only covers what usually happens would have shipped this bug just as confidently.
+
+**The sharpest test in the file** does not check the end state at all. It records `conn.info.transaction_status` at the moment the payment provider is invoked and asserts it is `IDLE`:
+
+```python
+assert calls == [TransactionStatus.IDLE], (
+    "a transaction was open while waiting on the payment provider, "
+    "so its latency is being billed as DSQL compute time"
+)
+```
+
+That encodes a cost rule as an executable constraint: never hold a database transaction across a network call. Scenario 4 deliberately makes that provider slow, so without this rule a latency incident silently becomes a billing incident.
+
+**Two smaller things.** All four services have their handler at `app.py`, because that is what each deployment zip contains, so importing them normally would collide on the name `app`. The tests load each one by path under its own module name, which is what Lambda effectively does anyway. And `conftest.py` sets obviously fake AWS credentials before anything imports boto3, so a test that escapes its mock fails with an authentication error instead of quietly creating something real in an account whose first rule is that it costs nothing. Unsetting `AWS_PROFILE` matters there too: botocore reads an empty one as a profile literally named `""` and raises `ProfileNotFound`.
