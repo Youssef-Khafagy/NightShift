@@ -18,15 +18,11 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
 import uuid
 from pathlib import Path
 
 import boto3
-from botocore.auth import SigV4Auth
-from botocore.awsrequest import AWSRequest
-from botocore.httpsession import URLLib3Session
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REGION = os.environ.get("AWS_REGION", "ca-central-1")
@@ -37,39 +33,39 @@ KEYBOARD = "11111111-1111-4111-8111-111111111111"
 MOUSE = "22222222-2222-4222-8222-222222222222"
 EXPECTED_TOTAL_CENTS = 2 * 12900 + 4900
 
-_session = boto3.Session()
-_http = URLLib3Session(timeout=30)
+_lambda = boto3.client("lambda", region_name=REGION)
 
 
-def terraform_output(name: str) -> str:
-    result = subprocess.run(
-        ["terraform", f"-chdir={REPO_ROOT / 'terraform'}", "output", "-raw", name],
-        capture_output=True,
-        text=True,
-        check=True,
+def function_name(output_name: str, default: str) -> str:
+    return os.environ.get(output_name.upper()) or default
+
+
+def call(target: str, method: str, path: str, payload=None, headers=None):
+    """Invoke a service the same way another service would.
+
+    Through the Lambda API rather than the function URL. Requests signed by a
+    role were rejected with 403 at the function URL in this account, while the
+    identical request signed by an IAM user succeeded, and that was never
+    root-caused. Since every internal caller now uses the Lambda API, the
+    smoke test does too, which also means it tests the path production
+    actually takes.
+    """
+    event = {
+        "rawPath": path,
+        "requestContext": {"http": {"method": method}},
+        "headers": headers or {},
+        "body": json.dumps(payload) if payload is not None else None,
+    }
+    response = _lambda.invoke(
+        FunctionName=target,
+        InvocationType="RequestResponse",
+        Payload=json.dumps(event).encode(),
     )
-    return result.stdout.strip()
-
-
-def endpoint(env_name: str, output_name: str) -> str:
-    return (os.environ.get(env_name) or terraform_output(output_name)).rstrip("/")
-
-
-def call(method: str, url: str, payload=None, headers=None):
-    body = json.dumps(payload) if payload is not None else None
-    sent = dict(headers or {})
-    if body is not None:
-        sent["content-type"] = "application/json"
-
-    request = AWSRequest(method=method, url=url, data=body, headers=sent)
-    # Resolved per call rather than once, so a long-lived runner or execution
-    # environment cannot sign with credentials that have since rotated.
-    SigV4Auth(
-        _session.get_credentials().get_frozen_credentials(), "lambda", REGION
-    ).add_auth(request)
-
-    response = _http.send(request.prepare())
-    return response.status_code, response.text
+    raw = response["Payload"].read().decode()
+    if response.get("FunctionError"):
+        return 500, raw
+    result = json.loads(raw) if raw else {}
+    return int(result.get("statusCode", 500)), result.get("body") or ""
 
 
 class Failure(Exception):
@@ -83,8 +79,8 @@ def expect(label: str, actual: int, wanted: int, body: str) -> None:
 
 
 def main() -> None:
-    cart_url = endpoint("CART_SERVICE_URL", "cart_service_url")
-    orders_url = endpoint("ORDERS_SERVICE_URL", "orders_service_url")
+    cart = function_name("cart_function", "nightshift-cart:live")
+    orders = function_name("orders_function", "nightshift-orders:live")
 
     cart_id = str(uuid.uuid4())
     idempotency_key = str(uuid.uuid4())
@@ -92,8 +88,9 @@ def main() -> None:
     print(f"Smoke checkout, correlation {correlation_id}")
 
     status, body = call(
+        cart,
         "PUT",
-        f"{cart_url}/carts/{cart_id}",
+        f"/carts/{cart_id}",
         {
             "items": [
                 {"product_id": KEYBOARD, "quantity": 2},
@@ -105,8 +102,9 @@ def main() -> None:
     expect("store a cart", status, 200, body)
 
     status, body = call(
+        orders,
         "POST",
-        f"{orders_url}/checkout",
+        "/checkout",
         {"cart_id": cart_id, "customer_id": "smoke-test"},
         {"x-correlation-id": correlation_id, "idempotency-key": idempotency_key},
     )
@@ -122,8 +120,9 @@ def main() -> None:
 
     # The same key must return the original order rather than buying twice.
     status, body = call(
+        orders,
         "POST",
-        f"{orders_url}/checkout",
+        "/checkout",
         {"cart_id": cart_id, "customer_id": "smoke-test"},
         {"x-correlation-id": correlation_id, "idempotency-key": idempotency_key},
     )
@@ -137,8 +136,9 @@ def main() -> None:
     print("  ok   replay returned the original order")
 
     status, body = call(
+        orders,
         "POST",
-        f"{orders_url}/checkout",
+        "/checkout",
         {"cart_id": cart_id, "customer_id": "smoke-test"},
         {"x-correlation-id": correlation_id},
     )
