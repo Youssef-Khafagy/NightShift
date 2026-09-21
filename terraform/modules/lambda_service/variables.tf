@@ -20,6 +20,24 @@ variable "extra_files" {
   default     = []
 }
 
+variable "shared_source_dir" {
+  description = "Optional directory of code shared by several functions. Its .py files are zipped under shared_package/ so the function can import them. Null means the function has no shared code."
+  type        = string
+  default     = null
+}
+
+variable "shared_package" {
+  description = "Directory name the shared code lands under inside the zip, which is also the package name it is imported as."
+  type        = string
+  default     = "common"
+}
+
+variable "extra_policy_json" {
+  description = "Optional IAM policy document JSON attached to the execution role, for whatever this particular function needs to reach."
+  type        = string
+  default     = null
+}
+
 variable "handler" {
   description = "module.function of the entry point, relative to the zip root."
   type        = string

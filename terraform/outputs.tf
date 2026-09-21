@@ -57,3 +57,18 @@ output "placed_orders_dlq_url" {
   description = "Dead letter queue for messages that failed three times."
   value       = aws_sqs_queue.placed_orders_dlq.url
 }
+
+output "cart_service_url" {
+  description = "Function URL for cart-service. SigV4-signed requests only."
+  value       = module.cart.function_url
+}
+
+output "orders_service_url" {
+  description = "Function URL for orders-service. SigV4-signed requests only."
+  value       = module.orders.function_url
+}
+
+output "orders_execution_role_arn" {
+  description = "Execution role for orders-service, mapped to the orders_service database role by scripts/grant_db_roles.py."
+  value       = module.orders.execution_role_arn
+}
