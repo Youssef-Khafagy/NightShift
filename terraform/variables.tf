@@ -40,6 +40,12 @@ variable "github_repo_id" {
   default     = "1376738088"
 }
 
+variable "hello_memory_mb" {
+  description = "Memory for the smoke-test function. CPU scales with memory, so this is the knob for import-heavy cold starts. Exists as a variable so it can be swept with -var during measurement."
+  type        = number
+  default     = 128
+}
+
 variable "log_retention_days" {
   description = "CloudWatch Logs retention. Kept short on purpose: the free allowance of 5 GB per month covers ingestion, storage and Logs Insights scans combined."
   type        = number

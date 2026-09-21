@@ -24,7 +24,8 @@ module "hello" {
   # The 5 second default was not enough for the layer probe's cold start at
   # 128 MB. Raised to measure rather than to paper over it; a timeout costs
   # nothing when unused, because Lambda bills actual duration.
-  timeout = 30
+  timeout     = 30
+  memory_size = var.hello_memory_mb
 
   log_retention_days  = var.log_retention_days
   create_function_url = true
