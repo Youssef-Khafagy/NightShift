@@ -27,6 +27,22 @@ data "archive_file" "this" {
       filename = source.value
     }
   }
+
+  # Shared code, zipped under its package directory. Copying it into each
+  # function's artifact rather than putting it in the dependency layer is
+  # deliberate: shared code changes with the services, and a layer rebuild on
+  # every edit would republish 7.7 MiB of unchanged wheels to redeploy a few
+  # kilobytes of Python.
+  dynamic "source" {
+    for_each = var.shared_source_dir == null ? toset([]) : toset([
+      for f in fileset(var.shared_source_dir, "**/*.py") : f
+    ])
+
+    content {
+      content  = file("${var.shared_source_dir}/${source.value}")
+      filename = "${var.shared_package}/${source.value}"
+    }
+  }
 }
 
 data "aws_iam_policy_document" "assume_role" {
@@ -82,6 +98,14 @@ data "aws_iam_policy_document" "xray" {
     ]
     resources = ["*"]
   }
+}
+
+resource "aws_iam_role_policy" "extra" {
+  count = var.extra_policy_json == null ? 0 : 1
+
+  name   = "service"
+  role   = aws_iam_role.this.id
+  policy = var.extra_policy_json
 }
 
 resource "aws_iam_role_policy" "xray" {
@@ -151,6 +175,7 @@ resource "aws_lambda_function" "this" {
   depends_on = [
     aws_iam_role_policy.logs,
     aws_iam_role_policy.xray,
+    aws_iam_role_policy.extra,
     aws_cloudwatch_log_group.this,
   ]
 }
