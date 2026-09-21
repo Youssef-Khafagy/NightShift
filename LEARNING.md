@@ -912,3 +912,52 @@ ok   checkout without an idempotency key -> 400
 It checks the total, because a cart priced wrongly is worse than one that fails. It checks that a replayed idempotency key returns the *same order id*, because idempotency that returns 200 with a new order is a double charge. And it fails the job, so a change that breaks checkout cannot sit on main unnoticed.
 
 The first time it ran in CI it failed, correctly, and told us something new: the GitHub Actions role hit the same 403 the orders role did. A test that fails on its first run for a real reason is a test worth having.
+
+### The asynchronous half, and why the queue is there
+
+Checkout writes the order and returns. Payment happens behind a queue, so a slow or failing payment provider degrades fulfilment instead of checkout. That split is not decoration: it is what makes several of the M4 scenarios possible at all. A poison message, a retry storm and a growing oldest-message age only exist when there is a queue in the middle.
+
+**The provider's behaviour is configuration, not code.** Latency and error rate are environment variables on a deployed function. The temptation is to put `if os.environ.get("CHAOS"): fail()` in the application, and that rehearses nothing, because production has no such branch. Changing an environment variable on a Lambda is an ordinary config change, which is exactly the mechanism M4 is allowed to use.
+
+### Partial batch failure reporting, and what it is actually for
+
+Lambda hands an SQS consumer up to ten messages at once. The naive contract is all-or-nothing: if the handler raises, the whole batch is treated as failed and all ten messages become visible again.
+
+That is worse than it sounds. Nine messages that succeeded get processed a second time, and every one of them burns a delivery attempt against `maxReceiveCount`. With `maxReceiveCount` at 3, a single persistently bad message can push its nine innocent neighbours to the dead letter queue after a few cycles. The DLQ threshold stops meaning "this message is bad" and starts meaning "this message shared a batch with a bad one".
+
+`function_response_types = ["ReportBatchItemFailures"]` changes the contract. The handler returns the identifiers of the messages that failed, and only those are redelivered:
+
+```json
+{"batchItemFailures": [{"itemIdentifier": "bad-1"}]}
+```
+
+Verified by invoking the worker with a batch of three, one of which had an unparseable body. Exactly one identifier came back, and it was the right one.
+
+The handler side of that contract is a `try` around each record rather than around the loop. Catching broadly per message is usually a smell; here it is the whole point, because the alternative is one message deciding the fate of nine others.
+
+### Idempotency, again, in a different shape
+
+SQS is at-least-once. A message can be delivered twice, so settling an order has to be safe to do twice:
+
+```sql
+UPDATE orders SET status = 'paid', updated_at = now()
+WHERE order_id = %s AND status = 'placed'
+```
+
+A redelivery matches no rows, `rowcount` is 0, and the worker logs that it was already paid and succeeds. Without the status predicate, a redelivery would charge the provider a second time.
+
+Note this is the third distinct idempotency mechanism in the project, each suited to its layer: a primary key collision in checkout, a conditional update here, and DynamoDB's conditional writes for the agent's incident correlation in M5. They are not interchangeable.
+
+**A missing order is dropped, not retried.** If the order does not exist, raising would put the message back on the queue to fail twice more and land in the DLQ having learned nothing. Retrying only helps when the failure might be transient, and "this row does not exist" is not.
+
+### Cost is a design input, not an afterthought
+
+The event source mapping ships `enabled = false`. An enabled mapping long-polls with five connections continuously, roughly 648,000 SQS requests a month, about two thirds of the free allowance spent on an idle queue producing nothing.
+
+So the trigger is turned on for a run and off afterwards, which also means most of M3's pause command already exists. Verified both directions: enabling it drained 19 queued orders from `placed` to `paid` within 15 seconds, and disabling it returned the mapping to `Disabled` with a clean plan.
+
+### Two more IAM lessons, quickly
+
+Creating the mapping failed first time on `lambda:TagResource`, because `default_tags` tags the mapping too, and a mapping is a different resource type with an ARN of `event-source-mapping:<uuid>`. The function-scoped grant did not cover it.
+
+Scoping that grant needed care. The create, update and delete actions take an `ArnLike` condition on `lambda:FunctionArn`, which works because that key is in the request context for them. `TagResource` gets no such condition, because the key is not present for it, and by now the rule is established: a condition on a key that is not in the request context is a deny, not a tighter allow.
