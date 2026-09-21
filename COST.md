@@ -31,7 +31,7 @@ Usage model for "Projected": one busy month = development plus one full benchmar
 
 | Service | Always Free allowance | Projected busy month | Headroom | Guardrails |
 |---|---|---|---|---|
-| Lambda | 1M requests and 400,000 GB-s per month, perpetual, **identical for x86 and arm64** (re-verified 2026-09-20) | ~410K requests, ~60K GB-s | ~59% requests, ~85% GB-s | Share each incident across configs (separate injections per config would be ~1.5M requests, over the limit). Agent never sleeps inside Lambda while waiting on LLM rate limits; it checkpoints and reschedules. **Open in M2a:** the GB-s estimate assumes 128 MB. Loading psycopg, Powertools and the OTel SDK may force 256 MB, which doubles GB-s. Measure before trusting the 85% headroom. |
+| Lambda | 1M requests and 400,000 GB-s per month, perpetual, **identical for x86 and arm64** (re-verified 2026-09-20) | ~410K requests, ~60K GB-s | ~59% requests, ~85% GB-s | Share each incident across configs (separate injections per config would be ~1.5M requests, over the limit). Agent never sleeps inside Lambda while waiting on LLM rate limits; it checkpoints and reschedules. **Measured 2026-09-20, resolved:** 128 MB holds. Importing Powertools, psycopg and boto3 and building a DSQL client costs 11,910 ms at 128 MB when done lazily inside the handler, but 712 ms at the same 128 MB when done at module scope during init. Memory was not the lever; where the imports run was. See the memory sweep below. |
 | Aurora DSQL | 100,000 DPUs and 1 GB storage per month, Always Free on Free and Paid plans (re-verified 2026-09-20). Beyond: $8 per million DPUs, $0.33 per GB-month | ~20K DPUs, <0.1 GB | ~80% (weak estimate) | DSQL is NOT in AWS's list of services tracked by free tier usage alerts. A local cost-check script reads the DSQL DPU metric with GetMetricStatistics. Measure DPUs per checkout in M2a before any load test. An idle cluster scales to zero and incurs no DPU charge, so leaving the cluster up between sessions is free as long as storage stays under 1 GB. |
 | DynamoDB | 25 RCU, 25 WCU (provisioned, Standard table class), 25 GB storage, per region | Planned total <= 20 RCU and 20 WCU across all tables and GSIs | >= 5 RCU/WCU | Provisioned mode only. No auto scaling: target tracking creates CloudWatch alarms that would use our alarm allowance. Capacity ledger kept in this file from M2. |
 | SQS | 1M requests per month (each 64 KB chunk is one request, a batch of up to 10 messages is one request) | ~110K with the consumer disabled between runs; ~760K if the trigger is left on 24/7 | ~89% | Idle Lambda trigger polls with 5 long-poll connections. Estimate 5 x 3 per min x 43,200 min = ~648K requests/month per idle queue, for zero work. **Decided 2026-09-20:** the event source mapping ships `enabled = false` and is turned on only for a run. Only one triggered queue; DLQ has no trigger; standard (not provisioned) poller mode. Measure with NumberOfEmptyReceives in M2a. |
@@ -60,6 +60,36 @@ Consequences for how the store is written:
 - Storage is billed at $0.33 per GB-month with 1 GB free, and data is replicated across three Availability Zones at no extra charge. Synthetic order data must be pruned between benchmark passes to stay under 1 GB.
 
 Measurement plan for M2a, before any load test: run one checkout, read the cluster's DPU metric with `GetMetricStatistics`, and record DPU per checkout here. The 42-incident benchmark projection is then rebuilt from that measured number instead of the current estimate.
+
+### Lambda memory and where imports run (measured 2026-09-20)
+
+Cold-start cost of importing Powertools, psycopg and boto3 and constructing a DSQL client, measured on the real runtime through the `nightshift-hello` layer probe.
+
+Lazily, inside the handler:
+
+| Memory | Import time | GB-seconds for that work |
+|---|---|---|
+| 128 MB | 11,910 ms | 1.49 |
+| 512 MB | 2,770 ms | 1.39 |
+| 1,024 MB | 1,387 ms | 1.39 |
+
+CPU scales nearly linearly with memory, so the same work costs roughly the same GB-seconds at any size. Paying for more memory buys latency, not cost, for CPU-bound work. The opposite is true for time spent waiting on a database: there, duration does not shrink with memory, so a larger function simply costs more.
+
+At module scope, during the init phase, at 128 MB:
+
+| Step | Lazy at 128 MB | At init, 128 MB |
+|---|---|---|
+| Powertools | 1,737 ms | 109 ms |
+| psycopg | 5,757 ms | 312 ms |
+| boto3 | 2,755 ms | 133 ms |
+| DSQL client | 1,661 ms | 158 ms |
+| **Total** | **11,910 ms** | **712 ms** |
+
+Same memory, 16.7 times faster, because Lambda gives the init phase more CPU than the configured memory would otherwise buy.
+
+**Design rule that follows:** every service imports its dependencies and constructs its AWS clients and database connections at module scope, never on first use inside the handler. Functions stay at 128 MB.
+
+**Not verified:** whether init duration is billed for on-demand invocations. The platform report lines did not surface in time to check. Worth confirming in step 6, since it decides whether the 712 ms is free or counts against the GB-second allowance. The projection above assumes it is billed, which is the conservative reading.
 
 ### DynamoDB capacity ledger
 
