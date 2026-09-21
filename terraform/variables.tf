@@ -46,6 +46,18 @@ variable "hello_memory_mb" {
   default     = 128
 }
 
+variable "cart_read_capacity" {
+  description = "Provisioned RCU for the cart table. The free allowance is 25 RCU per region across every table and index, tracked in COST.md."
+  type        = number
+  default     = 5
+}
+
+variable "cart_write_capacity" {
+  description = "Provisioned WCU for the cart table. See cart_read_capacity."
+  type        = number
+  default     = 5
+}
+
 variable "log_retention_days" {
   description = "CloudWatch Logs retention. Kept short on purpose: the free allowance of 5 GB per month covers ingestion, storage and Logs Insights scans combined."
   type        = number

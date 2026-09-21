@@ -27,8 +27,15 @@ locals {
 
   project_functions = "arn:aws:lambda:${local.region}:${local.account_id}:function:${var.project}-*"
   project_layers    = "arn:aws:lambda:${local.region}:${local.account_id}:layer:${var.project}-*"
-  project_roles     = "arn:aws:iam::${local.account_id}:role/${var.project}-*"
-  project_logs      = "arn:aws:logs:${local.region}:${local.account_id}:log-group:/aws/lambda/${var.project}-*"
+  project_tables    = "arn:aws:dynamodb:${local.region}:${local.account_id}:table/${var.project}-*"
+  project_queues    = "arn:aws:sqs:${local.region}:${local.account_id}:${var.project}-*"
+
+  # DSQL cluster identifiers are generated, not named, so there is no prefix
+  # to scope to. Every DSQL cluster in this account belongs to this project,
+  # and the denies below still apply.
+  project_clusters = "arn:aws:dsql:${local.region}:${local.account_id}:cluster/*"
+  project_roles    = "arn:aws:iam::${local.account_id}:role/${var.project}-*"
+  project_logs     = "arn:aws:logs:${local.region}:${local.account_id}:log-group:/aws/lambda/${var.project}-*"
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
@@ -214,6 +221,74 @@ data "aws_iam_policy_document" "ci_apply" {
       local.project_layers,
       "${local.project_layers}:*",
     ]
+  }
+
+  # Aurora DSQL. Action names come from the API operations the CLI exposes
+  # (create-cluster, get-cluster, ...), not from guesswork.
+  # GetVpcEndpointServiceName is included because the Terraform resource
+  # exports that attribute and therefore reads it on every refresh.
+  statement {
+    sid    = "ProjectDsql"
+    effect = "Allow"
+    actions = [
+      "dsql:CreateCluster",
+      "dsql:GetCluster",
+      "dsql:UpdateCluster",
+      "dsql:DeleteCluster",
+      "dsql:GetVpcEndpointServiceName",
+      "dsql:TagResource",
+      "dsql:UntagResource",
+      "dsql:ListTagsForResource",
+    ]
+    resources = [local.project_clusters]
+  }
+
+  statement {
+    sid       = "ListDsqlClusters"
+    effect    = "Allow"
+    actions   = ["dsql:ListClusters"]
+    resources = ["*"]
+  }
+
+  # DynamoDB. The Describe actions are all reads the provider performs during
+  # refresh; leaving one out fails an apply that changes nothing.
+  statement {
+    sid    = "ProjectDynamoDb"
+    effect = "Allow"
+    actions = [
+      "dynamodb:CreateTable",
+      "dynamodb:DeleteTable",
+      "dynamodb:UpdateTable",
+      "dynamodb:DescribeTable",
+      "dynamodb:DescribeTimeToLive",
+      "dynamodb:UpdateTimeToLive",
+      "dynamodb:DescribeContinuousBackups",
+      "dynamodb:UpdateContinuousBackups",
+      "dynamodb:DescribeContributorInsights",
+      "dynamodb:DescribeKinesisStreamingDestination",
+      "dynamodb:ListTagsOfResource",
+      "dynamodb:TagResource",
+      "dynamodb:UntagResource",
+    ]
+    resources = [local.project_tables]
+  }
+
+  # SQS. Note the ARN shape: a queue is
+  # arn:aws:sqs:region:account:queue-name, with no "queue/" segment.
+  statement {
+    sid    = "ProjectSqs"
+    effect = "Allow"
+    actions = [
+      "sqs:CreateQueue",
+      "sqs:DeleteQueue",
+      "sqs:GetQueueAttributes",
+      "sqs:SetQueueAttributes",
+      "sqs:GetQueueUrl",
+      "sqs:ListQueueTags",
+      "sqs:TagQueue",
+      "sqs:UntagQueue",
+    ]
+    resources = [local.project_queues]
   }
 
   statement {
