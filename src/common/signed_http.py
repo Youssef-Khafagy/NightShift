@@ -22,6 +22,7 @@ from typing import Any
 import boto3
 from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
+from botocore.credentials import ReadOnlyCredentials
 from botocore.httpsession import URLLib3Session
 
 from .context import CORRELATION_HEADER
@@ -49,6 +50,15 @@ def frozen_credentials():
     The boto3 fallback is for running outside Lambda, where these variables
     are not set and credentials come from a profile.
     """
+    # Lambda publishes the execution role's credentials as environment
+    # variables and rewrites them when they rotate. Anything that resolved
+    # them earlier keeps the old values, so read them fresh every time.
+    key = os.environ.get("AWS_ACCESS_KEY_ID")
+    secret = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    if key and secret:
+        return ReadOnlyCredentials(key, secret, os.environ.get("AWS_SESSION_TOKEN"))
+    # Outside Lambda these variables are not set and credentials come from a
+    # profile, where botocore's own refresh logic applies.
     return _session.get_credentials().get_frozen_credentials()
 
 

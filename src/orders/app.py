@@ -28,7 +28,7 @@ from typing import Any
 import boto3
 import psycopg
 
-from common import dsql, signed_http
+from common import dsql, service_client
 from common.context import (
     CORRELATION_ATTRIBUTE,
     CORRELATION_HEADER,
@@ -39,7 +39,7 @@ from common.context import (
 SERVICE = "orders"
 logger = get_logger(SERVICE)
 
-CART_SERVICE_URL = os.environ["CART_SERVICE_URL"]
+CART_FUNCTION_NAME = os.environ["CART_FUNCTION_NAME"]
 PLACED_ORDERS_QUEUE_URL = os.environ["PLACED_ORDERS_QUEUE_URL"]
 DB_ROLE = os.environ.get("DSQL_ROLE", "orders_service")
 CART_TIMEOUT_SECONDS = float(os.environ.get("CART_TIMEOUT_SECONDS", "2.0"))
@@ -77,8 +77,10 @@ def fetch_cart(cart_id: str, correlation_id: str) -> list[dict[str, Any]]:
     It also means the cart's storage can never change without changing this
     service, and it hides the dependency from every trace and service map.
     """
-    result = signed_http.get_json(
-        f"{CART_SERVICE_URL.rstrip('/')}/carts/{cart_id}",
+    result = service_client.call(
+        CART_FUNCTION_NAME,
+        "GET",
+        f"/carts/{cart_id}",
         correlation_id=correlation_id,
         timeout=CART_TIMEOUT_SECONDS,
     )
@@ -261,41 +263,9 @@ def checkout(
     return result
 
 
-def _selftest(correlation_id: str) -> dict[str, Any]:
-    """Temporary: can this function sign a call to any IAM-auth URL at all?
-
-    Calls hello-service, which has the same AWS_IAM function URL and no
-    relationship to checkout. If this succeeds while the cart call fails, the
-    problem is specific to cart. If both fail, signing from inside Lambda is
-    the problem.
-    """
-    results = {}
-    for label, url in (
-        ("hello", os.environ.get("HELLO_URL")),
-        ("cart", CART_SERVICE_URL),
-    ):
-        if not url:
-            results[label] = "no url configured"
-            continue
-        try:
-            signed_http.get_json(
-                url.rstrip("/"), correlation_id=correlation_id, timeout=5.0
-            )
-            results[label] = "ok"
-        except signed_http.RemoteCallError as exc:
-            results[label] = f"{exc.status}: {exc.body[:80]}"
-        except Exception as exc:  # noqa: BLE001
-            results[label] = f"{type(exc).__name__}: {exc}"
-    return results
-
-
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     request_id = getattr(context, "aws_request_id", "local")
     headers = event.get("headers")
-
-    if event.get("rawPath") == "/selftest":
-        cid = correlation_id_from_headers(headers, request_id)
-        return _response(200, {"selftest": _selftest(cid)}, cid)
 
     correlation_id = correlation_id_from_headers(headers, request_id)
     logger.append_keys(correlation_id=correlation_id)
@@ -323,7 +293,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     except ValueError as exc:
         logger.warning("checkout rejected", extra={"reason": str(exc)})
         return _response(409, {"error": str(exc)}, correlation_id)
-    except signed_http.RemoteCallError as exc:
+    except service_client.ServiceCallError as exc:
         # The body matters as much as the status. A 403 from a signature
         # mismatch and a 403 from an IAM denial are the same number and
         # entirely different problems.
