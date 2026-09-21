@@ -37,8 +37,11 @@ logger.setLevel(logging.INFO)
 
 CORRELATION_HEADER = "x-correlation-id"
 
-# Reported once per cold start, not per invocation. The answer cannot change
-# within an execution environment.
+# Built once at module import, which is deliberate. Lambda runs module-level
+# code during the init phase, and init is given more CPU than the function's
+# configured memory would normally buy. Doing this work here rather than on
+# the first request is the difference between a slow first request and no
+# slow first request.
 _LAYER_REPORT: dict[str, Any] | None = None
 
 
@@ -75,7 +78,11 @@ def _libpq_implementation() -> str:
     """
     try:
         pq = importlib.import_module("psycopg.pq")
-        return f"{pq.__impl__} (libpq {'.'.join(str(n) for n in pq.version_pretty().split()[:1])})"
+        # __impl__ is the answer that matters. "binary" means the compiled
+        # libpq from psycopg-binary loaded. "python" would mean psycopg fell
+        # back to a pure-Python implementation, which works but is not what
+        # was shipped and would be a silent downgrade.
+        return f"{pq.__impl__}, libpq {pq.version()}"
     except Exception as exc:  # noqa: BLE001
         return f"libpq binding failed: {type(exc).__name__}: {exc}"
 
@@ -100,22 +107,28 @@ def _dsql_support() -> dict[str, Any]:
         return {"error": f"{type(exc).__name__}: {exc}"}
 
 
+def build_layer_report() -> dict[str, Any]:
+    ms: dict[str, float] = {}
+    report = {
+        "aws_lambda_powertools": _timed(
+            "powertools_ms", lambda: _version_of("aws_lambda_powertools"), ms
+        ),
+        "psycopg": _timed("psycopg_ms", lambda: _version_of("psycopg"), ms),
+        "psycopg_libpq": _timed("libpq_ms", _libpq_implementation, ms),
+        "boto3": _timed("boto3_ms", lambda: _version_of("boto3"), ms),
+        "botocore": _version_of("botocore"),
+        "dsql": _timed("dsql_client_ms", _dsql_support, ms),
+    }
+    report["timings_ms"] = ms
+    report["imported_during"] = "init"
+    return report
+
+
+# Runs at import, so its cost lands in the init phase where the CPU is.
+_LAYER_REPORT = build_layer_report()
+
+
 def layer_report() -> dict[str, Any]:
-    global _LAYER_REPORT
-    if _LAYER_REPORT is None:
-        ms: dict[str, float] = {}
-        report = {
-            "aws_lambda_powertools": _timed(
-                "powertools_ms", lambda: _version_of("aws_lambda_powertools"), ms
-            ),
-            "psycopg": _timed("psycopg_ms", lambda: _version_of("psycopg"), ms),
-            "psycopg_libpq": _timed("libpq_ms", _libpq_implementation, ms),
-            "boto3": _timed("boto3_ms", lambda: _version_of("boto3"), ms),
-            "botocore": _version_of("botocore"),
-            "dsql": _timed("dsql_client_ms", _dsql_support, ms),
-        }
-        report["timings_ms"] = ms
-        _LAYER_REPORT = report
     return _LAYER_REPORT
 
 

@@ -44,7 +44,8 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 ## Architecture
 
 ### 1. The store (Python, latest Lambda Python runtime)
-- Powertools (Logger, Tracer, Metrics) for JSON logs, tracing, metrics, unless docs now recommend a better free option. Correlation ID propagated end to end, including SQS message attributes.
+- Every function imports its dependencies and builds its AWS clients and DB connections at module scope, never lazily inside the handler. Measured 2026-09-20: the same imports cost 11,910 ms inside the handler and 712 ms at init, both at 128 MB, because Lambda gives init more CPU. This keeps every function at 128 MB.
+- Powertools (Logger, Metrics) for JSON logs and metrics. Not Tracer: it wraps the X-Ray SDK, unsupported from 2027-02-25. Correlation ID propagated end to end, including SQS message attributes.
 - orders-service: Aurora DSQL (Postgres-compatible), IAM auth tokens, no VPC. Checkout is one transaction (validate cart, decrement inventory, write order and items), requires an idempotency key, retries SQLSTATE 40001 with exponential backoff and jitter, logs every retry. Design around DSQL unsupported features (check docs).
 - cart-service: DynamoDB, provisioned capacity.
 - fulfillment-worker: consumes placed-orders SQS queue, calls payment-provider, marks orders paid. DLQ with maxReceiveCount. Partial batch failure reporting.
