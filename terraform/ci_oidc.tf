@@ -26,6 +26,7 @@ locals {
   ]
 
   project_functions = "arn:aws:lambda:${local.region}:${local.account_id}:function:${var.project}-*"
+  project_layers    = "arn:aws:lambda:${local.region}:${local.account_id}:layer:${var.project}-*"
   project_roles     = "arn:aws:iam::${local.account_id}:role/${var.project}-*"
   project_logs      = "arn:aws:logs:${local.region}:${local.account_id}:log-group:/aws/lambda/${var.project}-*"
 }
@@ -193,6 +194,26 @@ data "aws_iam_policy_document" "ci_apply" {
       "lambda:ListTags",
     ]
     resources = [local.project_functions]
+  }
+
+  # Layers, scoped to this project's layer name prefix. Same two-ARN-shape
+  # trap as CloudWatch Logs: PublishLayerVersion and ListLayerVersions act on
+  # the layer ("layer:name"), while GetLayerVersion and DeleteLayerVersion act
+  # on one version of it ("layer:name:1"). Granting only one shape fails the
+  # other half, which is how the first CI apply broke on log groups.
+  statement {
+    sid    = "ProjectLambdaLayers"
+    effect = "Allow"
+    actions = [
+      "lambda:PublishLayerVersion",
+      "lambda:ListLayerVersions",
+      "lambda:GetLayerVersion",
+      "lambda:DeleteLayerVersion",
+    ]
+    resources = [
+      local.project_layers,
+      "${local.project_layers}:*",
+    ]
   }
 
   statement {

@@ -547,7 +547,51 @@ build 2: f9bd9f5827cad5709ce3eaa91b68806d523e12313b33b51c3d06c71e4f1ee428
 
 And by inspecting the archive: 469 entries, all under `python/`, exactly one distinct timestamp, exactly one distinct mode, zero `__pycache__` or `.pyc` entries.
 
-One variable is deliberately left open. zlib's deflate output for a given level is stable in practice but is not guaranteed across versions, so a CI runner with a different zlib could in principle produce different bytes from identical inputs. That will show up the same way M1's bug did, as a Terraform plan that is not empty, and the fix is already chosen: `ZIP_STORED`. The layer is 28 MiB unpacked and 7.7 MiB compressed, so an uncompressed archive still sits well inside the 50 MiB limit.
+Two builds on the same machine agreeing is the weak version of the claim. The one that matters is a CI runner agreeing with a laptop, and that is the next section.
+
+### Chasing a one-file difference across two machines
+
+The first CI run of the layer disagreed with the local build:
+
+```
+local:  f9bd9f5827cad5709ce3eaa91b68806d523e12313b33b51c3d06c71e4f1ee428
+runner: fd376d7a8fb71c0f32f329015b3548e55103d43d5b5b80a0ad158738e72ee6ec
+```
+
+Both reported 28.2 MiB unpacked and 7.7 MiB compressed. Identical sizes with different bytes looked like a compression difference, since zlib's deflate output is not guaranteed identical across versions and nothing in a zip records which implementation wrote it. That hypothesis was wrong, and the way it was wrong is the useful part.
+
+**A single digest cannot tell you where to look.** "The artifact differs" has two very different causes: the files installed differ, or the same files were archived differently. So the build gained a second digest covering file names and contents only, independent of how the archive is written. The next run answered the question immediately: the content digests differed too, so the installed files themselves were not the same and the archiver was never implicated.
+
+**A digest still cannot tell you which file.** 468 files, one rolled-up hash. So the build started writing `build/layer-manifest.txt`, one sha256 per path, and CI uploaded it as an artifact. Diffing the two manifests named exactly one file:
+
+```
+python/jmespath-1.1.0.dist-info/RECORD
+```
+
+**Why that file.** A wheel's `RECORD` lists every installed file with its hash. jmespath is the only dependency shipping a console script, and pip does not take that script from the wheel, it generates it, with a shebang naming the interpreter that ran the install:
+
+```
+#!/home/youssef/code/NightShift/.venv/bin/python
+```
+
+On a runner that path is somewhere under `/opt/hostedtoolcache`. Different bytes, different hash, and `RECORD` recorded it:
+
+```
+../../bin/jp.py,sha256=dzCAT-douyw2dUiBnbigpZGTUwnfJMxrS5y8CqcMBMQ,1725
+```
+
+The script itself was already being pruned, because nothing in a Lambda runs a console script. Its fingerprint stayed behind in a metadata file.
+
+**The fix is not a workaround.** `RECORD` is supposed to describe what is installed. An entry for a file that is not in the artifact is simply wrong, reproducibility aside, so the build drops `RECORD` lines whose path escapes the layer, and rewrites the surviving lines byte for byte rather than through a CSV writer that might requote them. After that, runner and laptop agreed:
+
+```
+content sha256: da9e383f2cf367edb14e3d4a843a3e8106af0e471df362cef95f1c62ae7e154d
+zip sha256:     53aec68892722b82a9f8870bcd633bb2bef222df64a9ce99ae74cccc80f96f48
+```
+
+**Then the wrong fix got reverted.** Switching the archive to uncompressed had been a response to the zlib theory, and it cost 20 MiB against a 50 MiB upload limit that M2b's OpenTelemetry packages will eat into. With the real cause fixed, compression was worth re-testing rather than leaving a precaution in place for a problem that did not exist. It reproduced byte for byte on both machines, so the layer is back to 7.7 MiB.
+
+**What to take from this.** Two habits did the work. Measure a difference at the level where you can act on it, which meant adding a digest that separates packaging from archiving and then a manifest that names files. And be suspicious of a fix that works without explaining the evidence: uncompressed archives would have made the symptom go away while leaving a machine-dependent file inside the artifact, ready to cause something stranger later.
 
 ### Testing the lock the way the hooks were tested
 

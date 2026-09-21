@@ -22,11 +22,19 @@ timestamp and mode 0644, and entries are written in sorted order.
 Mode 0644 is right for the bundled .so files too. dlopen needs the file
 readable, not executable, which is why system shared libraries are 0644.
 
-One variable is left: zlib's deflate output for a given compression level is
-stable in practice but is not guaranteed across versions. If a CI build ever
-disagrees with a local build despite identical wheels, that is the cause, and
-the fix is ZIP_STORED. The layer is about 28 MiB unpacked, so an uncompressed
-zip still fits well inside the 50 MiB limit.
+Two digests are reported. The content digest covers file names and contents
+only, so it is independent of how the archive is written, and answers "did we
+install the same thing?". The zip digest is what Terraform hashes, and answers
+"will this deploy?". When two machines disagree, the first digest says whether
+to look at packaging or at archiving. That distinction earned its place: a
+runner and this laptop once produced zips with different hashes and identical
+sizes, which looked exactly like a zlib difference and was not. The content
+digest showed the installed files differed, and build/layer-manifest.txt
+named the single file responsible.
+
+Compression is on. Once the real cause was fixed, deflate reproduced byte for
+byte across machines, and the 20 MiB it saves is headroom against the 50 MiB
+upload limit that later dependencies will need.
 """
 
 from __future__ import annotations
@@ -45,6 +53,7 @@ LOCK_FILE = REPO_ROOT / "requirements" / "lambda-deps.lock"
 BUILD_DIR = REPO_ROOT / "build"
 LAYER_ROOT = BUILD_DIR / "layer"
 LAYER_ZIP = BUILD_DIR / "nightshift-deps-layer.zip"
+MANIFEST = BUILD_DIR / "layer-manifest.txt"
 
 # Must match the runtime and architecture in terraform/modules/lambda_service.
 PYTHON_VERSION = "3.14"
@@ -162,21 +171,76 @@ def prune(root: Path) -> int:
     if console_scripts.is_dir():
         shutil.rmtree(console_scripts)
         removed += 1
+    removed += drop_escaping_record_entries(root)
     return removed
+
+
+def drop_escaping_record_entries(root: Path) -> int:
+    """Remove RECORD lines that point outside the layer.
+
+    A wheel's RECORD lists every installed file with its hash. pip generates
+    console scripts itself and writes them with a shebang naming the
+    interpreter that did the install, so the same wheel yields a different
+    script on every machine. Those scripts land outside the import tree and
+    are pruned above, but RECORD still carries their hash, and that alone was
+    enough to make a runner's layer differ from a laptop's byte for byte.
+
+    Dropping entries that escape the layer is not a workaround. RECORD is
+    meant to describe what is installed, and a file that is not in the
+    artifact does not belong in it.
+    """
+    dropped = 0
+    for record in root.rglob("*.dist-info/RECORD"):
+        lines = record.read_text().splitlines()
+        kept = [line for line in lines if not line.split(",", 1)[0].startswith("../")]
+        if len(kept) != len(lines):
+            # Rewrite line by line rather than through a csv writer, so every
+            # surviving line keeps its exact original bytes.
+            record.write_text("\n".join(kept) + "\n")
+            dropped += len(lines) - len(kept)
+    return dropped
+
+
+def sorted_files(root: Path) -> list[str]:
+    return sorted(
+        p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()
+    )
+
+
+def write_manifest(source_root: Path, out_path: Path) -> None:
+    """One line per file: sha256 and path, sorted.
+
+    Diffing two of these says exactly which files differ between machines,
+    which a single rolled-up digest cannot.
+    """
+    lines = [
+        f"{hashlib.sha256((source_root / rel).read_bytes()).hexdigest()}  {rel}"
+        for rel in sorted_files(source_root)
+    ]
+    out_path.write_text("\n".join(lines) + "\n")
+
+
+def content_digest(source_root: Path) -> str:
+    """Hash names and contents only, ignoring how they get archived.
+
+    If this matches between two machines but the zip digest does not, the
+    installed files are identical and the archiver is the problem.
+    """
+    digest = hashlib.sha256()
+    for relative in sorted_files(source_root):
+        digest.update(relative.encode())
+        digest.update(b"\0")
+        digest.update(hashlib.sha256((source_root / relative).read_bytes()).digest())
+    return digest.hexdigest()
 
 
 def write_deterministic_zip(source_root: Path, out_path: Path) -> str:
     """Zip source_root so the bytes depend only on the file contents."""
-    files = sorted(
-        p.relative_to(source_root).as_posix()
-        for p in source_root.rglob("*")
-        if p.is_file()
-    )
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(
         out_path, "w", zipfile.ZIP_DEFLATED, compresslevel=9
     ) as archive:
-        for relative in files:
+        for relative in sorted_files(source_root):
             info = zipfile.ZipInfo(relative, date_time=FIXED_TIMESTAMP)
             info.external_attr = FIXED_FILE_MODE << 16
             info.create_system = 3  # Unix, so the mode above is honoured
@@ -216,18 +280,24 @@ def cmd_build() -> None:
     )
 
     pruned = prune(target)
+    contents = content_digest(LAYER_ROOT)
+    write_manifest(LAYER_ROOT, MANIFEST)
     digest = write_deterministic_zip(LAYER_ROOT, LAYER_ZIP)
 
     unpacked = sum(p.stat().st_size for p in target.rglob("*") if p.is_file())
     print(f"\nPruned {pruned} build artefacts")
+    print(f"Files:          {len(sorted_files(LAYER_ROOT))}")
     print(
         f"Layer unpacked: {unpacked / 1024 / 1024:.1f} MiB (250 MiB limit, layers plus function)"
     )
     print(
         f"Layer zipped:   {LAYER_ZIP.stat().st_size / 1024 / 1024:.1f} MiB (50 MiB limit)"
     )
-    print(f"sha256:         {digest}")
-    print(f"\nWrote {LAYER_ZIP.relative_to(REPO_ROOT)}")
+    print(f"content sha256: {contents}")
+    print(f"zip sha256:     {digest}")
+    print(
+        f"\nWrote {LAYER_ZIP.relative_to(REPO_ROOT)} and {MANIFEST.relative_to(REPO_ROOT)}"
+    )
 
 
 def main() -> None:
