@@ -73,26 +73,12 @@ data "aws_iam_policy_document" "orders" {
     resources = [aws_sqs_queue.placed_orders.arn]
   }
 
-  # Calling cart-service's function URL. Same-account callers can be
-  # authorised by an identity policy alone, so cart-service needs no
-  # resource policy. Both ARN forms are listed because the call goes to the
-  # alias, and the unqualified form is what some SDK paths present.
-  #
-  # There is deliberately no lambda:FunctionUrlAuthType condition here.
-  # Adding one is the usual advice, and on an identity policy it silently
-  # broke every call with 403: `aws iam simulate-principal-policy` returned
-  # "allowed" when the key was supplied and "implicitDeny" when it was not,
-  # which is what the real request looks like. A condition on a key that is
-  # not in the request context is not a tighter Allow, it is a deny.
-  #
-  # The condition belongs on a resource policy, where it stops someone
-  # flipping a function URL to NONE auth. Here the resource ARNs already
-  # confine this to cart-service, and the auth type is set by Terraform on
-  # the URL itself, not chosen by the caller.
+  # Invoking cart-service through the Lambda API rather than its function
+  # URL. Both ARN forms are listed because the call targets the alias.
   statement {
     sid       = "CallCartService"
     effect    = "Allow"
-    actions   = ["lambda:InvokeFunctionUrl"]
+    actions   = ["lambda:InvokeFunction"]
     resources = [local.cart_function_arn, "${local.cart_function_arn}:*"]
   }
 }
@@ -116,11 +102,9 @@ module "orders" {
   environment = {
     DSQL_ENDPOINT           = local.dsql_endpoint
     DSQL_ROLE               = "orders_service"
-    CART_SERVICE_URL        = module.cart.function_url
+    CART_FUNCTION_NAME      = module.cart.function_name
     PLACED_ORDERS_QUEUE_URL = aws_sqs_queue.placed_orders.url
     CART_TIMEOUT_SECONDS    = "2.0"
-    SIGNED_HTTP_DEBUG       = "1"
-    HELLO_URL               = module.hello.function_url
     POWERTOOLS_SERVICE_NAME = "orders"
     POWERTOOLS_LOG_LEVEL    = "INFO"
   }
@@ -128,27 +112,4 @@ module "orders" {
   extra_policy_json   = data.aws_iam_policy_document.orders.json
   log_retention_days  = var.log_retention_days
   create_function_url = true
-}
-
-# cart-service's resource policy, naming orders-service as an allowed caller.
-#
-# An identity policy on the caller is not sufficient for a Lambda function
-# URL, despite the IAM simulator reporting "allowed" and despite granting the
-# role lambda:* on *. Without this, every call is rejected before cart's
-# handler runs, with "Forbidden. For troubleshooting Function URL
-# authorization issues".
-#
-# Be careful testing this by removing it: Lambda caches the authorization
-# decision, so calls keep succeeding for a while afterwards. A removal that
-# looks harmless for the first minute is not evidence.
-#
-# The auth type condition belongs here, on the resource, where it stops the
-# grant applying if the URL is ever switched to NONE.
-resource "aws_lambda_permission" "orders_invokes_cart" {
-  statement_id           = "AllowOrdersServiceToInvokeCartUrl"
-  action                 = "lambda:InvokeFunctionUrl"
-  function_name          = module.cart.function_name
-  qualifier              = "live"
-  principal              = module.orders.execution_role_arn
-  function_url_auth_type = "AWS_IAM"
 }
