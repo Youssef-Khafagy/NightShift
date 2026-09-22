@@ -1094,9 +1094,11 @@ This lists every Always Free allowance the account is tracking, with actual usag
 
 Since May 2025, AWS has priced Lambda logs as "vended logs", with their own usage type (`VendedLog-Bytes`) and tiered prices. No page said whether the 5 GB free tier covers that usage type. If it did not, a benchmark month would cost about $0.21, over this project's $0.10 line.
 
-The account's own bill answered it. Console: **Billing and Cost Management → Bills → September 2026 → Charges by service → CloudWatch → Canada (Central)**. It showed three line items, all $0.00: API requests, `CAN1-TimedStorage-ByteHrs` (log storage) and `PutLogEvents` ("First 5GB per month of log data ingested is free"). There was no vended logs line. Lambda is the only thing in the account that writes logs, and a line item appears even when usage rounds to 0 GB, so Lambda's logs are being counted as free tier ingestion.
+The account's own bill was the best evidence available. Console: **Billing and Cost Management → Bills → September 2026 → Charges by service → CloudWatch → Canada (Central)**. It showed three line items, all $0.00: API requests, `CAN1-TimedStorage-ByteHrs` (log storage) and `PutLogEvents` ("First 5GB per month of log data ingested is free"). There was no vended logs line, and Lambda is the only thing in the account that writes logs.
 
-The general lesson: when the documentation is silent, the bill is primary evidence. It is also free to read in the console.
+That is evidence, not proof, for two reasons the owner raised in review. Both quantities read 0 GB, so at this volume the bill is consistent with rounding and cannot show how vended logs are categorized; a small vended line might simply not appear. And the account is on the Free plan, where nothing can be charged, so the bill may present usage differently after the upgrade to Paid. COST.md records it as unsettled, keeps the $0.21 worst case in view, and schedules a re-check once a month has tens of MB of Lambda logs and again on the first Paid-plan bill.
+
+The general lesson: when the documentation is silent, the bill is useful evidence and free to read in the console. But a reading of 0 can hide a lot, and a conclusion drawn at tiny volume has to be re-checked at real volume.
 
 ### Interview questions
 
@@ -1106,7 +1108,7 @@ The general lesson: when the documentation is silent, the bill is primary eviden
    EMF writes metrics as part of a log line the function already produces, asynchronously, with no extra API call in the request path and no `PutMetricData` permission. The cost is that each metric also uses Logs bytes, which I budgeted: about 440 bytes per order on top of 1.8 KB.
 3. **Where does your observability budget actually go?**
    Into log queries, not log ingestion. Measured ingestion for a full benchmark is about 0.22 GB of 5. Logs Insights bills every byte in the queried time range, and 126 investigations at 25 MB each is 3.15 GB. So the agent carries a per-investigation scan cap, enforced from the `bytesScanned` statistic each query returns.
-4. **The docs didn't say whether Lambda logs are covered by the free tier. How did you decide?**
-   I read the account's September bill in the console. It had a free tier `PutLogEvents` line and no vended logs line, and Lambda is the only log producer in the account. The Free Tier API agreed. I recorded the worst case ($0.21 in a benchmark month) and the fact that the $0.01 tripwire budget fires after about 20 MB of paid ingestion, so if AWS changes this, I find out in days, not at month end.
+4. **The docs didn't say whether Lambda logs are covered by the free tier. How did you handle that?**
+   I read the account's September bill. It had a free tier `PutLogEvents` line and no vended logs line, and Lambda is the only log producer in the account. But every quantity was 0 GB, and the account was on the Free plan, so I recorded that as evidence rather than a conclusion. The worst case is $0.21 in a benchmark month. The $0.01 tripwire budget fires after about 20 MB of paid ingestion, and the question is re-checked once there is real volume on the bill and again after the upgrade to Paid.
 5. **Why not use the Infrequent Access log class to save money?**
    It is cheaper per GB ingested, but it does not extract EMF metrics, does not support metric filters, and does not support `GetLogEvents`. Our metrics would silently vanish. We are inside the free tier anyway, so the saving would be zero.
