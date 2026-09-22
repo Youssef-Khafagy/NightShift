@@ -38,9 +38,9 @@ Usage model for "Projected": one busy month = development plus one full benchmar
 | SQS | 1M requests per month (each 64 KB chunk is one request, a batch of up to 10 messages is one request) | ~110K with the consumer disabled between runs; ~760K if the trigger is left on 24/7 | ~89% | Idle Lambda trigger polls with 5 long-poll connections. Estimate 5 x 3 per min x 43,200 min = ~648K requests/month per idle queue, for zero work. **Decided 2026-09-20:** the event source mapping ships `enabled = false` and is turned on only for a run. Only one triggered queue; DLQ has no trigger; standard (not provisioned) poller mode. Measure with NumberOfEmptyReceives in M2a. |
 | SNS | 1M requests, 1,000 email deliveries per month | ~220 emails | ~78% | Alarm actions only on ALARM transitions we care about. |
 | EventBridge | AWS service events (including alarm state changes) on the default bus are free; Scheduler 14M invocations/month | Hundreds | Large | No custom event buses or API destinations. |
-| CloudWatch metrics | 10 metrics (custom and detailed monitoring combined); 1M API requests. GetMetricData, GetInsightRuleReport and GetMetricWidgetImage are ALWAYS charged (re-verified 2026-09-22) | 5 custom metrics planned; <100K API requests | 50% metrics, >90% API | Agent and dashboard use GetMetricStatistics, never GetMetricData. Every metric is budgeted in the custom metric ledger below before it is emitted. |
+| CloudWatch metrics | 10 metrics (custom and detailed monitoring combined); 1M API requests. GetMetricData, GetInsightRuleReport and GetMetricWidgetImage are ALWAYS charged (re-verified 2026-09-22) | 5 custom metrics budgeted, 3 live since 2026-09-22 (`list-metrics` count); <100K API requests | 50% metrics, >90% API | Agent and dashboard use GetMetricStatistics, never GetMetricData. Every metric is budgeted in the custom metric ledger below before it is emitted. |
 | CloudWatch alarms | 10 alarm metrics (standard resolution, metrics listed directly) | <= 10 | 0 to 2 | A metric math alarm counts every metric it lists. No composite alarms ($0.50 each), no anomaly detection alarms (count as 3). No CloudWatch billing alarm; Budgets does that job. |
-| CloudWatch Logs | 5 GB/month combined: ingestion + archive storage + Logs Insights data scanned (re-verified 2026-09-22) | ~3.6 GB, rebuilt from measurements on 2026-09-22 (see "CloudWatch Logs budget" below) | ~28% | Retention 3 days. Log groups stay in the Standard class, because Infrequent Access cannot extract EMF metrics. Insights cost follows bytes scanned in the time range, NOT the result limit, so every query is one log group and a short window. Scan budget of 25 MB per investigation. Lambda logs appear to count against this allowance (September 2026 bill, 2026-09-22), but at 0 GB quantities that is evidence, not proof. Re-check at higher volume and after the upgrade. |
+| CloudWatch Logs | 5 GB/month combined: ingestion + archive storage + Logs Insights data scanned (re-verified 2026-09-22) | ~3.6 GB, rebuilt from measurements on 2026-09-22, EMF line size measured (see "CloudWatch Logs budget" below) | ~28% | Retention 3 days. Log groups stay in the Standard class, because Infrequent Access cannot extract EMF metrics. Insights cost follows bytes scanned in the time range, NOT the result limit, so every query is one log group and a short window. Scan budget of 25 MB per investigation. Lambda logs appear to count against this allowance (September 2026 bill, 2026-09-22), but at 0 GB quantities that is evidence, not proof. Re-check at higher volume and after the upgrade. |
 | X-Ray | 100,000 traces recorded and 1M traces retrieved or scanned per month, perpetual (re-verified 2026-09-22; the Free Tier API lists it as always free and shows 526 traces recorded this month) | ~65K recorded | ~35% | **Correction (2026-09-20):** Lambda's sampling rate is fixed at 1 request/second plus 5% of the remainder and **cannot be configured**, so the earlier "explicit sampling rate" guardrail was wrong. The lever is how many requests we send, not what fraction is sampled. X-Ray SDK is in maintenance since 2026-02-25, end of support 2027-02-25; M2b uses OpenTelemetry with the X-Ray UDP span exporter. Never enable Transaction Search or Application Signals (paid span ingestion). |
 | CloudTrail | 90-day management event history, viewing and LookupEvents at no charge | Hundreds of lookups | Large | Never create a trail, data events, Lake, or Insights. |
 | SSM Parameter Store | Standard parameters and standard throughput: no additional charge. Standard tier: 10,000 parameters per account and region, 4 KB maximum value (re-verified 2026-09-22) | 3 parameters (2 flags live since 2026-09-22, 1 topology planned); a few thousand reads, since each execution environment reads its one flag at most once per 30 s | Free | Standard tier only; advanced is $0.05 per parameter-month and cannot be downgraded, only deleted and recreated. Higher throughput stays off: it bills $0.05 per 10,000 interactions for standard parameters too. The topology parameter has a hard 4 KB guard in Terraform. |
@@ -295,11 +295,11 @@ Every metric gets a row here before any code emits it.
 
 | Namespace | Metric | Dimensions | Emitted by | Milestone | Metrics | Status |
 |---|---|---|---|---|---|---|
-| `NightShift` | `CheckoutsPlaced` | `service=orders` | orders-service | M2b | 1 | Planned |
-| `NightShift` | `CheckoutsRejected` | `service=orders` | orders-service | M2b | 1 | Planned |
-| `NightShift` | `SerializationRetries` | `service=orders` | orders-service | M2b | 1 | Planned |
-| `NightShift` | `OrdersPaid` | `service=fulfillment` | fulfillment-worker | M2b | 1 | Planned |
-| `NightShift` | `PaymentFailures` | `service=fulfillment` | fulfillment-worker | M2b | 1 | Planned |
+| `NightShift` | `CheckoutsPlaced` | `service=orders` | orders-service | M2b | 1 | **Live** (first emitted 2026-09-22) |
+| `NightShift` | `CheckoutsRejected` | `service=orders` | orders-service | M2b | 1 | **Live** (first emitted 2026-09-22) |
+| `NightShift` | `SerializationRetries` | `service=orders` | orders-service | M2b | 1 | Built; appears on the first real conflict |
+| `NightShift` | `OrdersPaid` | `service=fulfillment` | fulfillment-worker | M2b | 1 | **Live** (first emitted 2026-09-22) |
+| `NightShift` | `PaymentFailures` | `service=fulfillment` | fulfillment-worker | M2b | 1 | Built; appears on the first failed payment |
 | **Allocated** | | | | | **5** | |
 | **Free allowance** | | | | | **10** | |
 | **Unallocated** | | | | | **5** | |
@@ -324,16 +324,16 @@ The earlier ~3.5 GB projection had no written derivation, so it was rebuilt from
 | cart | 313 | 94,065 | 301 |
 | hello | 12 | 8,016 | 668 |
 
-One order's full lifecycle (one cart call, checkout, fulfilment, payment) logs about **1,779 bytes** today. M2b adds an EMF line per checkout and per fulfilment batch; at an estimated 400 bytes each that is about **2,219 bytes per order**. The 400 is an estimate until step 3 measures a real one.
+One order's full lifecycle (one cart call, checkout, fulfilment, payment) logged about **1,779 bytes** before M2b. M2b step 3 adds one EMF line per checkout and one per fulfilment batch. **Measured 2026-09-22:** a raw EMF line is 204 to 214 bytes (orders 210 to 214, fulfillment 204), about half the 400 bytes first estimated. With a batch of ten orders sharing one fulfilment line, that is about **2,013 bytes per order**.
 
 | Component | Basis | Busy month |
 |---|---|---|
-| Traffic ingestion | 100,800 orders x 2,219 bytes | 0.22 GB |
+| Traffic ingestion | 100,800 orders x 2,013 bytes (measured) | 0.20 GB |
 | Agent and baseline Lambda logs (M5 to M7) | Allowance; not yet built | 0.10 GB |
 | Development and smoke tests | Allowance; this month so far is 0.0004 GB | 0.10 GB |
 | Archive storage | 3-day retention holds about a tenth of a month's ingestion, compressed | 0.05 GB |
 | Logs Insights scans | 126 investigations (42 incidents x 3 configurations that query logs: scripted runbook and the full agent on two models; the alarm-text baseline never queries) x 25 MB cap | 3.15 GB |
-| **Total** | | **3.62 GB of 5, ~28% headroom** |
+| **Total** | | **3.60 GB of 5, ~28% headroom** |
 
 Scans, not ingestion, are the budget. At 2 requests/s the orders log group grows about 2.2 KB/s, so a 15-minute window on it scans about 2 MB. The 25 MB cap is therefore about 12 such queries per investigation. M5 enforces it from the `bytesScanned` statistic each query returns, and stops querying when the cap is reached.
 
