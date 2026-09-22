@@ -36,6 +36,10 @@ locals {
   project_clusters = "arn:aws:dsql:${local.region}:${local.account_id}:cluster/*"
   project_roles    = "arn:aws:iam::${local.account_id}:role/${var.project}-*"
   project_logs     = "arn:aws:logs:${local.region}:${local.account_id}:log-group:/aws/lambda/${var.project}-*"
+
+  # Parameter ARNs drop the name's leading slash: /nightshift/flags/x is
+  # arn:aws:ssm:region:account:parameter/nightshift/flags/x.
+  project_parameters = "arn:aws:ssm:${local.region}:${local.account_id}:parameter/${var.project}/*"
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
@@ -307,6 +311,32 @@ data "aws_iam_policy_document" "ci_apply" {
       "sqs:UntagQueue",
     ]
     resources = [local.project_queues]
+  }
+
+  # SSM parameters: the feature flags, and from step 5 the topology. Only
+  # under /nightshift/, so this role cannot touch any other parameter.
+  statement {
+    sid    = "ProjectSsmParameters"
+    effect = "Allow"
+    actions = [
+      "ssm:PutParameter",
+      "ssm:GetParameter",
+      "ssm:GetParameters",
+      "ssm:DeleteParameter",
+      "ssm:AddTagsToResource",
+      "ssm:RemoveTagsFromResource",
+      "ssm:ListTagsForResource",
+    ]
+    resources = [local.project_parameters]
+  }
+
+  # DescribeParameters is a list call with no resource to scope to. The
+  # provider uses it to read back a parameter's tier and allowed pattern.
+  statement {
+    sid       = "DescribeSsmParameters"
+    effect    = "Allow"
+    actions   = ["ssm:DescribeParameters"]
+    resources = ["*"]
   }
 
   # The post-deploy smoke test buys something through the real services, so

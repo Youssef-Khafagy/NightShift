@@ -35,6 +35,8 @@ from common.context import (
     correlation_id_from_headers,
     get_logger,
 )
+from common.flags import flags
+from common.ratelimit import TokenBucket
 
 SERVICE = "orders"
 logger = get_logger(SERVICE)
@@ -43,6 +45,9 @@ CART_FUNCTION_NAME = os.environ["CART_FUNCTION_NAME"]
 PLACED_ORDERS_QUEUE_URL = os.environ["PLACED_ORDERS_QUEUE_URL"]
 DB_ROLE = os.environ.get("DSQL_ROLE", "orders_service")
 CART_TIMEOUT_SECONDS = float(os.environ.get("CART_TIMEOUT_SECONDS", "2.0"))
+# The full SSM parameter name. This function's IAM policy allows reading this
+# one parameter and no other.
+RATE_LIMIT_PARAMETER = os.environ["CHECKOUT_RATE_LIMIT_PARAMETER"]
 
 IDEMPOTENCY_HEADER = "idempotency-key"
 UNIQUE_VIOLATION = "23505"
@@ -51,13 +56,23 @@ UNIQUE_VIOLATION = "23505"
 # would otherwise buy.
 _sqs = boto3.client("sqs")
 
+# One bucket per execution environment. See common/ratelimit.py for why the
+# limit is per environment rather than global.
+_bucket = TokenBucket()
 
-def _response(status: int, body: dict[str, Any], correlation_id: str) -> dict[str, Any]:
+
+def _response(
+    status: int,
+    body: dict[str, Any],
+    correlation_id: str,
+    extra_headers: dict[str, str] | None = None,
+) -> dict[str, Any]:
     return {
         "statusCode": status,
         "headers": {
             "content-type": "application/json",
             CORRELATION_HEADER: correlation_id,
+            **(extra_headers or {}),
         },
         "body": json.dumps(body),
     }
@@ -275,6 +290,21 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     correlation_id = correlation_id_from_headers(headers, request_id)
     logger.append_keys(correlation_id=correlation_id)
+
+    # First, before the cart call or the database, so a shed request costs
+    # almost nothing. Shedding load is only useful if it is cheap.
+    limit = flags.get_int(RATE_LIMIT_PARAMETER, 0)
+    if not _bucket.allow(limit):
+        logger.warning(
+            "checkout rejected",
+            extra={"reason": "rate_limited", "limit_per_environment": limit},
+        )
+        return _response(
+            429,
+            {"error": "too many checkouts, retry shortly"},
+            correlation_id,
+            {"retry-after": "1"},
+        )
 
     idempotency_key = _header(headers, IDEMPOTENCY_HEADER)
     if not idempotency_key:
