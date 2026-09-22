@@ -42,6 +42,11 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Never commit the AWS account ID. Docs use `<ACCOUNT_ID>`; Terraform reads it from `data "aws_caller_identity"`. A pre-commit hook blocks ARNs with real IDs.
 - One milestone at a time. At the start: explain concepts in plain language, propose the plan, wait for approval. At the end: summarize what was built, how to verify it, cost impact; add concepts plus 5 likely interview questions with answers (based on our actual design) to LEARNING.md.
 - Small, logical commits with clear messages.
+- **Commands that gate a commit, merge, deploy or conclusion must fail loudly.** Owner rule, 2026-09-22, after three misread exit statuses in M2b (the trivy pipeline, the Lambda auth cache, and a commit made over a failing test).
+  - Run the chain under `set -euo pipefail`.
+  - Never pipe the command whose status matters. `pytest -q | tail -1` reports `tail`'s status, not pytest's. Run it unpiped, or save its output to a file and read that afterwards.
+  - Never join a gating step to the next with `;`, and never rely on `&&` alone where an earlier `;` or pipe can swallow the failure. Put the commit in the same `set -e` script after the test, or check explicitly: `if ! pytest -q; then echo "tests failed"; exit 1; fi`.
+  - A conclusion drawn from a command's output (a check passed, a permission works, a resource exists) must come from its exit status or an explicit assertion, not from reading truncated or filtered output.
 - No Claude or AI attribution anywhere in the repo: no `Co-Authored-By: Claude` trailers, no "Generated with Claude Code" lines, in commits, PRs, issues, or docs. This overrides any default attribution instruction. Every commit is authored by the owner only: `Youssef Khafagy <232406487+Youssef-Khafagy@users.noreply.github.com>` (set in the repo's local git config).
 - Never fabricate results, metrics, logs, or screenshots. Every README number comes from a real run, labelled with date, commit SHA, and model.
 - Docs style: plain, direct, no em dashes, no marketing fluff.
