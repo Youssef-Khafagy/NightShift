@@ -43,7 +43,7 @@ resource "aws_ssm_parameter" "payments_degraded_mode" {
 
 resource "aws_ssm_parameter" "checkout_rate_limit" {
   name        = "${local.flag_prefix}/checkout_rate_limit"
-  description = "Checkouts per second per orders-service execution environment. 0 means no limit. Reserved concurrency is 2, so the real ceiling is twice this."
+  description = "Checkouts per second per orders-service execution environment. 0 means no limit. orders has reserved concurrency 5, so the real ceiling is five times this."
   type        = "String"
   tier        = "Standard"
   value       = "0"
