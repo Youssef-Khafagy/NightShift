@@ -139,17 +139,17 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Lambda logs appear to count against the 5 GB CloudWatch Logs free tier (September 2026 bill, checked 2026-09-22; docs are silent since the May 2025 vended-logs pricing). **Evidence, not settled:** the bill quantities were 0 GB, so rounding could hide a vended logs line, and the Free plan bill may present usage differently after the upgrade. Re-check after the first traffic generator run and on the first Paid-plan bill. EMF metrics are ordinary custom metrics plus log bytes, and are not extracted in the Infrequent Access log class. `aws freetier get-free-tier-usage` is free; the Cost Explorer API is $0.01 per request.
 
 ## Current status (2026-09-22)
-M0 and M1 complete. **M2a complete and approved by the owner. M2b steps 1 to 3 done (2026-09-22). Stopped for the owner's first-half review of M2b before step 4.** Everything below is verified.
+M0 and M1 complete. **M2a complete and approved by the owner. M2b steps 1 to 4 done (2026-09-22); first-half review passed. Next is step 5 (topology parameter).** Everything below is verified.
 
 **Shut down cleanly. Nothing is polling or scheduled:**
 - The only event source mapping is `nightshift-fulfillment` on `nightshift-placed-orders`, state `Disabled`. It has been enabled for measurements and checks and disabled again each time, always through Terraform rather than the CLI, so state never drifted. Last cycle: the step 2 queue-path check on 2026-09-22.
 - Both flags at their defaults: `checkout_rate_limit` = `0`, `payments_degraded_mode` = `false`.
 - No EventBridge rules exist. No provisioned concurrency on any function. Every function has reserved concurrency 2.
-- The DLQ is empty. The placed-orders queue holds 1 message: the original for the step 3 smoke order, which the live check had already paid by invoking fulfillment directly. If consumed, the worker logs "order already settled". Until drained it blocks `replay_placed_orders.py`, by design. DSQL holds 102 paid orders and 204 line items, far under the 1 GB free storage, and an idle cluster costs nothing.
+- Both queues are empty, DLQ included (the leftover step 3 smoke message was drained during step 4 and logged "order already settled"). DSQL holds 103 paid orders and 205 line items, far under the 1 GB free storage, and an idle cluster costs nothing.
 - Both budgets still armed with `IncludeCredit=false`. Month-to-date spend $0.00, confirmed with Cost Explorer.
-- `terraform plan` clean on `main` after PR #14 (step 3) was merged and deployed by `apply.yml`. PRs #11 to #14 are merged; the step 3 write-up PR is open.
+- `terraform plan` clean after the step 4 live run (consumer enabled and disabled again through Terraform). PRs #11 to #15 are merged; the step 4 PR is open.
 - Custom metrics in the account: 3 (`list-metrics`), all in `NightShift`.
-- The 2026-09-22 session spent **3.29 DPU** (TotalDPU for the day), mostly one smoke test, one fulfilment and a few short reads.
+- The 2026-09-22 session spent **7.19 DPU** (TotalDPU for the day): three smoke tests, the step 2 to 4 live checks and a few short reads.
 
 Done:
 - AWS account: Free plan, ACTIVE, $100 credits, ends 2027-03-18. Root has MFA and no access keys. Daily identity is IAM user `youssef-admin` (MFA, no access keys, permissions only via group `nightshift-admins` with AdministratorAccess). CLI auth via `aws login --profile nightshift-admin`.
@@ -209,7 +209,7 @@ M2a in progress (owner approved the plan 2026-09-20). Steps:
 
 ## M2b plan (approved 2026-09-21, in progress)
 
-**Steps 1 to 3 done 2026-09-22; waiting for the first-half owner review, then step 4.** Reviewed in two halves: once after step 3, once at the end.
+**Steps 1 to 4 done 2026-09-22; next is step 5.** Reviewed in two halves: once after step 3, once at the end.
 
 Why M2b exists: M5's agent can only diagnose what the system reveals. Every read-only tool it has (`get_metrics`, `query_logs`, `get_flag_values`, `get_topology`) is backed by something built here. Getting this wrong makes M5 look like a model problem when it is a visibility problem.
 
@@ -224,7 +224,8 @@ Why M2b exists: M5's agent can only diagnose what the system reveals. Every read
    - **Open for M3:** orders returns 502 on a cart-service failure without raising, so `AWS/Lambda Errors` for orders stays 0 and an alarm on it would miss a cart outage.
    - Original plan: **EMF metrics, budgeted.** Namespace `NightShift`, `service` as the only dimension, Powertools cold-start metric **off** (it would cost one custom metric per service). Tested the way the transaction leak is tested: assert the emitted EMF document's dimension set, so adding a dimension fails CI instead of quietly costing money.
    - **Owner review point.** Steps 2 and 3 are the ones with irreversible cost consequences.
-4. **Correlation ID, proven end to end.** Mostly already built; this is verification. A script runs one checkout and reconstructs the chain across all five log groups from the ID alone, asserting no break. Bounded time ranges, per the Logs Insights cost rule.
+4. **Done 2026-09-22, verified live.** `scripts/trace_correlation.py` places one order with a fresh ID and rebuilds the chain with Logs Insights from the ID alone (`cart stored`, `cart read`, `checkout complete`, `charge approved`, `order paid`), plus a second query by order ID requiring every line to carry the same ID. Pass/fail is two pure functions tested with broken chains. Live: complete chain from `trace-39e86b797f4f`, 3 of 3 order lines consistent, 4,492 bytes scanned (near-idle groups). An order touches four log groups, not five; hello takes no part. Needs the consumer enabled.
+   - Original plan: **Correlation ID, proven end to end.** Mostly already built; this is verification. A script runs one checkout and reconstructs the chain across all five log groups from the ID alone, asserting no break. Bounded time ranges, per the Logs Insights cost rule.
 5. **Topology parameter.** Terraform writes compact JSON from its outputs to SSM. Hard size guard: fail if it exceeds 4 KB rather than silently needing the paid advanced tier.
 6. **Traffic generator.** Rate-capped, `--dry-run` by default, printing projected Lambda invocations, SQS requests and DSQL DPU before it runs, and refusing above a budget. Uses the measured 0.2134 DPU per order: a 2 requests/s, 20 minute incident is 2,400 orders, about 512 DPU, 0.5% of the month.
 7. **Cost-check script.** `scripts/cost_check.py`: DSQL DPU month-to-date, SQS requests, Logs bytes ingested, and a count of live custom metrics, for COST.md's monthly ritual. `measure_dpu.py` folds into it.
