@@ -13,9 +13,10 @@ put it on the way out, in the response header and in every message published.
 from __future__ import annotations
 
 import uuid
+import warnings
 from typing import Any
 
-from aws_lambda_powertools import Logger
+from aws_lambda_powertools import Logger, Metrics
 
 CORRELATION_HEADER = "x-correlation-id"
 
@@ -24,6 +25,14 @@ CORRELATION_HEADER = "x-correlation-id"
 # otherwise the trail stops at the queue and picks up again as something
 # apparently unrelated.
 CORRELATION_ATTRIBUTE = "correlationId"
+
+# Every custom metric in the project lives in this namespace.
+METRICS_NAMESPACE = "NightShift"
+
+# Powertools warns on every invocation that ends without a metric. For these
+# services that is normal (a replayed checkout, a deferred payment), so the
+# warning would only add log bytes.
+warnings.filterwarnings("ignore", message="No application metrics to publish")
 
 
 def new_id() -> str:
@@ -37,6 +46,22 @@ def get_logger(service: str) -> Logger:
     is unsupported from 2027-02-25, so tracing is handled separately.
     """
     return Logger(service=service)
+
+
+def get_metrics(service: str) -> Metrics:
+    """Powertools Metrics, which writes metrics as EMF log lines.
+
+    Each metric costs one of the ten free custom metrics per unique set of
+    dimensions, so the rules here are strict and enforced by
+    tests/test_metrics.py against the ledger in COST.md:
+
+    - `service` is the only dimension. Never add another; a reason, status or
+      ID belongs in a log field, not a dimension.
+    - Every metric name must be in the ledger before any code emits it.
+    - The cold-start metric stays off. It is one more metric per service, and
+      the platform report line already carries the init duration.
+    """
+    return Metrics(namespace=METRICS_NAMESPACE, service=service)
 
 
 def correlation_id_from_headers(headers: dict[str, Any] | None, fallback: str) -> str:
