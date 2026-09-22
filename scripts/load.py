@@ -63,11 +63,18 @@ from seed_catalogue import CATALOGUE
 REGION = os.environ.get("AWS_REGION", "ca-central-1")
 PROJECT = "nightshift"
 
-# Per-order costs, from measurements taken in M2a and M2b (see COST.md).
-LAMBDA_PER_ORDER = 4.1  # cart PUT, orders, cart GET, payments, 1/10 fulfillment batch
-SQS_PER_ORDER = 1.3  # send, plus the consumer's share of receive and delete
-DPU_PER_ORDER = 0.2134  # checkout 0.1366 + fulfilment 0.0768, measured 2026-09-21
+# Per-order costs, measured (see COST.md, "Traffic generator live check").
+# The 2026-09-22 run at 1/s measured 4.64 invocations and 0.2455 DPU per
+# order; these round up so the guard errs toward over-estimating.
+LAMBDA_PER_ORDER = 4.7  # cart PUT, orders, cart GET, payments, fulfillment batches
+DPU_PER_ORDER = 0.25  # measured 0.2455 at 1/s; 0.2134 in the M2a batch runs
 LOG_BYTES_PER_ORDER = 2013  # measured 2026-09-22, EMF lines included
+# SQS: a send per order plus a receive and a delete per fulfillment batch.
+# Batches averaged 1.7 orders at 1/s, so about 2.2 requests per order. On top
+# of that the consumer polls whether or not there is work: 119 empty receives
+# in 6 minutes, about 20 a minute while it is enabled.
+SQS_PER_ORDER = 2.2
+SQS_POLLS_PER_MINUTE = 20
 
 # Refusal limits, approved 2026-09-22.
 MAX_RATE = 5.0
@@ -113,7 +120,7 @@ def projection(rate: float, duration: int) -> dict[str, float]:
     return {
         "orders": orders,
         "lambda_invocations": orders * LAMBDA_PER_ORDER,
-        "sqs_requests": orders * SQS_PER_ORDER,
+        "sqs_requests": orders * SQS_PER_ORDER + duration / 60 * SQS_POLLS_PER_MINUTE,
         "dsql_dpu": orders * DPU_PER_ORDER,
         "log_mb": orders * LOG_BYTES_PER_ORDER / 1e6,
     }
