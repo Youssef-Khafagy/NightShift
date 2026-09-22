@@ -38,7 +38,7 @@ Usage model for "Projected": one busy month = development plus one full benchmar
 | SQS | 1M requests per month (each 64 KB chunk is one request, a batch of up to 10 messages is one request) | ~250K with the consumer enabled only for runs (2.2 per order plus ~20 polls/min while enabled, measured 2026-09-22); ~760K if the trigger is left on 24/7 | ~75% | Idle Lambda trigger polls with 5 long-poll connections. Estimate 5 x 3 per min x 43,200 min = ~648K requests/month per idle queue, for zero work. **Decided 2026-09-20:** the event source mapping ships `enabled = false` and is turned on only for a run. Only one triggered queue; DLQ has no trigger; standard (not provisioned) poller mode. Measure with NumberOfEmptyReceives in M2a. |
 | SNS | 1M requests, 1,000 email deliveries per month | ~220 emails | ~78% | Alarm actions only on ALARM transitions we care about. |
 | EventBridge | AWS service events (including alarm state changes) on the default bus are free; Scheduler 14M invocations/month | Hundreds | Large | No custom event buses or API destinations. |
-| CloudWatch metrics | 10 metrics (custom and detailed monitoring combined); 1M API requests. GetMetricData, GetInsightRuleReport and GetMetricWidgetImage are ALWAYS charged (re-verified 2026-09-22) | 5 custom metrics budgeted, 3 live since 2026-09-22 (`list-metrics` count); <100K API requests | 50% metrics, >90% API | Agent and dashboard use GetMetricStatistics, never GetMetricData. Every metric is budgeted in the custom metric ledger below before it is emitted. |
+| CloudWatch metrics | 10 metrics (custom and detailed monitoring combined); 1M API requests. GetMetricData, GetInsightRuleReport and GetMetricWidgetImage are ALWAYS charged (re-verified 2026-09-22) | 5 custom metrics budgeted, 4 live as of 2026-09-22 (`scripts/cost_check.py`); <100K API requests | 50% metrics, >90% API | Agent and dashboard use GetMetricStatistics, never GetMetricData. Every metric is budgeted in the custom metric ledger below before it is emitted. |
 | CloudWatch alarms | 10 alarm metrics (standard resolution, metrics listed directly) | <= 10 | 0 to 2 | A metric math alarm counts every metric it lists. No composite alarms ($0.50 each), no anomaly detection alarms (count as 3). No CloudWatch billing alarm; Budgets does that job. |
 | CloudWatch Logs | 5 GB/month combined: ingestion + archive storage + Logs Insights data scanned (re-verified 2026-09-22) | ~3.6 GB, rebuilt from measurements on 2026-09-22, EMF line size measured (see "CloudWatch Logs budget" below) | ~28% | Retention 3 days. Log groups stay in the Standard class, because Infrequent Access cannot extract EMF metrics. Insights cost follows bytes scanned in the time range, NOT the result limit, so every query is one log group and a short window. Scan budget of 25 MB per investigation. Lambda logs appear to count against this allowance (September 2026 bill, 2026-09-22), but at 0 GB quantities that is evidence, not proof. Re-check at higher volume and after the upgrade. |
 | X-Ray | 100,000 traces recorded and 1M traces retrieved or scanned per month, perpetual (re-verified 2026-09-22; the Free Tier API lists it as always free and shows 526 traces recorded this month) | ~65K recorded | ~35% | **Correction (2026-09-20):** Lambda's sampling rate is fixed at 1 request/second plus 5% of the remainder and **cannot be configured**, so the earlier "explicit sampling rate" guardrail was wrong. The lever is how many requests we send, not what fraction is sampled. X-Ray SDK is in maintenance since 2026-02-25, end of support 2027-02-25; M2b uses OpenTelemetry with the X-Ray UDP span exporter. Never enable Transaction Search or Application Signals (paid span ingestion). |
@@ -297,7 +297,7 @@ Every metric gets a row here before any code emits it.
 |---|---|---|---|---|---|---|
 | `NightShift` | `CheckoutsPlaced` | `service=orders` | orders-service | M2b | 1 | **Live** (first emitted 2026-09-22) |
 | `NightShift` | `CheckoutsRejected` | `service=orders` | orders-service | M2b | 1 | **Live** (first emitted 2026-09-22) |
-| `NightShift` | `SerializationRetries` | `service=orders` | orders-service | M2b | 1 | Built; appears on the first real conflict |
+| `NightShift` | `SerializationRetries` | `service=orders` | orders-service | M2b | 1 | **Live** (first emitted 2026-09-22 22:49 UTC, by one conflict in load run `363e7f2a`) |
 | `NightShift` | `OrdersPaid` | `service=fulfillment` | fulfillment-worker | M2b | 1 | **Live** (first emitted 2026-09-22) |
 | `NightShift` | `PaymentFailures` | `service=fulfillment` | fulfillment-worker | M2b | 1 | Built; appears on the first failed payment |
 | **Allocated** | | | | | **5** | |
@@ -371,6 +371,19 @@ What changed as a result:
 
 Benchmark consequences: with these numbers a full pass projects about 475K Lambda requests (52% headroom), 250K SQS requests (75%) and 25K DPU (75%), all still inside the free allowances. Every incident should start with a warm-up period so start-of-run throttles are not mistaken for scenario 9 (throttling). The eval harness design already includes one.
 
+### Monthly cost check (built 2026-09-22)
+
+`scripts/cost_check.py` puts every allowance in one table, from free APIs only:
+
+- **Billing view:** the Free Tier API, billing's own record of every tracked Always Free allowance. Authoritative, but about a day behind: on 2026-09-22 it showed 728 Lambda requests while CloudWatch already counted 1,089.
+- **Live view:** `GetMetricStatistics` month to date for DSQL DPU (which the Free Tier API does not track at all), Lambda invocations, SQS requests (an upper bound, since batched calls are counted per message), Logs bytes ingested, plus `ListMetrics` for the custom metric count and `DescribeAlarms` for alarm metrics.
+
+Rows are OK, WATCH (50% or more) or ALERT (85% or more, the same line AWS's free tier alerts use), and the script exits 1 on any ALERT so it can gate a benchmark run. It also lists any service in the billing view that this project does not use.
+
+First run, 2026-09-22 23:17 UTC: 0 ALERT, 0 WATCH, 18 OK. DSQL 1,874 DPU (1.9%), custom metrics 4 of 10 (40%), everything else under 1.1%. **One unexpected service: AWS Glue, 10 catalog requests** (free allowance 1M). This project uses no Glue. CloudTrail `LookupEvents` (free) showed every call came from `resource-explorer-2`, the service-linked role of AWS Resource Explorer, which periodically lists Glue databases, jobs and crawlers in ca-central-1 and us-east-1 to build its search index. AWS background activity, not the project; Glue is now in the script's expected set with that reason.
+
+Not covered: Logs Insights bytes scanned (no metric exists; the scripts that query print their own `bytesScanned`) and DSQL storage.
+
 ## Not Always Free
 
 | Item | Cost | Plan |
@@ -428,7 +441,7 @@ Free plan end date from the Billing console after sign-up: **2027-03-18** (accou
 
 | Date | Reminder | What to do |
 |---|---|---|
-| 1st of each month, Oct 2026 to Feb 2027 | NightShift monthly cost check (15 min) | Billing home: credit balance and Free plan end date. Free Tier page: any service above 50%. Both budgets: status. Run the cost-check script (DSQL DPUs, SQS requests, Logs bytes) once it exists. Record numbers in this file. |
+| 1st of each month, Oct 2026 to Feb 2027 | NightShift monthly cost check (15 min) | Billing home: credit balance and Free plan end date. Free Tier page: any service above 50%. Both budgets: status. Run `scripts/cost_check.py --out results/cost-check-YYYY-MM.json` and fix any ALERT or unexpected service before anything else. Record numbers in this file. |
 | 2027-01-15 | NightShift upgrade readiness check | Confirm 30 days of measured usage inside every allowance, `pause` verified, both budgets tested with a delivered email. Fix anything missing before February. |
 | 2027-02-01 | NightShift upgrade window opens | Billing console, Upgrade plan, review, Upgrade account. Then re-check both budgets still have IncludeCredit=false, Free Tier alerts still on, and watch Bills daily for 7 days. |
 | 2027-02-15 | NightShift upgrade HARD DEADLINE | If not upgraded yet, upgrade now or decide on purpose to let the account close. Before closing: export results, journals, and postmortems so the Vercel replay mode keeps working without AWS. |
