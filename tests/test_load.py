@@ -67,7 +67,7 @@ def test_the_planned_incident_projects_as_documented(load):
     assert p["lambda_invocations"] == pytest.approx(11_280)
     assert p["sqs_requests"] == pytest.approx(2400 * 2.2 + 20 * 20)
     assert p["dsql_dpu"] == pytest.approx(600)
-    assert p["log_mb"] == pytest.approx(4.83, abs=0.01)
+    assert p["log_mb"] == pytest.approx(14.06, abs=0.01)
 
 
 # --------------------------------------------------------------------------

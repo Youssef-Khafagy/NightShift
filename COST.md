@@ -40,7 +40,7 @@ Usage model for "Projected": one busy month = development plus one full benchmar
 | EventBridge | AWS service events (including alarm state changes) on the default bus are free; Scheduler 14M invocations/month | Hundreds | Large | No custom event buses or API destinations. |
 | CloudWatch metrics | 10 metrics (custom and detailed monitoring combined); 1M API requests. GetMetricData, GetInsightRuleReport and GetMetricWidgetImage are ALWAYS charged (re-verified 2026-09-22) | 5 custom metrics budgeted, 4 live as of 2026-09-22 (`scripts/cost_check.py`); <100K API requests | 50% metrics, >90% API | Agent and dashboard use GetMetricStatistics, never GetMetricData. Every metric is budgeted in the custom metric ledger below before it is emitted. |
 | CloudWatch alarms | 10 alarm metrics (standard resolution, metrics listed directly) | <= 10 | 0 to 2 | A metric math alarm counts every metric it lists. No composite alarms ($0.50 each), no anomaly detection alarms (count as 3). No CloudWatch billing alarm; Budgets does that job. |
-| CloudWatch Logs | 5 GB/month combined: ingestion + archive storage + Logs Insights data scanned (re-verified 2026-09-22) | ~3.6 GB, rebuilt from measurements on 2026-09-22, EMF line size measured (see "CloudWatch Logs budget" below) | ~28% | Retention 3 days. Log groups stay in the Standard class, because Infrequent Access cannot extract EMF metrics. Insights cost follows bytes scanned in the time range, NOT the result limit, so every query is one log group and a short window. Scan budget of 25 MB per investigation. Lambda logs appear to count against this allowance (September 2026 bill, 2026-09-22), but at 0 GB quantities that is evidence, not proof. Re-check at higher volume and after the upgrade. |
+| CloudWatch Logs | 5 GB/month combined: ingestion + archive storage + Logs Insights data scanned (re-verified 2026-09-22) | ~4.0 GB, rebuilt from measurements on 2026-09-22 with platform lines at INFO (see "CloudWatch Logs budget" below) | ~19% | Retention 3 days. Log groups stay in the Standard class, because Infrequent Access cannot extract EMF metrics. Insights cost follows bytes scanned in the time range, NOT the result limit, so every query is one log group and a short window. Scan budget of 25 MB per investigation. Lambda logs appear to count against this allowance (September 2026 bill, 2026-09-22), but at 0 GB quantities that is evidence, not proof. Re-check at higher volume and after the upgrade. |
 | X-Ray | 100,000 traces recorded and 1M traces retrieved or scanned per month, perpetual (re-verified 2026-09-22; the Free Tier API lists it as always free and shows 526 traces recorded this month) | ~65K recorded | ~35% | **Correction (2026-09-20):** Lambda's sampling rate is fixed at 1 request/second plus 5% of the remainder and **cannot be configured**, so the earlier "explicit sampling rate" guardrail was wrong. The lever is how many requests we send, not what fraction is sampled. X-Ray SDK is in maintenance since 2026-02-25, end of support 2027-02-25; M2b uses OpenTelemetry with the X-Ray UDP span exporter. Never enable Transaction Search or Application Signals (paid span ingestion). |
 | CloudTrail | 90-day management event history, viewing and LookupEvents at no charge | Hundreds of lookups | Large | Never create a trail, data events, Lake, or Insights. |
 | SSM Parameter Store | Standard parameters and standard throughput: no additional charge. Standard tier: 10,000 parameters per account and region, 4 KB maximum value (re-verified 2026-09-22) | 3 parameters (2 flags live since 2026-09-22, 1 topology planned); a few thousand reads, since each execution environment reads its one flag at most once per 30 s | Free | Standard tier only; advanced is $0.05 per parameter-month and cannot be downgraded, only deleted and recreated. Higher throughput stays off: it bills $0.05 per 10,000 interactions for standard parameters too. The topology parameter has a hard 4 KB guard in Terraform. |
@@ -261,7 +261,7 @@ Same memory, 16.7 times faster, because Lambda gives the init phase more CPU tha
 
 **Design rule that follows:** every service imports its dependencies and constructs its AWS clients and database connections at module scope, never on first use inside the handler. Functions stay at 128 MB.
 
-**Not verified:** whether init duration is billed for on-demand invocations. The platform report lines did not surface in time to check. Worth confirming in step 6, since it decides whether the 712 ms is free or counts against the GB-second allowance. The projection above assumes it is billed, which is the conservative reading.
+**Resolved 2026-09-22: init duration is billed.** Once platform lines were logged (INFO), the REPORT line for a new environment's first request showed it directly: orders `durationMs` 2,997 plus `initDurationMs` 1,107 billed as `billedDurationMs` 4,105; cart 282 plus 1,150 billed as 1,432. The projection above already assumed this.
 
 ### DynamoDB capacity ledger
 
@@ -328,12 +328,12 @@ One order's full lifecycle (one cart call, checkout, fulfilment, payment) logged
 
 | Component | Basis | Busy month |
 |---|---|---|
-| Traffic ingestion | 100,800 orders x 2,013 bytes (measured) | 0.20 GB |
+| Traffic ingestion | 100,800 orders x 5,859 bytes (measured with platform lines at INFO, 2026-09-22) | 0.59 GB |
 | Agent and baseline Lambda logs (M5 to M7) | Allowance; not yet built | 0.10 GB |
 | Development and smoke tests | Allowance; this month so far is 0.0004 GB | 0.10 GB |
-| Archive storage | 3-day retention holds about a tenth of a month's ingestion, compressed | 0.05 GB |
+| Archive storage | 3-day retention holds about a tenth of a month's ingestion, compressed | 0.10 GB |
 | Logs Insights scans | 126 investigations (42 incidents x 3 configurations that query logs: scripted runbook and the full agent on two models; the alarm-text baseline never queries) x 25 MB cap | 3.15 GB |
-| **Total** | | **3.60 GB of 5, ~28% headroom** |
+| **Total** | | **4.04 GB of 5, ~19% headroom** |
 
 Scans, not ingestion, are the budget. At 2 requests/s the orders log group grows about 2.2 KB/s, so a 15-minute window on it scans about 2 MB. The 25 MB cap is therefore about 12 such queries per investigation. M5 enforces it from the `bytesScanned` statistic each query returns, and stops querying when the cap is reached.
 
@@ -370,6 +370,23 @@ What changed as a result:
 - **Platform lines are not logged.** `system_log_level = "WARN"` in the Lambda module drops START, REPORT and init report lines, which Lambda logs at INFO. So cold starts and per-invocation durations are invisible in the logs, and only the free `AWS/Lambda` metrics show them. Lowering it to INFO would add a REPORT line to every invocation, roughly doubling log volume per order. Open decision for the owner.
 
 Benchmark consequences: with these numbers a full pass projects about 475K Lambda requests (52% headroom), 250K SQS requests (75%) and 25K DPU (75%), all still inside the free allowances. Every incident should start with a warm-up period so start-of-run throttles are not mistaken for scenario 9 (throttling). The eval harness design already includes one.
+
+### Platform lines at INFO, and concurrency 5 (2026-09-22)
+
+Owner decisions after the traffic generator live check: Lambda `system_log_level` from WARN to INFO on every function, and reserved concurrency 5 (from 2) for orders and cart. Deployed by `apply.yml` (11 changed), then checked with a second 60-order run at 1/s (run `af75ed97`, `results/load-concurrency5-2026-09-22.json`).
+
+| | Run `363e7f2a` (WARN, concurrency 2) | Run `af75ed97` (INFO, concurrency 5) |
+|---|---|---|
+| Placed | 56 of 60 | **60 of 60** |
+| Throttles | orders 3, cart 1 | orders 0, cart 0, **fulfillment 1** |
+| Checkout p50 / p99 | 360 / 4,435 ms | 366 / 2,867 ms |
+| Lambda invocations | 260 | 270 (projected 282) |
+| DSQL DPU per order | 0.2455 | 0.2333 |
+| Log bytes per order | 2,013 (M2b step 3) | **5,859** |
+
+- **Log volume nearly tripled.** Each invocation now adds a START line (about 395 bytes) and a REPORT line (about 410 to 437), and each cold start an init line (about 455). At 4.5 to 4.7 invocations per order that is about 3.8 KB more per order. The Logs budget above is rebuilt with it: 4.04 GB of 5, 19% headroom, down from 28%. Scans still dominate; lowering M5's scan cap from 25 MB to 20 MB per investigation would bring the total back to about 3.4 GB. To decide in M5.
+- **The slow first request is a new environment's first handler run.** Each cold start in the run: orders init 742 ms then handler 1,896 ms; fulfillment init 1,066 ms then handler 2,078 ms. Warm orders requests take about 300 ms. The likely cost is opening the first DSQL connection inside the handler (`shared_connection` is lazy), which the project rule says belongs at module scope. Not yet timed directly.
+- **fulfillment was throttled once.** Its event source mapping has no maximum concurrency (`ScalingConfig` is null), so the SQS poller can invoke above fulfillment's reserved concurrency of 2. A throttled batch returns to the queue and each receive counts toward `maxReceiveCount` 3, so under sustained load healthy messages could reach the DLQ, which is scenario 5's signal. Nothing was lost here: all 60 orders were paid and the DLQ stayed empty. Fix proposed to the owner: `scaling_config { maximum_concurrency = 2 }` on the mapping.
 
 ### Monthly cost check (built 2026-09-22)
 
