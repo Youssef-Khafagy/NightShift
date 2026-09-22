@@ -1517,3 +1517,35 @@ The plan said `measure_dpu.py` would fold into this script. It did not: `measure
    SQS has no request-count metric. Adding the per-message metrics counts a batched call once per message, which overstates requests. For a cost check, overstating is the safe error.
 5. **How often does it run?**
    On the 1st of each month as part of the cost ritual in COST.md, and before any large run. The output can be saved as JSON in `results/` so month-to-month numbers are comparable.
+
+## Platform logs at INFO and concurrency 5 (2026-09-22)
+
+Two owner decisions after the step 6 live check, deployed together and checked with a second 60-order run.
+
+### What INFO logging bought
+
+With `system_log_level = "INFO"`, every invocation now writes a `platform.start` line and a `platform.report` line, and every cold start a `platform.initStart` line plus an init duration inside the report. The first report lines answered two questions that had been open since M2a:
+
+- **Init time is billed.** orders' first request in a new environment: `durationMs` 2,997, `initDurationMs` 1,107, `billedDurationMs` 4,105. Cart: 282 + 1,150 = 1,432. COST.md had assumed so; now it is measured.
+- **The slow first request is the handler, not only init.** orders spent about 1.9 to 3.0 s inside the handler on each new environment's first request, against about 0.3 s warm. The prime suspect is the DSQL connection: `shared_connection` opens it lazily on the first request, although the project's rule is that connections are built at module scope. That is a hypothesis until it is timed directly.
+
+It cost log volume: START plus REPORT is about 830 bytes per invocation, and an order is about 4.6 invocations. Measured, 5,859 bytes per order against 2,013 before. The Logs budget dropped from 28% to 19% headroom. It still fits, and the generator's projection now uses the new number.
+
+### What concurrency 5 fixed, and what it exposed
+
+The second run placed 60 of 60 with no throttles on orders or cart, against 4 throttles at concurrency 2. But **fulfillment was throttled once**, which exposed something the first run had hidden. The event source mapping has no maximum concurrency, so the SQS poller can invoke fulfillment with more concurrency than its reservation of 2. A throttled batch goes back to the queue, and each receive counts toward `maxReceiveCount` 3. Under sustained load, healthy orders could land in the DLQ, and the DLQ-depth alarm is the signal for scenario 5 (poison message). A false DLQ entry would contaminate that scenario.
+
+Nothing was lost this time (all 60 paid, DLQ empty). The standard fix is `scaling_config { maximum_concurrency = 2 }` on the mapping, which caps the poller's concurrency to match the function's instead of letting it overrun and be throttled. Proposed to the owner rather than changed.
+
+### Interview questions
+
+1. **Why log Lambda's platform lines if they nearly triple log volume?**
+   Without them, cold starts, init time and per-invocation duration are invisible in the logs the agent searches, and two of the fourteen scenarios are about latency. Measured, it costs about 3.8 KB per order and leaves the Logs budget at 19% headroom, which still fits.
+2. **Is Lambda init time billed?**
+   Yes, measured: a cold orders request reported 2,997 ms of handler time and 1,107 ms of init, billed as 4,105 ms.
+3. **Why did raising concurrency on orders and cart not remove every throttle?**
+   The remaining one was on fulfillment, whose SQS event source mapping had no maximum concurrency. The poller can invoke above the function's reservation, so it gets throttled, and SQS counts each redelivery toward the DLQ threshold. The fix is to cap the mapping's concurrency at the function's.
+4. **Why does a throttled SQS consumer matter more than a throttled HTTP one?**
+   An HTTP caller sees a 429 and can retry. A throttled SQS batch silently goes back to the queue with its receive count raised, so repeated throttling can move healthy messages into the dead-letter queue, where they look like poison.
+5. **What does the slow first request tell you?**
+   That a new environment's first request pays for more than init: about 2 to 3 s of handler time against 0.3 s warm. The likely cause is the lazily opened database connection, which is testable by timing the connection and, if confirmed, moving it to module scope like the project's rule says.
