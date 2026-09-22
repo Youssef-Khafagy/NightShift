@@ -380,7 +380,7 @@ Benchmark consequences: with these numbers a full pass projects about 475K Lambd
 
 Rows are OK, WATCH (50% or more) or ALERT (85% or more, the same line AWS's free tier alerts use), and the script exits 1 on any ALERT so it can gate a benchmark run. It also lists any service in the billing view that this project does not use.
 
-First run, 2026-09-22 23:17 UTC: 0 ALERT, 0 WATCH, 18 OK. DSQL 1,874 DPU (1.9%), custom metrics 4 of 10 (40%), everything else under 1.1%. **One unexpected service: AWS Glue, 10 catalog requests** (free allowance 1M). This project uses no Glue. Cause not yet found; listed as an open question rather than guessed at.
+First run, 2026-09-22 23:17 UTC: 0 ALERT, 0 WATCH, 18 OK. DSQL 1,874 DPU (1.9%), custom metrics 4 of 10 (40%), everything else under 1.1%. **One unexpected service: AWS Glue, 10 catalog requests** (free allowance 1M). This project uses no Glue. CloudTrail `LookupEvents` (free) showed every call came from `resource-explorer-2`, the service-linked role of AWS Resource Explorer, which periodically lists Glue databases, jobs and crawlers in ca-central-1 and us-east-1 to build its search index. AWS background activity, not the project; Glue is now in the script's expected set with that reason.
 
 Not covered: Logs Insights bytes scanned (no metric exists; the scripts that query print their own `bytesScanned`) and DSQL storage.
 

@@ -53,6 +53,10 @@ EXPECTED_SERVICES = {
     "Amazon DynamoDB",
     "Amazon Simple Notification Service",
     "AWS Key Management Service",
+    # Not us: AWS Resource Explorer's service-linked role (resource-explorer-2)
+    # periodically lists Glue databases, jobs and crawlers to build its index.
+    # Found with CloudTrail LookupEvents on 2026-09-22.
+    "AWS Glue",
 }
 
 # Allowances that are not in the Free Tier API, or are checked live here.
