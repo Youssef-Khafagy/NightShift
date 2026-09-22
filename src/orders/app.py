@@ -34,12 +34,16 @@ from common.context import (
     CORRELATION_HEADER,
     correlation_id_from_headers,
     get_logger,
+    get_metrics,
 )
 from common.flags import flags
 from common.ratelimit import TokenBucket
 
 SERVICE = "orders"
 logger = get_logger(SERVICE)
+# Three metrics, all in the COST.md ledger: CheckoutsPlaced, CheckoutsRejected
+# and SerializationRetries.
+metrics = get_metrics(SERVICE)
 
 CART_FUNCTION_NAME = os.environ["CART_FUNCTION_NAME"]
 PLACED_ORDERS_QUEUE_URL = os.environ["PLACED_ORDERS_QUEUE_URL"]
@@ -259,6 +263,9 @@ def checkout(
             return {"order_id": replayed, "replayed": True}
 
     def on_retry(attempt_number: int, delay: float, exc: BaseException) -> None:
+        # The earliest visible symptom of hot-row contention, so it is worth a
+        # metric of its own.
+        metrics.add_metric(name="SerializationRetries", unit="Count", value=1)
         logger.warning(
             "serialization conflict, retrying",
             extra={
@@ -284,6 +291,14 @@ def checkout(
     return result
 
 
+def _rejected() -> None:
+    # One metric for every kind of rejection. Which kind goes in the log
+    # line's `reason`, never in a dimension: a dimension per reason would be
+    # a billed metric per reason.
+    metrics.add_metric(name="CheckoutsRejected", unit="Count", value=1)
+
+
+@metrics.log_metrics
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     request_id = getattr(context, "aws_request_id", "local")
     headers = event.get("headers")
@@ -295,6 +310,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     # almost nothing. Shedding load is only useful if it is cheap.
     limit = flags.get_int(RATE_LIMIT_PARAMETER, 0)
     if not _bucket.allow(limit):
+        _rejected()
         logger.warning(
             "checkout rejected",
             extra={"reason": "rate_limited", "limit_per_environment": limit},
@@ -308,6 +324,8 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     idempotency_key = _header(headers, IDEMPOTENCY_HEADER)
     if not idempotency_key:
+        _rejected()
+        logger.warning("checkout rejected", extra={"reason": "missing_idempotency_key"})
         return _response(
             400,
             {"error": f"{IDEMPOTENCY_HEADER} header is required"},
@@ -317,6 +335,10 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     try:
         payload = json.loads(event.get("body") or "{}")
         result = checkout(payload, idempotency_key, correlation_id)
+        if not result["replayed"]:
+            # A replayed key returns an order placed earlier, so it is not a
+            # new placement.
+            metrics.add_metric(name="CheckoutsPlaced", unit="Count", value=1)
         logger.info(
             "checkout complete",
             extra={"order_id": result["order_id"], "replayed": result["replayed"]},
@@ -324,9 +346,11 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         return _response(200 if result["replayed"] else 201, result, correlation_id)
 
     except LookupError as exc:
+        _rejected()
         logger.warning("checkout rejected", extra={"reason": str(exc)})
         return _response(404, {"error": str(exc)}, correlation_id)
     except ValueError as exc:
+        _rejected()
         logger.warning("checkout rejected", extra={"reason": str(exc)})
         return _response(409, {"error": str(exc)}, correlation_id)
     except service_client.ServiceCallError as exc:
