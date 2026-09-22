@@ -1472,3 +1472,42 @@ Consequence for M4 and M7: every incident needs a warm-up period before injectio
    Reserved concurrency is 2 per function. All four throttles came in the first minute, alongside a 3.1-second orders invocation, and none after. So a slow first request in a new environment held one of only two slots. I could not see the init duration directly, because platform log lines are filtered at WARN, so the conclusion is stated as likely, not proven.
 5. **Why keep the result JSON in the repo?**
    Every number in the README has to come from a real run with a date, a commit and a model. The summary records the run ID, date, commit, seed, projection and outcome, so the number and its provenance travel together.
+
+## M2b step 7: the monthly cost check (2026-09-22)
+
+`scripts/cost_check.py` answers one question: how much of each free allowance has this month used? It reads only free APIs and prints every allowance in one table.
+
+### Two views, because each one lies a little
+
+- **The Free Tier API** (`aws freetier get-free-tier-usage`) is billing's own record. It is the authority on what counts against an allowance, but it runs about a day behind: at the time of the first run it showed 728 Lambda requests while CloudWatch already counted 1,089.
+- **CloudWatch** (`GetMetricStatistics`, month to date) is live, but it is not billing, and some of it is approximate. SQS has no "requests" metric, so the script adds up sent, received, deleted and empty receives. Batched calls are counted once per message, so that overstates requests, which is the safe direction for a cost check.
+
+Aurora DSQL only appears in the live view: the Free Tier API does not track it, and neither do AWS's free tier alerts. It is the allowance most likely to surprise, and the only one where nothing outside this project would warn us.
+
+Every row is OK, WATCH (50% or more) or ALERT (85% or more, the same line AWS's own alerts use). Any ALERT makes the script exit 1, so it can gate a benchmark run the way the smoke test gates a deploy.
+
+### What the first run found
+
+0 ALERT, 0 WATCH, 18 OK. Two things worth more than the green rows:
+
+- **4 custom metrics, not the 3 I had reported after step 3.** The fourth was `SerializationRetries{service=orders}`, emitted at 22:49 UTC by the single serialization conflict during the step 6 load run. It was budgeted, so nothing was wrong, but my own summary was stale, and the script noticed before I did.
+- **AWS Glue, 10 catalog requests.** This project uses no Glue. Ten requests against a free million costs nothing, but usage nobody planned is exactly what a cost check should surface. So the script compares billing's service list with an expected set and prints anything extra. The cause is not known yet; it is recorded as an open question, not guessed at.
+
+### What it deliberately does not do
+
+It does not call the Cost Explorer API, which is $0.01 per request; the console shows the same thing for free. It does not use `GetMetricData`, which is billed even inside the free tier. And it does not try to report Logs Insights bytes scanned, because no metric exists for it; the scripts that query Insights print their own `bytesScanned` instead.
+
+The plan said `measure_dpu.py` would fold into this script. It did not: `measure_dpu.py` measures the cost of a controlled experiment in batches, and the cost check reads month-to-date totals. Different jobs, so they stay separate.
+
+### Interview questions
+
+1. **How do you know you are still inside the free tier?**
+   A script reads billing's view from the Free Tier API and a live month-to-date view from CloudWatch, for every allowance the project uses, including DSQL, which billing does not track. It flags anything at 50% or 85% and exits non-zero on 85%, so it can gate a benchmark run.
+2. **Why two sources instead of one?**
+   The Free Tier API is authoritative but a day behind. CloudWatch is live but is not billing, and for SQS it is an approximation. Seeing both shows lag and disagreement instead of hiding them.
+3. **What would you do about the Glue requests?**
+   Find the source before anything else, because unplanned usage is how cost surprises start, even when this one costs nothing. CloudTrail event history (`LookupEvents`, free) would show which principal called Glue and when.
+4. **Why is the SQS number an upper bound?**
+   SQS has no request-count metric. Adding the per-message metrics counts a batched call once per message, which overstates requests. For a cost check, overstating is the safe error.
+5. **How often does it run?**
+   On the 1st of each month as part of the cost ritual in COST.md, and before any large run. The output can be saved as JSON in `results/` so month-to-month numbers are comparable.
