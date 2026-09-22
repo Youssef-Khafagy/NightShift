@@ -66,6 +66,15 @@ data "aws_iam_policy_document" "orders" {
     resources = [aws_dsql_cluster.main.arn]
   }
 
+  # Its own flag and nothing else. Least privilege, and it also makes this
+  # policy an exact record of which service reads which flag.
+  statement {
+    sid       = "ReadCheckoutRateLimit"
+    effect    = "Allow"
+    actions   = ["ssm:GetParameter"]
+    resources = ["${local.flag_arn_prefix}/checkout_rate_limit"]
+  }
+
   statement {
     sid       = "PublishPlacedOrders"
     effect    = "Allow"
@@ -100,13 +109,14 @@ module "orders" {
   timeout = 15
 
   environment = {
-    DSQL_ENDPOINT           = local.dsql_endpoint
-    DSQL_ROLE               = "orders_service"
-    CART_FUNCTION_NAME      = module.cart.function_name
-    PLACED_ORDERS_QUEUE_URL = aws_sqs_queue.placed_orders.url
-    CART_TIMEOUT_SECONDS    = "2.0"
-    POWERTOOLS_SERVICE_NAME = "orders"
-    POWERTOOLS_LOG_LEVEL    = "INFO"
+    DSQL_ENDPOINT                 = local.dsql_endpoint
+    DSQL_ROLE                     = "orders_service"
+    CART_FUNCTION_NAME            = module.cart.function_name
+    PLACED_ORDERS_QUEUE_URL       = aws_sqs_queue.placed_orders.url
+    CART_TIMEOUT_SECONDS          = "2.0"
+    CHECKOUT_RATE_LIMIT_PARAMETER = aws_ssm_parameter.checkout_rate_limit.name
+    POWERTOOLS_SERVICE_NAME       = "orders"
+    POWERTOOLS_LOG_LEVEL          = "INFO"
   }
 
   extra_policy_json   = data.aws_iam_policy_document.orders.json
@@ -176,6 +186,13 @@ data "aws_iam_policy_document" "fulfillment" {
   }
 
   statement {
+    sid       = "ReadPaymentsDegradedMode"
+    effect    = "Allow"
+    actions   = ["ssm:GetParameter"]
+    resources = ["${local.flag_arn_prefix}/payments_degraded_mode"]
+  }
+
+  statement {
     sid       = "CallPaymentProvider"
     effect    = "Allow"
     actions   = ["lambda:InvokeFunction"]
@@ -200,12 +217,13 @@ module "fulfillment" {
   timeout = 30
 
   environment = {
-    DSQL_ENDPOINT           = local.dsql_endpoint
-    DSQL_ROLE               = "fulfillment_service"
-    PAYMENTS_FUNCTION_NAME  = module.payments.function_name
-    PAYMENT_TIMEOUT_SECONDS = "3.0"
-    POWERTOOLS_SERVICE_NAME = "fulfillment"
-    POWERTOOLS_LOG_LEVEL    = "INFO"
+    DSQL_ENDPOINT                    = local.dsql_endpoint
+    DSQL_ROLE                        = "fulfillment_service"
+    PAYMENTS_FUNCTION_NAME           = module.payments.function_name
+    PAYMENT_TIMEOUT_SECONDS          = "3.0"
+    PAYMENTS_DEGRADED_MODE_PARAMETER = aws_ssm_parameter.payments_degraded_mode.name
+    POWERTOOLS_SERVICE_NAME          = "fulfillment"
+    POWERTOOLS_LOG_LEVEL             = "INFO"
   }
 
   extra_policy_json   = data.aws_iam_policy_document.fulfillment.json

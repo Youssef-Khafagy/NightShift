@@ -29,6 +29,7 @@ import inspect
 from contextlib import contextmanager
 from typing import Any, Self
 
+from botocore.exceptions import ClientError
 from psycopg.pq import TransactionStatus
 
 
@@ -174,3 +175,28 @@ class FakeConnection:
 
     def is_idle(self) -> bool:
         return self.status == TransactionStatus.IDLE
+
+
+class FakeSSM:
+    """Just ssm.get_parameter, with the error shapes boto3 really raises.
+
+    `values` maps parameter names to string values. Set `error` to an
+    exception instance to make every call raise it, which is how the tests
+    simulate SSM being throttled, unreachable, or denied.
+    """
+
+    def __init__(self, values: dict[str, str] | None = None) -> None:
+        self.values = dict(values or {})
+        self.error: BaseException | None = None
+        self.calls = 0
+
+    def get_parameter(self, Name: str) -> dict[str, Any]:
+        self.calls += 1
+        if self.error is not None:
+            raise self.error
+        if Name not in self.values:
+            raise ClientError(
+                {"Error": {"Code": "ParameterNotFound", "Message": Name}},
+                "GetParameter",
+            )
+        return {"Parameter": {"Name": Name, "Value": self.values[Name]}}
