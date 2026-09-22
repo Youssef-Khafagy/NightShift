@@ -1030,3 +1030,19 @@ assert calls == [TransactionStatus.IDLE], (
 That encodes a cost rule as an executable constraint: never hold a database transaction across a network call. Scenario 4 deliberately makes that provider slow, so without this rule a latency incident silently becomes a billing incident.
 
 **Two smaller things.** All four services have their handler at `app.py`, because that is what each deployment zip contains, so importing them normally would collide on the name `app`. The tests load each one by path under its own module name, which is what Lambda effectively does anyway. And `conftest.py` sets obviously fake AWS credentials before anything imports boto3, so a test that escapes its mock fails with an authentication error instead of quietly creating something real in an account whose first rule is that it costs nothing. Unsetting `AWS_PROFILE` matters there too: botocore reads an empty one as a profile literally named `""` and raises `ProfileNotFound`.
+
+### Two points always fit a line
+
+The first DPU measurement used batches of 5 and 25 and reported 0.1189 DPU per checkout. That is a real number from real data, and it was wrong enough to matter.
+
+Two points determine a line exactly. There is no residual, no error estimate, and no way for the data to disagree with the model, so the fit cannot tell you whether the model is right. It only tells you what the model says if you assume it is. Adding a batch of 50 moved the marginal cost to **0.1366, up 15%**, and pulled the fixed cost from 0.639 down to 0.425.
+
+Fifteen percent sounds survivable until you notice which way it went. The marginal term is the one multiplied by 100,800 in the benchmark projection, and the fixed term is the one that amortises away. Two points understated the term that scales and overstated the term that does not. The error was in the direction that flatters the estimate, which is the direction errors usually run when nobody has checked.
+
+The third point cost about 7 DPU and ten minutes of waiting.
+
+The fulfilment measurement was done with two sizes for the same reason, 31 orders and 50, and there the linearity held perfectly: both gave 0.0768 DPU per order to four decimal places, with a fixed cost of -0.001, which is zero within noise. Worth noticing that this is what a genuinely linear result looks like, and that the checkout numbers never looked like that.
+
+**A detail that fell out of having three points.** Every write DPU figure measured is an exact multiple of 0.05: the values 0.400, 1.550, 3.000 and 2.500 are 8, 31, 60 and 50 units. A drain of 31 orders billed exactly 31 units and a drain of 50 billed exactly 50, one per single-row update, while a checkout bills about 1.2 units despite writing six rows. So the quantum is not per row, and a very small write costs the same as a slightly larger one. The design consequence is to prefer fewer, fuller write transactions, which happens to be the same advice that transaction-duration billing gives.
+
+**And the estimate that was right.** Fulfilment was guessed at 0.07 DPU per order before it was measured, and came in at 0.0768. That guess landed because the billing model underneath it had already been measured: it was built from the cost of a short committed transaction, times the two transactions the worker issues. A guess standing on a measurement is a different thing from a guess standing on nothing, which is what the original 20,000 DPU projection was. It also landed close, and it was still recorded as an estimate until it was checked, because the alternative is not knowing which of your numbers you are allowed to trust.
