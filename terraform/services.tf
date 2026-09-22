@@ -172,6 +172,12 @@ module "payments" {
 
 locals {
   payments_function_arn = "arn:aws:lambda:${local.region}:${local.account_id}:function:${var.project}-payments"
+
+  # One number for both fulfillment's reserved concurrency and the queue
+  # mapping's maximum concurrency. AWS: "Don't set maximum concurrency higher
+  # than the function's reserved concurrency ... Otherwise, Lambda might
+  # throttle your messages." Keeping them one value means they cannot drift.
+  fulfillment_concurrency = 2
 }
 
 data "aws_iam_policy_document" "fulfillment" {
@@ -239,6 +245,8 @@ module "fulfillment" {
   extra_policy_json   = data.aws_iam_policy_document.fulfillment.json
   log_retention_days  = var.log_retention_days
   create_function_url = false
+
+  reserved_concurrency = local.fulfillment_concurrency
 }
 
 # The trigger. Disabled by default, and that is the cost control: an enabled
@@ -260,4 +268,18 @@ resource "aws_lambda_event_source_mapping" "placed_orders" {
   # redelivered, so nine successful messages get processed twice and every
   # one of them burns a delivery attempt against maxReceiveCount.
   function_response_types = ["ReportBatchItemFailures"]
+
+  # Without a cap the SQS poller invokes with up to five concurrent batches
+  # from the start, above fulfillment's reservation of 2, so some are
+  # throttled. A throttled batch goes back to the queue and its receive
+  # counts toward maxReceiveCount 3, so under load healthy orders could reach
+  # the DLQ and look like poison messages (scenario 5's signal). Seen once in
+  # the concurrency-5 load run on 2026-09-22.
+  #
+  # Trade-off: with a cap set, Lambda cannot scale idle polling down to 2
+  # concurrent invokes to save SQS requests. The consumer only runs during
+  # test runs, so this is measured rather than assumed.
+  scaling_config {
+    maximum_concurrency = local.fulfillment_concurrency
+  }
 }
