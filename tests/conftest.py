@@ -50,6 +50,8 @@ os.environ.update(
         "PLACED_ORDERS_QUEUE_URL": "https://sqs.invalid/placeholder",
         "PAYMENTS_FUNCTION_NAME": "nightshift-payments:live",
         "DSQL_ENDPOINT": "cluster.dsql.ca-central-1.on.aws",
+        "CHECKOUT_RATE_LIMIT_PARAMETER": "/nightshift/flags/checkout_rate_limit",
+        "PAYMENTS_DEGRADED_MODE_PARAMETER": "/nightshift/flags/payments_degraded_mode",
         # Powertools writes a JSON line per log call; keep the output readable.
         "POWERTOOLS_LOG_LEVEL": "CRITICAL",
     }
@@ -79,6 +81,25 @@ def orders_app() -> ModuleType:
 @pytest.fixture(scope="session")
 def fulfillment_app() -> ModuleType:
     return load_service("fulfillment")
+
+
+@pytest.fixture(autouse=True)
+def fake_ssm(monkeypatch):
+    """Every test gets an empty fake SSM, so no flag read ever leaves the process.
+
+    With no parameters set, every flag reads as ParameterNotFound and falls
+    back to its default: no rate limit, payments not degraded. That is what the
+    tests written before the flags existed assume. Tests about flags put values
+    into the returned fake.
+    """
+    from fakes import FakeSSM
+
+    from common.flags import flags
+
+    ssm = FakeSSM()
+    monkeypatch.setattr(flags, "_client", ssm)
+    monkeypatch.setattr(flags, "_cache", {})
+    return ssm
 
 
 class FakeContext:
