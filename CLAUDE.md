@@ -137,14 +137,14 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - An idle SQS-triggered Lambda long-polls at roughly 648K requests/month per queue, about two thirds of the 1M free allowance, for zero work.
 
 ## Current status (end of the second 2026-09-21 session)
-M0 and M1 complete. **M2a complete, including step 7. Ready for owner review.** Everything below is verified.
+M0 and M1 complete. **M2a complete and approved by the owner. M2b proposed and approved; next session starts at M2b step 1.** Everything below is verified.
 
 **Shut down cleanly. Nothing is polling or scheduled:**
 - The only event source mapping is `nightshift-fulfillment` on `nightshift-placed-orders`, state `Disabled`. It was enabled twice during the fulfilment measurement and disabled again both times, through Terraform rather than the CLI, so state never drifted.
 - No EventBridge rules exist. No provisioned concurrency on any function. Every function has reserved concurrency 2.
 - Both queues are empty, DLQ included. DSQL holds 100 paid orders and 200 line items, far under the 1 GB free storage, and an idle cluster costs nothing.
 - Both budgets still armed with `IncludeCredit=false`. Month-to-date spend $0.00, confirmed with Cost Explorer.
-- `terraform plan` clean, working tree clean, local and origin in sync on `main`.
+- `terraform plan` clean, working tree clean, local and origin in sync on `main`. No open pull requests; PRs #8, #9 and #10 are merged and their branches deleted.
 - This session spent about **80 DPU** of the 100,000 monthly allowance, 0.08%, across the billing-model experiment (60), three checkout batches, two drains and one smoke test.
 
 Done:
@@ -201,7 +201,40 @@ M2a in progress (owner approved the plan 2026-09-20). Steps:
    - The third batch size earned its place: it moved the marginal cost up 15% from the two-point answer, in the direction that matters, since that term is multiplied by 100,800. Largest residual is 3.1%.
    - **Write DPU is quantised in units of 0.05**, so a tiny write costs the same as a slightly larger one. Argues for fewer, fuller write transactions.
    - The fix was confirmed in billing data, not only in tests: the apply run's smoke test cost 1.12 DPU across 13 transactions with no delayed spike, against roughly 316 DPU for the same test before the fix.
-8. Then: M2a owner review, then propose M2b (SSM flags, correlation ID propagation end to end, EMF metrics, tracing, topology parameter, rate-capped traffic generator, DPU cost-check script).
+8. **Done.** M2a reviewed and approved by the owner on 2026-09-21. M2b proposed and approved the same evening.
+
+## M2b plan (approved 2026-09-21, not started)
+
+**Next session starts at step 1.** Reviewed in two halves: once after step 3, once at the end.
+
+Why M2b exists: M5's agent can only diagnose what the system reveals. Every read-only tool it has (`get_metrics`, `query_logs`, `get_flag_values`, `get_topology`) is backed by something built here. Getting this wrong makes M5 look like a model problem when it is a visibility problem.
+
+1. **Verify and budget. No AWS changes.** Re-verify on official pages: SSM Parameter Store standard tier (free, 4 KB value limit, standard throughput not billable); the exact definition of a billable custom metric and that the 10 free are per account per region; that EMF metric extraction bills ingestion against the 5 GB Logs allowance rather than separately; X-Ray's current free tier for the step 8 gate. Then write a custom-metric ledger into COST.md in the same shape as the DynamoDB capacity ledger.
+   - **The EMF question is the one to confirm most carefully.** If EMF ingestion bills differently than assumed, the metric budget still holds but the Logs budget may not: five metrics at 2 requests/s across a 42-incident benchmark is a lot of log lines, and Logs is the allowance with the least headroom at about 30%.
+2. **SSM flags.** Two String parameters, `payments_degraded_mode` and `checkout_rate_limit`. `src/common/flags.py` reads them with a module-scope cache and a 30 s TTL, failing open to a default if SSM errors. IAM scoped per function to its own parameter path. Note the Lambda subtlety: a frozen container can serve a stale flag for a full TTL after it thaws. Verify by flipping a flag and watching behaviour change within 30 s.
+3. **EMF metrics, budgeted.** Namespace `NightShift`, `service` as the only dimension, Powertools cold-start metric **off** (it would cost one custom metric per service). Tested the way the transaction leak is tested: assert the emitted EMF document's dimension set, so adding a dimension fails CI instead of quietly costing money.
+   - **Owner review point.** Steps 2 and 3 are the ones with irreversible cost consequences.
+4. **Correlation ID, proven end to end.** Mostly already built; this is verification. A script runs one checkout and reconstructs the chain across all five log groups from the ID alone, asserting no break. Bounded time ranges, per the Logs Insights cost rule.
+5. **Topology parameter.** Terraform writes compact JSON from its outputs to SSM. Hard size guard: fail if it exceeds 4 KB rather than silently needing the paid advanced tier.
+6. **Traffic generator.** Rate-capped, `--dry-run` by default, printing projected Lambda invocations, SQS requests and DSQL DPU before it runs, and refusing above a budget. Uses the measured 0.2134 DPU per order: a 2 requests/s, 20 minute incident is 2,400 orders, about 512 DPU, 0.5% of the month.
+7. **Cost-check script.** `scripts/cost_check.py`: DSQL DPU month-to-date, SQS requests, Logs bytes ingested, and a count of live custom metrics, for COST.md's monthly ritual. `measure_dpu.py` folds into it.
+8. **Tracing, last, behind a go/no-go gate.** Add OpenTelemetry with the X-Ray UDP exporter, then measure init duration. **If it costs more than 300 ms on top of the current 712 ms, stop**, remove `get_traces` from the agent's toolset, and write an ADR explaining the call.
+   - Reasoning for the gate: the X-Ray SDK is dying so this is a hand-built OTel path, sparsely documented for python3.14 on arm64, feeding 128 MB functions where init cost already forced a design decision. Against that, no scenario among the fourteen is currently known to need traces that correlated structured logs do not cover. A clean documented "we measured it and dropped it" beats a half-working tracer.
+
+### The M2b metric budget
+
+Every M3 alarm (error rate, checkout p99, queue age, DLQ depth, throttles) is built from metrics AWS publishes for free. The custom budget is spent only on business facts AWS cannot see.
+
+| Service | Metric | Custom metrics |
+|---|---|---|
+| orders | `CheckoutsPlaced` | 1 |
+| orders | `CheckoutsRejected` | 1 |
+| orders | `SerializationRetries` | 1 |
+| fulfillment | `OrdersPaid` | 1 |
+| fulfillment | `PaymentFailures` | 1 |
+| | **Total** | **5 of 10** |
+
+The rule that keeps it there: separate metric names, never variable dimensions. `CheckoutsRejected`, not `CheckoutOutcome{outcome=rejected}`. The reason for a rejection goes in the log line, where the agent finds it with a bounded query.
 
 Later (tracked, not blocking): test that a budget email actually arrives before the Feb 2027 upgrade (COST.md upgrade plan).
 
@@ -228,5 +261,8 @@ Later (tracked, not blocking): test that a budget email actually arrives before 
 - Approved 2026-09-20: M2 is split into M2a (data plane) and M2b (telemetry), each with its own owner review. Reason: M2 as originally scoped is about four times the size of M1, and a wrong turn should cost half a milestone rather than a whole one.
 - Approved 2026-09-20: tracing uses OpenTelemetry with the X-Ray UDP span exporter and the X-Ray Lambda propagator, set up manually, with no collector layer. Powertools is used for Logger and Metrics only. Reason: Powertools Tracer wraps the AWS X-Ray SDK, which is unsupported from 2027-02-25, inside this project's life; the ADOT managed layer is heavier and its ARN carries an AWS-owned account ID that the pre-commit hook blocks.
 - Approved 2026-09-20: Python dependencies ship in one shared Lambda layer built by a script from a pinned requirements file. Reason: function zips stay small and reviewable, deploys upload only our code, the layer ARN is ours so no foreign account ID enters the repo, and layers are worth knowing.
+- Approved 2026-09-21: M2b custom metrics are five separate metric names with `service` as the only dimension, and the Powertools cold-start metric is off. Reason: a custom metric is a name plus a dimension set, so one variable dimension multiplies the bill by its cardinality; separate names keep the count fixed and predictable, reasons belong in log fields, and every M3 alarm can be built from free AWS-published metrics anyway. Leaves 5 of 10 free for M3 to M7.
+- Approved 2026-09-21: M2b tracing is built last behind a 300 ms init-duration gate, and dropped with an ADR if it exceeds it. Reason: it is a hand-built OpenTelemetry path on a dying SDK, feeding 128 MB functions where init cost already forced imports to module scope, and no scenario is currently known to need traces that correlated logs do not cover. The risky item must not block the useful ones.
+- Approved 2026-09-21: M2b is reviewed in two halves, after step 3 and at the end. Reason: the same logic that split M2 into M2a and M2b. Steps 2 and 3 carry the irreversible cost consequences, so a wrong turn there should surface before everything is built on top of it.
 - Approved 2026-09-21: DSQL connections default to `autocommit=True`, and code that needs several statements to be atomic asks for a transaction explicitly with `with conn.transaction():`. Reason: DSQL bills compute by how long a transaction stays open (measured, one DPU per transaction-second), and psycopg's normal default leaves a transaction open after any lone statement, which costs up to 315 DPU each time a Lambda freezes afterwards. Four such leaks were already in the code and had no functional symptom.
 - Approved 2026-09-20: the SQS event source mapping ships disabled and is enabled explicitly for a run. Reason: an idle triggered queue spends about two thirds of the free SQS allowance doing nothing, and this makes most of M3's pause command already built.
