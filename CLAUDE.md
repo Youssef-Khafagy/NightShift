@@ -135,9 +135,10 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Powertools Tracer is a thin wrapper over the AWS X-Ray SDK and the Powertools docs say it was chosen over ADOT for cold start. Since the X-Ray SDK is unsupported from 2027-02-25, this project uses Powertools for Logger and Metrics only.
 - Lambda tracing options: active tracing alone gives 2 segments per trace with no SDK, at a fixed sampling rate of 1 request/second plus 5% of the rest, which cannot be configured. AWS also documents a manual OpenTelemetry path with a Simple Span Processor, an X-Ray UDP span exporter and an X-Ray Lambda propagator, requiring no collector layer.
 - An idle SQS-triggered Lambda long-polls at roughly 648K requests/month per queue, about two thirds of the 1M free allowance, for zero work.
+- Lambda logs count against the 5 GB CloudWatch Logs free tier (checked 2026-09-22 from the bill; docs are silent since the May 2025 vended-logs pricing). EMF metrics are ordinary custom metrics plus log bytes, and are not extracted in the Infrequent Access log class. `aws freetier get-free-tier-usage` is free; the Cost Explorer API is $0.01 per request.
 
-## Current status (end of the second 2026-09-21 session)
-M0 and M1 complete. **M2a complete and approved by the owner. M2b proposed and approved; next session starts at M2b step 1.** Everything below is verified.
+## Current status (2026-09-22)
+M0 and M1 complete. **M2a complete and approved by the owner. M2b step 1 done (2026-09-22); next is step 2 (SSM flags).** Everything below is verified.
 
 **Shut down cleanly. Nothing is polling or scheduled:**
 - The only event source mapping is `nightshift-fulfillment` on `nightshift-placed-orders`, state `Disabled`. It was enabled twice during the fulfilment measurement and disabled again both times, through Terraform rather than the CLI, so state never drifted.
@@ -203,13 +204,13 @@ M2a in progress (owner approved the plan 2026-09-20). Steps:
    - The fix was confirmed in billing data, not only in tests: the apply run's smoke test cost 1.12 DPU across 13 transactions with no delayed spike, against roughly 316 DPU for the same test before the fix.
 8. **Done.** M2a reviewed and approved by the owner on 2026-09-21. M2b proposed and approved the same evening.
 
-## M2b plan (approved 2026-09-21, not started)
+## M2b plan (approved 2026-09-21, in progress)
 
-**Next session starts at step 1.** Reviewed in two halves: once after step 3, once at the end.
+**Step 1 done 2026-09-22; next is step 2.** Reviewed in two halves: once after step 3, once at the end.
 
 Why M2b exists: M5's agent can only diagnose what the system reveals. Every read-only tool it has (`get_metrics`, `query_logs`, `get_flag_values`, `get_topology`) is backed by something built here. Getting this wrong makes M5 look like a model problem when it is a visibility problem.
 
-1. **Verify and budget. No AWS changes.** Re-verify on official pages: SSM Parameter Store standard tier (free, 4 KB value limit, standard throughput not billable); the exact definition of a billable custom metric and that the 10 free are per account per region; that EMF metric extraction bills ingestion against the 5 GB Logs allowance rather than separately; X-Ray's current free tier for the step 8 gate. Then write a custom-metric ledger into COST.md in the same shape as the DynamoDB capacity ledger.
+1. **Done 2026-09-22.** Custom metric ledger and a measured Logs budget are in COST.md. Lambda logs count against the 5 GB Logs free tier (confirmed from the September bill: a free tier `PutLogEvents` line, no vended logs line). Ingestion is ~1.8 KB per order, so scans are the Logs budget: M5 gets a 25 MB scan cap per investigation. Log groups must stay Standard class (Infrequent Access drops EMF). Original plan: **Verify and budget. No AWS changes.** Re-verify on official pages: SSM Parameter Store standard tier (free, 4 KB value limit, standard throughput not billable); the exact definition of a billable custom metric and that the 10 free are per account per region; that EMF metric extraction bills ingestion against the 5 GB Logs allowance rather than separately; X-Ray's current free tier for the step 8 gate. Then write a custom-metric ledger into COST.md in the same shape as the DynamoDB capacity ledger.
    - **The EMF question is the one to confirm most carefully.** If EMF ingestion bills differently than assumed, the metric budget still holds but the Logs budget may not: five metrics at 2 requests/s across a 42-incident benchmark is a lot of log lines, and Logs is the allowance with the least headroom at about 30%.
 2. **SSM flags.** Two String parameters, `payments_degraded_mode` and `checkout_rate_limit`. `src/common/flags.py` reads them with a module-scope cache and a 30 s TTL, failing open to a default if SSM errors. IAM scoped per function to its own parameter path. Note the Lambda subtlety: a frozen container can serve a stale flag for a full TTL after it thaws. Verify by flipping a flag and watching behaviour change within 30 s.
 3. **EMF metrics, budgeted.** Namespace `NightShift`, `service` as the only dimension, Powertools cold-start metric **off** (it would cost one custom metric per service). Tested the way the transaction leak is tested: assert the emitted EMF document's dimension set, so adding a dimension fails CI instead of quietly costing money.

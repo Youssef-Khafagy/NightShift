@@ -1046,3 +1046,67 @@ The fulfilment measurement was done with two sizes for the same reason, 31 order
 **A detail that fell out of having three points.** Every write DPU figure measured is an exact multiple of 0.05: the values 0.400, 1.550, 3.000 and 2.500 are 8, 31, 60 and 50 units. A drain of 31 orders billed exactly 31 units and a drain of 50 billed exactly 50, one per single-row update, while a checkout bills about 1.2 units despite writing six rows. So the quantum is not per row, and a very small write costs the same as a slightly larger one. The design consequence is to prefer fewer, fuller write transactions, which happens to be the same advice that transaction-duration billing gives.
 
 **And the estimate that was right.** Fulfilment was guessed at 0.07 DPU per order before it was measured, and came in at 0.0768. That guess landed because the billing model underneath it had already been measured: it was built from the cost of a short committed transaction, times the two transactions the worker issues. A guess standing on a measurement is a different thing from a guess standing on nothing, which is what the original 20,000 DPU projection was. It also landed close, and it was still recorded as an estimate until it was checked, because the alternative is not knowing which of your numbers you are allowed to trust.
+
+## M2b step 1: verifying the telemetry budget (2026-09-22)
+
+M2b adds metrics, flags and tracing. Each has a free allowance that is easy to overspend without noticing, so before building anything the limits were re-read on AWS's own pages and checked against this account's own data. No AWS resources were created.
+
+### What makes a custom metric
+
+A CloudWatch metric is identified by namespace, metric name and dimensions. Every distinct set of dimension values is billed as its own metric. `CheckoutsRejected{service=orders}` is one metric. `CheckoutOutcome{service=orders, outcome=rejected}` looks like one too, but each new `outcome` value (`accepted`, `out_of_stock`, `invalid`) quietly creates another. That is why our five metrics are five separate names with `service` as the only dimension, and why the reason for a rejection goes in a log field instead of a dimension. The unit does not create a new metric. The 10 free metrics are shared with detailed monitoring, and charges are prorated by the hour, but the ledger in COST.md counts every metric as a whole one anyway.
+
+### EMF costs twice
+
+EMF (embedded metric format) is a JSON log line with a `_aws` block that tells CloudWatch to extract metrics from it. Powertools Metrics writes those lines. There is no `PutMetricData` call, so the function needs no `cloudwatch:PutMetricData` permission. The billing docs list the extracted metrics under `MetricStorage:AWS/Logs-EMF`, which counts toward the 10 custom metrics, and the line itself is billed as log ingestion. So every metric costs a slot in the metric count and some bytes in the Logs allowance.
+
+A trap found in the log class docs: a log group in the Infrequent Access class does not extract EMF metrics. The line would still be ingested and billed, but no metric would appear, and nothing would report an error. Ours are all Standard, checked with `describe-log-groups`.
+
+### Measuring log volume instead of guessing it
+
+The old ~3.5 GB Logs projection had no derivation written down. It was replaced with a measurement, using two free APIs:
+
+```bash
+# bytes ingested per log group this month (AWS/Logs publishes this for free)
+aws cloudwatch get-metric-statistics --namespace AWS/Logs --metric-name IncomingBytes \
+  --dimensions Name=LogGroupName,Value=/aws/lambda/nightshift-orders \
+  --start-time 2026-09-01T00:00:00Z --end-time 2026-09-23T00:00:00Z \
+  --period 86400 --statistics Sum
+# invocations per function over the same window
+aws cloudwatch get-metric-statistics --namespace AWS/Lambda --metric-name Invocations \
+  --dimensions Name=FunctionName,Value=nightshift-orders ... --period 86400 --statistics Sum
+```
+
+Dividing one by the other gives bytes per invocation: 705 for orders, 385 for payments, about 1.8 KB for an order's whole lifecycle.
+
+A mistake made along the way: the first attempt used one 30-day period (`--period 2592000`) and asked for three different end dates. All three returned the same total, because a period is only reported whole and ignores where the end date cuts it. Daily periods, summed, gave the real answer.
+
+Once the ingestion is measured, it turns out not to be the problem: a full benchmark pass ingests about 0.22 GB. The budget goes on **Logs Insights scans**, which bill every byte in the time range queried, even if the query returns nothing. 126 investigations that query logs at 25 MB each is 3.15 GB. That makes the 25 MB cap per investigation a design requirement for M5, not a tuning knob.
+
+### Reading free tier usage without paying for it
+
+```bash
+aws freetier get-free-tier-usage --region us-east-1
+```
+
+This lists every Always Free allowance the account is tracking, with actual usage this month. It costs nothing. The Cost Explorer API (`aws ce get-cost-and-usage`) looks similar and is billed $0.01 per request, so that one is used in the console only, where it is free. The `Global-` prefix on the usage types (for example `Global-DataProcessing-Bytes`) means the allowance is summed across all regions.
+
+### The question the docs did not answer
+
+Since May 2025, AWS has priced Lambda logs as "vended logs", with their own usage type (`VendedLog-Bytes`) and tiered prices. No page said whether the 5 GB free tier covers that usage type. If it did not, a benchmark month would cost about $0.21, over this project's $0.10 line.
+
+The account's own bill answered it. Console: **Billing and Cost Management → Bills → September 2026 → Charges by service → CloudWatch → Canada (Central)**. It showed three line items, all $0.00: API requests, `CAN1-TimedStorage-ByteHrs` (log storage) and `PutLogEvents` ("First 5GB per month of log data ingested is free"). There was no vended logs line. Lambda is the only thing in the account that writes logs, and a line item appears even when usage rounds to 0 GB, so Lambda's logs are being counted as free tier ingestion.
+
+The general lesson: when the documentation is silent, the bill is primary evidence. It is also free to read in the console.
+
+### Interview questions
+
+1. **How do you keep CloudWatch custom metrics from getting expensive?**
+   Every unique combination of namespace, name and dimension values is one billed metric, so the risk is a dimension with many possible values. Ours have one dimension (`service`) with a fixed value per function, five metric names in total, and a ledger in COST.md that every metric enters before any code emits it. Anything with many possible values, such as a rejection reason, goes in a log field. Step 3 adds a test that asserts the exact dimension set of the emitted EMF document, so adding a dimension fails CI instead of showing up on the bill.
+2. **Why EMF rather than `PutMetricData`?**
+   EMF writes metrics as part of a log line the function already produces, asynchronously, with no extra API call in the request path and no `PutMetricData` permission. The cost is that each metric also uses Logs bytes, which I budgeted: about 440 bytes per order on top of 1.8 KB.
+3. **Where does your observability budget actually go?**
+   Into log queries, not log ingestion. Measured ingestion for a full benchmark is about 0.22 GB of 5. Logs Insights bills every byte in the queried time range, and 126 investigations at 25 MB each is 3.15 GB. So the agent carries a per-investigation scan cap, enforced from the `bytesScanned` statistic each query returns.
+4. **The docs didn't say whether Lambda logs are covered by the free tier. How did you decide?**
+   I read the account's September bill in the console. It had a free tier `PutLogEvents` line and no vended logs line, and Lambda is the only log producer in the account. The Free Tier API agreed. I recorded the worst case ($0.21 in a benchmark month) and the fact that the $0.01 tripwire budget fires after about 20 MB of paid ingestion, so if AWS changes this, I find out in days, not at month end.
+5. **Why not use the Infrequent Access log class to save money?**
+   It is cheaper per GB ingested, but it does not extract EMF metrics, does not support metric filters, and does not support `GetLogEvents`. Our metrics would silently vanish. We are inside the free tier anyway, so the saving would be zero.
