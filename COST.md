@@ -3,6 +3,7 @@
 Status: APPROVED by owner on 2026-09-18 (Free plan, ca-central-1, IAM user with MFA plus `aws login`). Update it whenever a number is measured or a service is added.
 All allowances below were checked on 2026-09-18 against the sources listed at the bottom.
 Re-verified 2026-09-20 before starting M2a: Aurora DSQL, Lambda and X-Ray. See "Sources checked 2026-09-20".
+Re-verified 2026-09-22 before M2b step 2: CloudWatch metrics, EMF and Logs, SSM Parameter Store, X-Ray. See "Sources checked 2026-09-22".
 "Projected" numbers are estimates from stated assumptions, not measurements. They get replaced with measured numbers in M2 to M4.
 
 ## Account plan
@@ -37,12 +38,12 @@ Usage model for "Projected": one busy month = development plus one full benchmar
 | SQS | 1M requests per month (each 64 KB chunk is one request, a batch of up to 10 messages is one request) | ~110K with the consumer disabled between runs; ~760K if the trigger is left on 24/7 | ~89% | Idle Lambda trigger polls with 5 long-poll connections. Estimate 5 x 3 per min x 43,200 min = ~648K requests/month per idle queue, for zero work. **Decided 2026-09-20:** the event source mapping ships `enabled = false` and is turned on only for a run. Only one triggered queue; DLQ has no trigger; standard (not provisioned) poller mode. Measure with NumberOfEmptyReceives in M2a. |
 | SNS | 1M requests, 1,000 email deliveries per month | ~220 emails | ~78% | Alarm actions only on ALARM transitions we care about. |
 | EventBridge | AWS service events (including alarm state changes) on the default bus are free; Scheduler 14M invocations/month | Hundreds | Large | No custom event buses or API destinations. |
-| CloudWatch metrics | 10 custom metrics; 1M API requests. GetMetricData, GetInsightRuleReport and GetMetricWidgetImage are ALWAYS charged | <= 6 custom metrics; <100K API requests | ~40% metrics, >90% API | Agent and dashboard use GetMetricStatistics, never GetMetricData. Fixed EMF dimension sets; watch Powertools default dimensions and the cold start metric. |
+| CloudWatch metrics | 10 metrics (custom and detailed monitoring combined); 1M API requests. GetMetricData, GetInsightRuleReport and GetMetricWidgetImage are ALWAYS charged (re-verified 2026-09-22) | 5 custom metrics planned; <100K API requests | 50% metrics, >90% API | Agent and dashboard use GetMetricStatistics, never GetMetricData. Every metric is budgeted in the custom metric ledger below before it is emitted. |
 | CloudWatch alarms | 10 alarm metrics (standard resolution, metrics listed directly) | <= 10 | 0 to 2 | A metric math alarm counts every metric it lists. No composite alarms ($0.50 each), no anomaly detection alarms (count as 3). No CloudWatch billing alarm; Budgets does that job. |
-| CloudWatch Logs | 5 GB/month combined: ingestion + archive storage + Logs Insights data scanned | ~3.5 GB | ~30% | Retention 3 days. Short log lines. Insights cost follows bytes scanned in the time range, NOT the result limit, so every query is one log group and a short window. Track scanned bytes per investigation. |
-| X-Ray | 100,000 traces recorded and 1M traces retrieved or scanned per month, perpetual (re-verified 2026-09-20) | ~65K recorded | ~35% | **Correction (2026-09-20):** Lambda's sampling rate is fixed at 1 request/second plus 5% of the remainder and **cannot be configured**, so the earlier "explicit sampling rate" guardrail was wrong. The lever is how many requests we send, not what fraction is sampled. X-Ray SDK is in maintenance since 2026-02-25, end of support 2027-02-25; M2b uses OpenTelemetry with the X-Ray UDP span exporter. Never enable Transaction Search or Application Signals (paid span ingestion). |
+| CloudWatch Logs | 5 GB/month combined: ingestion + archive storage + Logs Insights data scanned (re-verified 2026-09-22) | ~3.6 GB, rebuilt from measurements on 2026-09-22 (see "CloudWatch Logs budget" below) | ~28% | Retention 3 days. Log groups stay in the Standard class, because Infrequent Access cannot extract EMF metrics. Insights cost follows bytes scanned in the time range, NOT the result limit, so every query is one log group and a short window. Scan budget of 25 MB per investigation. Lambda logs appear to count against this allowance (September 2026 bill, 2026-09-22), but at 0 GB quantities that is evidence, not proof. Re-check at higher volume and after the upgrade. |
+| X-Ray | 100,000 traces recorded and 1M traces retrieved or scanned per month, perpetual (re-verified 2026-09-22; the Free Tier API lists it as always free and shows 526 traces recorded this month) | ~65K recorded | ~35% | **Correction (2026-09-20):** Lambda's sampling rate is fixed at 1 request/second plus 5% of the remainder and **cannot be configured**, so the earlier "explicit sampling rate" guardrail was wrong. The lever is how many requests we send, not what fraction is sampled. X-Ray SDK is in maintenance since 2026-02-25, end of support 2027-02-25; M2b uses OpenTelemetry with the X-Ray UDP span exporter. Never enable Transaction Search or Application Signals (paid span ingestion). |
 | CloudTrail | 90-day management event history, viewing and LookupEvents at no charge | Hundreds of lookups | Large | Never create a trail, data events, Lake, or Insights. |
-| SSM Parameter Store | Standard parameters and standard throughput: no additional charge | Tens of thousands of reads | Free | Standard tier only. Higher throughput setting stays off (it makes standard parameters billable). |
+| SSM Parameter Store | Standard parameters and standard throughput: no additional charge. Standard tier: 10,000 parameters per account and region, 4 KB maximum value (re-verified 2026-09-22) | 3 parameters (2 flags, 1 topology); a few thousand reads, since each Lambda container caches flags for 30 s | Free | Standard tier only; advanced is $0.05 per parameter-month and cannot be downgraded, only deleted and recreated. Higher throughput stays off: it bills $0.05 per 10,000 interactions for standard parameters too. The topology parameter has a hard 4 KB guard in Terraform. |
 | KMS | 20,000 requests/month across all regions; AWS managed keys only | ~1K (SecureString decrypts for API keys) | ~95% | Feature flags are plain String, not SecureString. No customer managed keys. |
 | AWS Budgets | Monitoring and notifications free; first 2 action-enabled budgets free | 2 budgets, no actions | Free | No budget actions, no budget reports ($0.01 each). |
 
@@ -278,6 +279,75 @@ The free allowance is 25 RCU and 25 WCU **per region across the whole account**,
 
 If a table needs a GSI later, its capacity comes out of the 9 unallocated, not out of thin air.
 
+### Custom metric ledger (checked 2026-09-22)
+
+What counts as one billable metric, from the CloudWatch docs:
+
+- A metric is identified by namespace, name and dimensions. "CloudWatch treats each unique combination of dimensions as a separate metric, even if the metrics have the same metric name." One dimension with 20 possible values is 20 metrics.
+- The unit is not part of the identity. Data points with different units are aggregated separately when read, but they do not create a new metric.
+- The free 10 are shared between custom metrics and detailed monitoring metrics. Never enable detailed monitoring on anything.
+- Metrics exist only in the region they are created in. The pricing page does not say whether the free 10 are per region or per account. The Free Tier API labels the Logs allowance `Global-...`, meaning it is summed across regions, and we treat metrics the same way. This project uses one region, so either reading gives 10.
+- Charges are prorated by the hour and only for hours in which data was sent. A metric that only fires during benchmark runs would cost a fraction of a metric. The ledger does not rely on this: every metric counts as a whole one.
+- EMF (embedded metric format) metrics are ordinary custom metrics. The billing docs list them under usage type `MetricMonitorUsage`, operation `MetricStorage:AWS/Logs-EMF`, and the log line that carries them is billed as normal log ingestion. So EMF costs twice: once in the metric count and once in Logs bytes.
+- EMF needs the log group in the Standard log class. The Infrequent Access class does not extract EMF metrics, so metrics would silently not appear.
+
+Every metric gets a row here before any code emits it.
+
+| Namespace | Metric | Dimensions | Emitted by | Milestone | Metrics | Status |
+|---|---|---|---|---|---|---|
+| `NightShift` | `CheckoutsPlaced` | `service=orders` | orders-service | M2b | 1 | Planned |
+| `NightShift` | `CheckoutsRejected` | `service=orders` | orders-service | M2b | 1 | Planned |
+| `NightShift` | `SerializationRetries` | `service=orders` | orders-service | M2b | 1 | Planned |
+| `NightShift` | `OrdersPaid` | `service=fulfillment` | fulfillment-worker | M2b | 1 | Planned |
+| `NightShift` | `PaymentFailures` | `service=fulfillment` | fulfillment-worker | M2b | 1 | Planned |
+| **Allocated** | | | | | **5** | |
+| **Free allowance** | | | | | **10** | |
+| **Unallocated** | | | | | **5** | |
+
+Deliberately not emitted:
+
+| Would-be metric | Cost if emitted | Why not |
+|---|---|---|
+| Powertools `ColdStart` | 1 per service, so 4 | Lambda already writes `initDurationMs` into the platform report line, which the agent can read with a bounded log query instead of a metric. Powertools only emits it with `capture_cold_start_metric=True`, which we never set; step 3's test asserts no `ColdStart` metric appears. |
+| Any metric with a reason, status or error-code dimension | 1 per distinct value, unbounded | The reason goes in a log field. The agent finds it with a bounded Logs Insights query. |
+| Per-function copies of AWS metrics (errors, duration, throttles) | 1 each | `AWS/Lambda`, `AWS/SQS` and `AWS/DynamoDB` publish these free. Every M3 alarm is built from them. |
+
+### CloudWatch Logs budget (rebuilt from measurements, 2026-09-22)
+
+The earlier ~3.5 GB projection had no written derivation, so it was rebuilt from this month's real ingestion. Source: `IncomingBytes` per log group and `Invocations` per function, both read with GetMetricStatistics for 2026-09-01 to 2026-09-22.
+
+| Function | Invocations | Bytes ingested | Bytes per invocation |
+|---|---|---|---|
+| orders | 286 | 201,682 | 705 |
+| payments | 100 | 38,540 | 385 |
+| fulfillment | 17 (batches, 100 orders) | 38,782 | 388 per order |
+| cart | 313 | 94,065 | 301 |
+| hello | 12 | 8,016 | 668 |
+
+One order's full lifecycle (one cart call, checkout, fulfilment, payment) logs about **1,779 bytes** today. M2b adds an EMF line per checkout and per fulfilment batch; at an estimated 400 bytes each that is about **2,219 bytes per order**. The 400 is an estimate until step 3 measures a real one.
+
+| Component | Basis | Busy month |
+|---|---|---|
+| Traffic ingestion | 100,800 orders x 2,219 bytes | 0.22 GB |
+| Agent and baseline Lambda logs (M5 to M7) | Allowance; not yet built | 0.10 GB |
+| Development and smoke tests | Allowance; this month so far is 0.0004 GB | 0.10 GB |
+| Archive storage | 3-day retention holds about a tenth of a month's ingestion, compressed | 0.05 GB |
+| Logs Insights scans | 126 investigations (42 incidents x 3 configurations that query logs: scripted runbook and the full agent on two models; the alarm-text baseline never queries) x 25 MB cap | 3.15 GB |
+| **Total** | | **3.62 GB of 5, ~28% headroom** |
+
+Scans, not ingestion, are the budget. At 2 requests/s the orders log group grows about 2.2 KB/s, so a 15-minute window on it scans about 2 MB. The 25 MB cap is therefore about 12 such queries per investigation. M5 enforces it from the `bytesScanned` statistic each query returns, and stops querying when the cap is reached.
+
+**Evidence, not settled (2026-09-22): Lambda logs appear to count against the 5 GB free tier.** Since May 2025 Lambda logs can be billed as vended logs (usage type `VendedLog-Bytes`, tiered from $0.50/GB in US East), and no official page found says whether the free tier covers that usage type. The September 2026 bill for CloudWatch in Canada (Central) lists three line items: API requests (66, free tier), `CAN1-TimedStorage-ByteHrs` ("First 5GB-mo per month of logs storage is free", 0 GB-Mo) and `PutLogEvents` ("First 5GB per month of log data ingested is free", 0 GB), all $0.00, with no vended logs line. The Free Tier API reports 228,970 bytes of `Global-DataProcessing-Bytes` this month against 381,085 bytes of `IncomingBytes`, and Lambda is the only thing in this account that writes logs. That is consistent with Lambda ingestion being recorded as free tier `PutLogEvents`.
+
+Why it is not proof:
+
+- Both quantities on the bill show 0 GB. At this volume the bill is consistent with rounding, and says nothing definite about how vended logs are categorized. A vended logs line may simply not be shown for usage that small, and the 150 KB gap between the Free Tier API and `IncomingBytes` is unexplained.
+- The account is on the Free plan, where charges are not possible. The bill page may present usage differently after the February 2027 upgrade to Paid.
+
+Worst case if Lambda ingestion is not covered: about 0.42 GB x $0.50 = **~$0.21 in a benchmark month**, over the $0.10 rule. The $0.01 tripwire budget would fire after roughly 20 MB of paid ingestion.
+
+**Re-check at higher volume**, when a month has at least tens of MB of Lambda logs so the bill shows non-zero quantities: after the first M2b traffic generator run, and again in the first bill after the February 2027 upgrade. Look for a `VendedLog-Bytes` line and whether its quantity matches `IncomingBytes`. Until then the Logs budget treats Lambda ingestion as free but keeps the worst case in view.
+
 ## Not Always Free
 
 | Item | Cost | Plan |
@@ -341,6 +411,19 @@ Free plan end date from the Billing console after sign-up: **2027-03-18** (accou
 | 2027-02-15 | NightShift upgrade HARD DEADLINE | If not upgraded yet, upgrade now or decide on purpose to let the account close. Before closing: export results, journals, and postmortems so the Vercel replay mode keeps working without AWS. |
 
 If credits ever drop by more than $1 in a month, treat it as an incident: find the cause before doing anything else.
+
+## Sources checked 2026-09-22 (before M2b step 2)
+
+- CloudWatch pricing (free tier, dimension combinations, hourly proration, X-Ray free tier): https://aws.amazon.com/cloudwatch/pricing/
+- Metric identity, dimensions, regional metrics: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html
+- EMF charges ("logs ingestion and archival, and custom metrics that are generated"): https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format.html
+- EMF and vended log usage types (`MetricStorage:AWS/Logs-EMF`, `DataProcessing-Bytes`, `VendedLog-Bytes`): https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_billing.html
+- Infrequent Access log class does not support EMF: https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CloudWatch_Logs_Log_Classes.html
+- Lambda logs billed as vended logs from May 2025: https://aws.amazon.com/blogs/compute/aws-lambda-introduces-tiered-pricing-for-amazon-cloudwatch-logs-and-additional-logging-destinations/
+- Parameter Store pricing: https://aws.amazon.com/systems-manager/pricing/
+- Parameter Store tiers (10,000 standard parameters, 4 KB): https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-advanced-parameters.html
+- X-Ray pricing: https://aws.amazon.com/xray/pricing/
+- Account data: `aws freetier get-free-tier-usage` (no charge: https://aws.amazon.com/about-aws/whats-new/2023/11/aws-free-tier-usage-getfreetierusage-api/ ; the Cost Explorer API is $0.01 per request), plus `IncomingBytes` and `Invocations` via GetMetricStatistics.
 
 ## Sources checked 2026-09-20 (before M2a)
 
