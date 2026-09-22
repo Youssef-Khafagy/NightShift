@@ -1216,3 +1216,84 @@ Both refusal guards in the replay script fired during the check without being pr
    `lifecycle { ignore_changes = [value] }`. Terraform owns that the parameter exists, its type, tier and allowed pattern, but not what it is currently set to. The value in the configuration is only the starting value.
 5. **What stops a replayed order from being charged twice?**
    The replay refuses while the queue has any messages or the degraded flag is on, and skips orders younger than 10 minutes. Those three cover the ways a `placed` order can still have another message coming. The worker's conditional update means a duplicate can never mark an order paid twice, but it cannot un-send a second charge, so the prevention has to happen before the message is published.
+
+## M2b step 3: EMF metrics (2026-09-22)
+
+Five custom metrics, all budgeted in the COST.md ledger before any code emitted them:
+
+| Service | Metric | When |
+|---|---|---|
+| orders | `CheckoutsPlaced` | A new order is written. A replayed idempotency key is not counted: it returns an order placed earlier. |
+| orders | `CheckoutsRejected` | Any rejection: missing idempotency key (400), unknown cart or product (404), not enough stock (409), rate limited (429). |
+| orders | `SerializationRetries` | Each retry after SQLSTATE 40001. The earliest visible sign of hot-row contention. |
+| fulfillment | `OrdersPaid` | This delivery moved the order from `placed` to `paid`. |
+| fulfillment | `PaymentFailures` | The payment call raised, error or timeout alike. |
+
+Namespace `NightShift`, `service` as the only dimension, cold-start metric off.
+
+### How the metrics get from Python to CloudWatch
+
+Powertools `Metrics` collects metrics during an invocation, and `@metrics.log_metrics` on the handler prints them at the end as one JSON line in embedded metric format. A real one from orders:
+
+```json
+{"_aws":{"Timestamp":1790115111783,"CloudWatchMetrics":[{"Namespace":"NightShift","Dimensions":[["service"]],"Metrics":[{"Name":"CheckoutsPlaced","Unit":"Count"}]}]},"service":"orders","CheckoutsPlaced":[1.0]}
+```
+
+CloudWatch Logs recognises the `_aws` block and turns the line into a metric data point. There is no `PutMetricData` call and no extra IAM permission, which is why step 3 needed no Terraform change beyond new code.
+
+**The risk checked first.** Our functions use Lambda's JSON log format. If Lambda wrapped that line in its own JSON envelope (`{"timestamp":..., "message": "{\"_aws\"...}"}`), CloudWatch would not see an `_aws` block, no metric would appear, and nothing would report an error. The Lambda docs say "Lambda doesn't double-encode any logs that are already JSON encoded", but they also warn that EMF can break under JSON format for Node.js and recommend testing. So the live check read the raw log line back: it arrived unwrapped, and `list-metrics` showed the metrics.
+
+### Making the ledger executable
+
+`tests/test_metrics.py` drives every handler path that emits a metric, captures the EMF lines printed to stdout, and checks them against the ledger table in COST.md, parsed with a regular expression. It fails if:
+
+- a metric is emitted that has no ledger row;
+- any dimension set is other than `["service"]` (the failure message says why: each extra dimension value is a separately billed metric);
+- `ColdStart` appears;
+- a ledger row names a metric nothing emits;
+- the ledger stops parsing (it asserts exactly 5 rows, so a reformatted table cannot silently become an empty ledger that everything passes against).
+
+Like the transaction hygiene tests, it was checked by breaking the code on purpose. Adding `metrics.add_dimension(name="reason", ...)` failed with the billing message, and renaming `CheckoutsPlaced` failed with "budgeted but never emitted".
+
+The ledger test earned its keep before it was even committed. While PRs #11 and #13 were still unmerged, the branch was moved onto a `main` that did not have the ledger yet, and six tests failed with "metrics not in the COST.md ledger". That was correct, and it is how the unmerged PRs were noticed.
+
+**One Powertools detail.** `Metrics` instances share their metric set at class level, so two `Metrics` objects in one process are really one. In Lambda each process runs one service, so it does not matter. In tests, where orders and fulfillment load side by side, it works only because every handler flushes (and clears) at the end of each call.
+
+**One `SerializationRetries` rule.** fulfillment also retries on 40001, but the ledger budgets `SerializationRetries` for `service=orders` only. Emitting it from fulfillment would create `SerializationRetries{service=fulfillment}`, a sixth metric. So fulfillment logs its retries without a metric, and the code says why.
+
+### Verified live (2026-09-22)
+
+After `apply.yml` deployed it (smoke test green), with no extra traffic beyond the smoke test and one direct invoke of fulfillment for the smoke order:
+
+| Check | Result |
+|---|---|
+| Raw EMF line in the log group | Unwrapped, namespace `NightShift`, `Dimensions: [["service"]]` |
+| Line size | 210 to 214 bytes (orders), 204 bytes (fulfillment), against a 400-byte estimate |
+| `aws cloudwatch list-metrics --namespace NightShift` | Exactly 3: `CheckoutsPlaced`, `CheckoutsRejected` (service=orders), `OrdersPaid` (service=fulfillment), one dimension each |
+| `get-metric-statistics ... --statistics Sum` | 1.0 each, matching the smoke test |
+| Custom metrics in the whole account | 3 |
+
+`SerializationRetries` and `PaymentFailures` need real contention or a failing payment provider to appear. The unit tests cover their shape; they will show up live in the chaos scenarios that cause them.
+
+The measured line size replaced the estimate in COST.md: about 2,013 bytes of log per order instead of 2,219, and the Logs budget total moved from 3.62 to 3.60 GB.
+
+### A gap found for M3
+
+When cart-service fails, orders catches the error and returns 502 without raising. Lambda only counts an invocation in `AWS/Lambda Errors` when the handler raises or times out, so orders' `Errors` stays at 0 during a cart outage. An M3 alarm on orders' `Errors` would not fire. To be decided with the alarm design in M3, not patched here.
+
+### A GitHub lesson
+
+After PR #11 was merged, GitHub marked #13 (which contained #11's commits) as conflicting. A local trial merge (`git merge --no-commit --no-ff`) into the new `main` was clean, and the commit merged as #11 was byte-for-byte the one #13 contained, so the flag was stale. Merging `origin/main` into #13's branch and pushing made GitHub recompute: `MERGEABLE`, CI green, merged. Check locally before believing a conflict report.
+
+### Interview questions
+
+1. **How do you know your metrics actually reach CloudWatch, given you use Lambda's JSON log format?**
+   The docs say Lambda does not re-encode lines that are already JSON, but they also recommend testing EMF under JSON format. So after deploying I read the raw log line back with `filter-log-events` and confirmed the `_aws` block was at the top level, then confirmed with `list-metrics` that CloudWatch had created exactly the three metrics the smoke test should produce, each summing to 1.
+2. **How do you stop a teammate from adding an expensive metric by accident?**
+   A unit test parses the ledger table in COST.md and fails CI on any metric or dimension that is not budgeted there. Adding a metric means adding a ledger row in the same PR, where the cost is visible to the reviewer. I proved the test works by planting an extra dimension and a renamed metric; both failed.
+3. **Why is `CheckoutsRejected` one metric instead of one per reason?**
+   A dimension like `reason=out_of_stock` would make every reason a separately billed metric, and the set of reasons is open-ended. The count answers "is something wrong", and the reason is in the log line next to it, where a bounded Logs Insights query finds it.
+4. **Why doesn't the orders error alarm catch a cart-service outage?**
+   Found during this step: orders catches cart failures and returns 502, and Lambda only counts raised exceptions and timeouts as errors. So the fix belongs in the alarm design, for example alarming on cart's own errors, or counting 5xx responses, which would cost a metric and has to go through the ledger.
+5. **What did EMF cost in log volume?**
+   Measured, 204 to 214 bytes per line, one line per checkout and one per fulfilment batch of up to ten. About 234 bytes per order on top of about 1.8 KB of ordinary logs, or roughly 0.02 GB across a full benchmark pass.
