@@ -1112,3 +1112,107 @@ The general lesson: when the documentation is silent, the bill is useful evidenc
    I read the account's September bill. It had a free tier `PutLogEvents` line and no vended logs line, and Lambda is the only log producer in the account. But every quantity was 0 GB, and the account was on the Free plan, so I recorded that as evidence rather than a conclusion. The worst case is $0.21 in a benchmark month. The $0.01 tripwire budget fires after about 20 MB of paid ingestion, and the question is re-checked once there is real volume on the bill and again after the upgrade to Paid.
 5. **Why not use the Infrequent Access log class to save money?**
    It is cheaper per GB ingested, but it does not extract EMF metrics, does not support metric filters, and does not support `GetLogEvents`. Our metrics would silently vanish. We are inside the free tier anyway, so the saving would be zero.
+
+## M2b step 2: operational feature flags (2026-09-22)
+
+A feature flag here is a switch an operator (and from M6, the agent) flips during an incident to change how a service behaves without deploying anything. There are two, stored as SSM Parameter Store parameters under `/nightshift/flags/`:
+
+| Flag | Read by | What `true` / `N` does | Undo |
+|---|---|---|---|
+| `payments_degraded_mode` | fulfillment-worker | Skips the payment provider, leaves the order in `placed`, acknowledges the message | Set `false`, then `scripts/replay_placed_orders.py --apply` |
+| `checkout_rate_limit` | orders-service | Allows N checkouts per second per execution environment; the rest get 429 with `retry-after: 1`. 0 is off | Set `0` |
+
+### Why each flag behaves the way it does
+
+**Degraded mode defers rather than refusing.** It exists for scenario 4, a slow payment provider. The two alternatives were worse. A checkout kill switch (return 503) hurts customers more than a slow provider does, since orders were still being accepted anyway. Failing fast into the DLQ spends delivery attempts and makes the DLQ-depth alarm fire, which is exactly the signal scenario 5 (poison message) depends on. Deferring keeps checkout working, stops calls to the sick dependency, and loses nothing, because the order is still in the database in `placed`.
+
+Acknowledging the message is the important detail. Reporting it as a failure would redeliver it against the same slow provider, three times, and then park it in the DLQ.
+
+**The replay script is careful about double charging.** Two messages for one order, processed at the same moment, can both read `placed` and both call the payment provider. The worker's conditional `UPDATE ... WHERE status = 'placed'` stops the second one from marking it paid, but not from charging. So the script refuses while the flag is still on, refuses while the queue has any messages (a `placed` order might still have its original one waiting), and skips orders younger than 10 minutes (they might be in flight). The same script also closes a gap orders-service already documented: a crash between committing an order and publishing its message.
+
+**The rate limit is per environment, not global.** Each Lambda execution environment keeps its own token bucket. With reserved concurrency 2, a limit of N means at most 2N per second. An exact global limit would need a shared counter, such as a DynamoDB item updated on every checkout, which costs write capacity and adds a new way for every checkout to fail. For shedding load during an incident, the approximation is enough, and the 2N ceiling is written down.
+
+A token bucket holds up to N tokens and refills at N per second. Each request takes one. That allows a burst of N, then holds the average at N per second. The check runs first in the handler, before the cart call or the database, because shedding load is only useful if a shed request is cheap.
+
+### The flag reader
+
+`src/common/flags.py` caches each value for 30 seconds per execution environment, so a checkout does not wait on SSM every time. Three details:
+
+- **Fail open.** If SSM errors (throttled, down, or permission removed), the last value read is kept, and if there never was one, the default. A flag outage must not become a checkout outage.
+- **Cache the failure too.** Otherwise an SSM outage adds one failing call, with its timeout, to every request.
+- **Short timeouts.** boto3 defaults to a 60 second read timeout plus retries. The client uses 1 second and 2 total attempts.
+
+A bug in that last line, caught by a test before it shipped: `retries={"max_attempts": 2}` makes **three** calls, because botocore reads `max_attempts` as the number of retries. The key that means "total calls" is `total_max_attempts`. The docstring said two, the config said three, and only the test that read back `client.meta.config.retries` noticed.
+
+### Terraform owns the parameter, not its value
+
+```hcl
+resource "aws_ssm_parameter" "payments_degraded_mode" {
+  name            = "/nightshift/flags/payments_degraded_mode"
+  type            = "String"
+  tier            = "Standard"
+  value           = "false"
+  allowed_pattern = "^(true|false)$"
+  lifecycle { ignore_changes = [value] }
+}
+```
+
+- `ignore_changes = [value]`: during an incident someone flips the flag in SSM directly. Without this, the next routine `terraform apply` would quietly flip it back while the incident was still going on.
+- `allowed_pattern`: SSM itself rejects `ture` or `-1` at write time, so a typo fails at the keyboard rather than silently reading as the default inside the service.
+- `tier = "Standard"` stated explicitly: advanced parameters are billed, and a parameter can never be moved from advanced back to standard, only deleted and recreated.
+
+Each function's IAM policy allows `ssm:GetParameter` on its own flag only, which also makes the policy an exact record of which service reads which flag.
+
+**A plan-time error worth knowing.** The first version of those IAM statements used `aws_ssm_parameter.checkout_rate_limit.arn`. An ARN is unknown until the parameter exists, which made the whole policy document unknown, and the Lambda module decides `count = var.extra_policy_json == null ? 0 : 1`. Terraform cannot plan a `count` that depends on an unknown value, so the plan failed. The fix builds the ARN from values known at plan time (region, account ID, name), the same trick already used for `cart_function_arn`.
+
+**And one about how the CI role changes itself.** The CI apply role gained SSM permissions, but it has an explicit deny on changing its own policy. So that one resource was applied locally first:
+
+```bash
+terraform -chdir=terraform apply -target=aws_iam_role_policy.ci_apply
+```
+
+Then the PR was merged and `apply.yml` deployed the rest. The deny working as designed is the reason for the two steps.
+
+### Verifying it live
+
+**Rate limit.** Checkouts were sent through the Lambda API with no idempotency key. One that passes the limiter stops at the 400 immediately after it, before the cart or the database, so the test cost no DSQL at all: 400 means "let through", 429 means "shed".
+
+```bash
+aws ssm put-parameter --name /nightshift/flags/checkout_rate_limit --value 1 --overwrite
+```
+
+| Step | Result |
+|---|---|
+| Limit 0 | 10 of 10 let through |
+| Set to 1 | First 429 at **26.5 s** after the write, inside the 30 s TTL |
+| Limit 1, after 2 s idle | `[400, 429, 429]`: one through, then shed |
+| Back to 0 | All let through again by **16.6 s** |
+
+The two times differ because each depends on when that execution environment last refreshed its cache, which is anywhere in the 30 s window.
+
+**Degraded mode**, first by invoking the worker directly with a synthetic SQS event, then through the real queue:
+
+1. Flag `true`, wait 35 s, enable the consumer (a Terraform apply with `-var=queue_consumer_enabled=true`). The queued message from the deploy's smoke test was consumed and logged `payment deferred` with its original correlation ID. The payment provider's log group had no events in the window. The queue emptied and the order stayed `placed`.
+2. Flag `false`, wait 35 s, `replay_placed_orders.py --apply`: "Republished 1". About 30 s later the worker logged `order paid` with correlation ID `replay-<order_id>`, and the payment provider was called exactly once.
+3. Consumer disabled again through Terraform. `terraform plan -detailed-exitcode` returned 0.
+
+Both refusal guards in the replay script fired during the check without being provoked on purpose: once for a non-empty queue, once for the flag still being on.
+
+**A wrong assumption along the way.** The first `--apply` republished nothing, reporting "0 orders in 'placed' for more than 10 minutes". I had estimated the order was about 25 minutes old. Asking the database settled it: created 21:21:50, and the query ran at about 21:29, so the order was 7.5 minutes old and the age filter was right to skip it. The fix was to wait, not to change the code. The lesson: when a guard refuses, check the guard's inputs before doubting the guard.
+
+**Two small shell lessons.**
+- `export AWS_PROFILE=x DSQL_ENDPOINT=$(terraform output ...)` runs the command substitution before the export takes effect, so Terraform ran with no profile. Set the profile in its own `export` first.
+- CI's lint job failed on EXE001 ("shebang present but file is not executable") for the new script. The other scripts are stored as mode `100755` in git (`git ls-files -s scripts/` shows it); this one was `100644`. My local `pre-commit run` on the staged files did not report it, and I have not worked out why; `pre-commit run --all-files` is what CI runs.
+
+### Interview questions
+
+1. **Why SSM Parameter Store for feature flags rather than environment variables?**
+   In this project, changing an environment variable means publishing a new function version and moving the `live` alias, which is a deploy. A flag has to change in seconds during an incident without a deploy, and be readable by the agent as a separate fact. Standard parameters are free, each function can be limited to reading its own, and the 30 s cache keeps SSM out of the request path.
+2. **What happens to checkout if SSM goes down?**
+   Nothing visible to customers. The reader keeps the last value it read, or the default if it never read one, logs the failure, and caches the failure for 30 s so it is not retried on every request. Each call allows 1 s to connect and 1 s to read, with 2 attempts, so a failing read costs a few seconds at most, once per 30 s per environment, instead of boto3's default of a minute or more. There is a unit test for each of those cases.
+3. **Your rate limit isn't exact. Why is that acceptable?**
+   It is per execution environment, so the real ceiling is N times the number of environments, 2N here. An exact limit needs a shared counter on every checkout, which costs DynamoDB write capacity and makes the limiter itself a new dependency that can fail. Its job is shedding load off a struggling dependency during an incident, where roughly right in 30 seconds beats exactly right with a new failure mode.
+4. **How do you stop `terraform apply` from undoing an operator's flag change?**
+   `lifecycle { ignore_changes = [value] }`. Terraform owns that the parameter exists, its type, tier and allowed pattern, but not what it is currently set to. The value in the configuration is only the starting value.
+5. **What stops a replayed order from being charged twice?**
+   The replay refuses while the queue has any messages or the degraded flag is on, and skips orders younger than 10 minutes. Those three cover the ways a `placed` order can still have another message coming. The worker's conditional update means a duplicate can never mark an order paid twice, but it cannot un-send a second charge, so the prevention has to happen before the message is published.
