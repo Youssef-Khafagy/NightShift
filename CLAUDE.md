@@ -139,15 +139,16 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Lambda logs appear to count against the 5 GB CloudWatch Logs free tier (September 2026 bill, checked 2026-09-22; docs are silent since the May 2025 vended-logs pricing). **Evidence, not settled:** the bill quantities were 0 GB, so rounding could hide a vended logs line, and the Free plan bill may present usage differently after the upgrade. Re-check after the first traffic generator run and on the first Paid-plan bill. EMF metrics are ordinary custom metrics plus log bytes, and are not extracted in the Infrequent Access log class. `aws freetier get-free-tier-usage` is free; the Cost Explorer API is $0.01 per request.
 
 ## Current status (2026-09-22)
-M0 and M1 complete. **M2a complete and approved by the owner. M2b steps 1 and 2 done (2026-09-22); next is step 3 (EMF metrics), then the first-half owner review.** Everything below is verified.
+M0 and M1 complete. **M2a complete and approved by the owner. M2b steps 1 to 3 done (2026-09-22). Stopped for the owner's first-half review of M2b before step 4.** Everything below is verified.
 
 **Shut down cleanly. Nothing is polling or scheduled:**
 - The only event source mapping is `nightshift-fulfillment` on `nightshift-placed-orders`, state `Disabled`. It has been enabled for measurements and checks and disabled again each time, always through Terraform rather than the CLI, so state never drifted. Last cycle: the step 2 queue-path check on 2026-09-22.
 - Both flags at their defaults: `checkout_rate_limit` = `0`, `payments_degraded_mode` = `false`.
 - No EventBridge rules exist. No provisioned concurrency on any function. Every function has reserved concurrency 2.
-- Both queues are empty, DLQ included. DSQL holds 101 paid orders and 202 line items, far under the 1 GB free storage, and an idle cluster costs nothing.
+- The DLQ is empty. The placed-orders queue holds 1 message: the original for the step 3 smoke order, which the live check had already paid by invoking fulfillment directly. If consumed, the worker logs "order already settled". Until drained it blocks `replay_placed_orders.py`, by design. DSQL holds 102 paid orders and 204 line items, far under the 1 GB free storage, and an idle cluster costs nothing.
 - Both budgets still armed with `IncludeCredit=false`. Month-to-date spend $0.00, confirmed with Cost Explorer.
-- `terraform plan` clean on `main` after PR #12 (step 2) was merged and deployed by `apply.yml`. PR #11 (step 1 docs) and the step 2 write-up PR are open for review.
+- `terraform plan` clean on `main` after PR #14 (step 3) was merged and deployed by `apply.yml`. PRs #11 to #14 are merged; the step 3 write-up PR is open.
+- Custom metrics in the account: 3 (`list-metrics`), all in `NightShift`.
 - The 2026-09-22 session spent **3.29 DPU** (TotalDPU for the day), mostly one smoke test, one fulfilment and a few short reads.
 
 Done:
@@ -208,7 +209,7 @@ M2a in progress (owner approved the plan 2026-09-20). Steps:
 
 ## M2b plan (approved 2026-09-21, in progress)
 
-**Steps 1 and 2 done 2026-09-22; next is step 3.** Reviewed in two halves: once after step 3, once at the end.
+**Steps 1 to 3 done 2026-09-22; waiting for the first-half owner review, then step 4.** Reviewed in two halves: once after step 3, once at the end.
 
 Why M2b exists: M5's agent can only diagnose what the system reveals. Every read-only tool it has (`get_metrics`, `query_logs`, `get_flag_values`, `get_topology`) is backed by something built here. Getting this wrong makes M5 look like a model problem when it is a visibility problem.
 
@@ -218,7 +219,10 @@ Why M2b exists: M5's agent can only diagnose what the system reveals. Every read
    - Live results: rate limit took effect 26.5 s after the write and was lifted 16.6 s after reset, both inside the 30 s TTL. Degraded mode deferred a queued message (no payment call, queue emptied, order stayed `placed`); the replay then got it to `paid` with the payment provider called exactly once.
    - Two bugs caught before deploy: botocore's `max_attempts` counts retries, not attempts (now `total_max_attempts`); and IAM built from `aws_ssm_parameter.*.arn` broke the module's `count` at plan time (now built from names, like `cart_function_arn`).
    - Original plan: **SSM flags.** Two String parameters, `payments_degraded_mode` and `checkout_rate_limit`. `src/common/flags.py` reads them with a module-scope cache and a 30 s TTL, failing open to a default if SSM errors. IAM scoped per function to its own parameter path. Note the Lambda subtlety: a frozen container can serve a stale flag for a full TTL after it thaws. Verify by flipping a flag and watching behaviour change within 30 s.
-3. **EMF metrics, budgeted.** Namespace `NightShift`, `service` as the only dimension, Powertools cold-start metric **off** (it would cost one custom metric per service). Tested the way the transaction leak is tested: assert the emitted EMF document's dimension set, so adding a dimension fails CI instead of quietly costing money.
+3. **Done 2026-09-22, verified live.** `get_metrics()` in `common/context.py`; orders emits `CheckoutsPlaced`, `CheckoutsRejected`, `SerializationRetries`; fulfillment emits `OrdersPaid`, `PaymentFailures` (not `SerializationRetries`, which is budgeted for orders only). `tests/test_metrics.py` parses the COST.md ledger and fails on any unbudgeted metric or dimension, on `ColdStart`, on a budgeted metric nothing emits, or on an unparseable ledger; verified by planting violations.
+   - Live: EMF lines arrive unwrapped under Lambda JSON log format; 204 to 214 bytes each (estimate was 400). `list-metrics` shows exactly 3 so far (`CheckoutsPlaced`, `CheckoutsRejected`, `OrdersPaid`), one dimension each; the other two appear on the first retry or payment failure. Logs budget now 3.60 GB of 5.
+   - **Open for M3:** orders returns 502 on a cart-service failure without raising, so `AWS/Lambda Errors` for orders stays 0 and an alarm on it would miss a cart outage.
+   - Original plan: **EMF metrics, budgeted.** Namespace `NightShift`, `service` as the only dimension, Powertools cold-start metric **off** (it would cost one custom metric per service). Tested the way the transaction leak is tested: assert the emitted EMF document's dimension set, so adding a dimension fails CI instead of quietly costing money.
    - **Owner review point.** Steps 2 and 3 are the ones with irreversible cost consequences.
 4. **Correlation ID, proven end to end.** Mostly already built; this is verification. A script runs one checkout and reconstructs the chain across all five log groups from the ID alone, asserting no break. Bounded time ranges, per the Logs Insights cost rule.
 5. **Topology parameter.** Terraform writes compact JSON from its outputs to SSM. Hard size guard: fail if it exceeds 4 KB rather than silently needing the paid advanced tier.
