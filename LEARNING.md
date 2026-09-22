@@ -1491,7 +1491,13 @@ Every row is OK, WATCH (50% or more) or ALERT (85% or more, the same line AWS's 
 0 ALERT, 0 WATCH, 18 OK. Two things worth more than the green rows:
 
 - **4 custom metrics, not the 3 I had reported after step 3.** The fourth was `SerializationRetries{service=orders}`, emitted at 22:49 UTC by the single serialization conflict during the step 6 load run. It was budgeted, so nothing was wrong, but my own summary was stale, and the script noticed before I did.
-- **AWS Glue, 10 catalog requests.** This project uses no Glue. Ten requests against a free million costs nothing, but usage nobody planned is exactly what a cost check should surface. So the script compares billing's service list with an expected set and prints anything extra. The cause is not known yet; it is recorded as an open question, not guessed at.
+- **AWS Glue, 10 catalog requests.** This project uses no Glue. Ten requests against a free million costs nothing, but usage nobody planned is exactly what a cost check should surface, so the script compares billing's service list with an expected set and prints anything extra. CloudTrail event history answered it in one command:
+
+  ```bash
+  aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventSource,AttributeValue=glue.amazonaws.com
+  ```
+
+  Every call came from `resource-explorer-2`, the service-linked role of AWS Resource Explorer, which periodically lists Glue databases, jobs and crawlers to build its search index. AWS's own background activity, not ours. Glue went into the expected set with a comment saying why, so the next unexplained service still stands out.
 
 ### What it deliberately does not do
 
@@ -1505,8 +1511,8 @@ The plan said `measure_dpu.py` would fold into this script. It did not: `measure
    A script reads billing's view from the Free Tier API and a live month-to-date view from CloudWatch, for every allowance the project uses, including DSQL, which billing does not track. It flags anything at 50% or 85% and exits non-zero on 85%, so it can gate a benchmark run.
 2. **Why two sources instead of one?**
    The Free Tier API is authoritative but a day behind. CloudWatch is live but is not billing, and for SQS it is an approximation. Seeing both shows lag and disagreement instead of hiding them.
-3. **What would you do about the Glue requests?**
-   Find the source before anything else, because unplanned usage is how cost surprises start, even when this one costs nothing. CloudTrail event history (`LookupEvents`, free) would show which principal called Glue and when.
+3. **The cost check found a service you don't use. What did you do?**
+   Found the caller before anything else, because unplanned usage is how cost surprises start, even when it costs nothing. CloudTrail `LookupEvents` (free) showed every Glue call came from AWS Resource Explorer's service-linked role building its index. So it went into the expected list with that reason, rather than being ignored or silenced.
 4. **Why is the SQS number an upper bound?**
    SQS has no request-count metric. Adding the per-message metrics counts a batched call once per message, which overstates requests. For a cost check, overstating is the safe error.
 5. **How often does it run?**
