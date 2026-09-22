@@ -62,12 +62,15 @@ def test_free_tier_rows_carry_the_numbers(cost):
 
 
 def test_unexpected_services_are_listed(cost):
+    """EC2 is on this project's forbidden list, so it must always stand out."""
     usages = [
         {"service": "AWS Lambda"},
-        {"service": "AWS Glue"},
+        {"service": "Amazon Elastic Compute Cloud - Compute"},
         {"service": "Amazon Simple Queue Service"},
     ]
-    assert cost.unexpected_services(usages) == ["AWS Glue"]
+    assert cost.unexpected_services(usages) == [
+        "Amazon Elastic Compute Cloud - Compute"
+    ]
 
 
 def test_sqs_estimate_errs_high(cost):
