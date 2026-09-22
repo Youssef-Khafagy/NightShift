@@ -1356,3 +1356,61 @@ That number is small because the log groups were almost idle. Insights bills eve
    The decision is separated into two pure functions over log rows, tested with broken chains: stopping at the queue, out of order, a wrong ID, a missing ID. The AWS part only fetches rows. The live run then showed it passing on real data.
 5. **What does it cost to search the logs this way?**
    Logs Insights bills bytes in the queried time range across all named groups, matching or not. This run scanned 4,492 bytes for two queries over near-idle groups. Under benchmark traffic the same window would hold far more, which is why M5 bounds every query to one short window and carries a 25 MB scan cap per investigation.
+
+## M2b step 5: the topology parameter (2026-09-22)
+
+Before the M5 agent looks at a single metric, it needs to know what exists and what depends on what: that orders calls cart, that fulfillment sits behind a queue and calls payments, which flag each service reads, where each one logs. `terraform/topology.tf` writes that as compact JSON to the SSM parameter `/nightshift/topology`, and M5's `get_topology` tool reads it.
+
+### Structure, not state
+
+The topology holds what the system *is*: services, calls, stores, queues, flags, log groups. It leaves out anything a deploy or a chaos scenario can change, such as the published version, timeout, memory or table capacity. Scenario 3 (timeout regression) changes a timeout and scenario 12 (red herring deploy) changes a version; if the topology carried those, the agent could read a snapshot from before the fault and trust it. Those facts come from live tools (`get_function_config`, `list_recent_deployments`) at investigation time instead. A side effect: the parameter changes only when the architecture does.
+
+The first draft included the cart table's read and write capacity. It came out on review for the same reason: capacity can be changed outside Terraform, and then the topology would quietly be wrong.
+
+### Generated, not hand-written
+
+Every name is read from a Terraform resource attribute (`module.orders.log_group_name`, `aws_sqs_queue.placed_orders.name`), so renaming a queue updates the topology in the same apply. `max_receive_count` is read from the queue's own redrive policy with `jsondecode(...).maxReceiveCount` rather than typed as `3`. The `calls` lists are the one hand-written part, and a comment says they must match the IAM policies in `services.tf`.
+
+Unlike the flags, Terraform owns this value outright, with no `ignore_changes`. Flags are operational controls people flip mid-incident; the topology is generated, and nobody edits it by hand.
+
+### The 4 KB guard
+
+A Standard-tier parameter holds at most 4 KB. Above that SSM needs the Advanced tier, which is billed per parameter per month and can never be moved back to Standard, only deleted and recreated. So the size is checked at plan time:
+
+```hcl
+lifecycle {
+  precondition {
+    condition     = length(local.topology_json) <= 4096 && can(regex("^[[:ascii:]]*$", local.topology_json))
+    error_message = "Topology JSON is ${length(local.topology_json)} characters; ..."
+  }
+}
+```
+
+A precondition runs during `terraform plan`, so an oversized topology fails the PR's plan job before anything is applied.
+
+The second half of the condition exists because Terraform's `length()` counts characters, not bytes. `é` is one character and two bytes in UTF-8, so a string of 4,000 characters with some non-ASCII in it could pass a length check and still exceed 4,096 bytes. Requiring ASCII makes the character count equal the byte count.
+
+Both halves were tested by breaking them: lowering the limit to 1,000 failed the plan, and adding one `é` to the namespace failed it too. Then the file was restored.
+
+### Verified live
+
+After `apply.yml` (1 added, smoke test green):
+
+- `describe-parameters`: `/nightshift/topology`, `String`, `Standard`, version 1.
+- The stored value compared with `cmp` against Terraform's own `local.topology_json` (read with `terraform console`): identical, 1,173 bytes each, 29% of the limit.
+- `terraform plan -detailed-exitcode`: 0.
+
+The topology includes the DSQL cluster identifier, which lives in SSM, not in the repo. When M8 builds the dashboard's public replay files, the topology must not be copied into them verbatim.
+
+### Interview questions
+
+1. **Why does the agent get a topology at all? Couldn't it discover the system?**
+   It could, with many list and describe calls, each costing a step, tokens and time in an investigation with hard limits on all three. One small parameter answers "what exists and what depends on what" in a single call, so the steps go on the actual incident.
+2. **Why leave versions and timeouts out of it?**
+   They are exactly what several faults change. A topology that included them would let the agent trust a snapshot from before the fault. The topology holds structure, which changes when the architecture does, and state is always read live.
+3. **What stops the topology from outgrowing the free tier?**
+   A Terraform precondition fails the plan above 4,096 characters or on any non-ASCII character, so the count is also a byte count. It runs at plan time, so the PR's CI plan job catches it before any apply. It is at 1,173 bytes today.
+4. **Why is this one owned by Terraform when the flags use `ignore_changes`?**
+   The flags are controls that people change during incidents, and an apply must not undo that. The topology is derived from the configuration and nobody should edit it; if it drifted, Terraform putting it back is the correct behaviour.
+5. **How do you know the parameter holds what Terraform intended?**
+   After deploying, I read the value back from SSM and compared it byte for byte with `local.topology_json` from `terraform console`. They were identical, and `terraform plan` was clean.
