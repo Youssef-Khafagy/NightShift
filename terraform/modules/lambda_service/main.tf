@@ -161,8 +161,13 @@ resource "aws_lambda_function" "this" {
   logging_config {
     log_format            = "JSON"
     application_log_level = "INFO"
-    system_log_level      = "WARN"
-    log_group             = aws_cloudwatch_log_group.this.name
+    # INFO, not WARN: Lambda writes its platform lines (START, REPORT with
+    # duration and memory, and the init report on a cold start) at INFO. At
+    # WARN none of them reach CloudWatch, so cold starts and slow invocations
+    # are invisible in the logs the agent searches. Owner decision 2026-09-22:
+    # worth the extra REPORT line per invocation.
+    system_log_level = "INFO"
+    log_group        = aws_cloudwatch_log_group.this.name
   }
 
   dynamic "environment" {

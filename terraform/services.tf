@@ -49,6 +49,11 @@ module "cart" {
   extra_policy_json   = data.aws_iam_policy_document.cart.json
   log_retention_days  = var.log_retention_days
   create_function_url = true
+
+  # 5, not the module's 2: orders calls cart on every checkout while clients
+  # also store carts, and at 2 a slow first request in a new environment was
+  # enough to throttle at 1 order/s (step 6 live check, 2026-09-22).
+  reserved_concurrency = 5
 }
 
 # ---------------------------------------------------------------------------
@@ -122,6 +127,11 @@ module "orders" {
   extra_policy_json   = data.aws_iam_policy_document.orders.json
   log_retention_days  = var.log_retention_days
   create_function_url = true
+
+  # 5, not the module's 2. At 2, one slow checkout in a new environment
+  # (3.1 s) plus normal traffic throttled at 1 order/s in the step 6 live
+  # check. The checkout_rate_limit flag's real ceiling is 5 times its value.
+  reserved_concurrency = 5
 }
 
 # ---------------------------------------------------------------------------

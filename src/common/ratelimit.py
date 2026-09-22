@@ -8,7 +8,7 @@ at `rate` per second.
 This limit is per execution environment, not global. Each Lambda environment
 has its own bucket and none of them talk to each other, so the real ceiling is
 `rate` times the number of environments running. orders-service has reserved
-concurrency 2, so a flag value of N caps checkout at 2N per second. That is
+concurrency 5, so a flag value of N caps checkout at 5N per second. That is
 load shedding, not an exact quota. An exact global limit needs shared state,
 such as a DynamoDB counter, which would cost write capacity and add a new way
 for every checkout to fail. The approximation is good enough for the job this
