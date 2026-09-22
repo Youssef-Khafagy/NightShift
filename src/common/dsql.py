@@ -24,6 +24,7 @@ from typing import TypeVar
 
 import boto3
 import psycopg
+from aws_lambda_powertools import Logger
 
 T = TypeVar("T")
 
@@ -89,6 +90,16 @@ def auth_token(endpoint: str, region: str, *, admin: bool = False) -> str:
 
 _shared: psycopg.Connection | None = None
 
+# child=True shares the service's logger, so the connection line carries the
+# correlation ID of the request that paid for it.
+logger = Logger(child=True)
+
+# How long the last connect() spent on each part, in milliseconds. Set by
+# connect(), logged by shared_connection(). Measured because a new execution
+# environment's first request takes 1.9 to 3.0 s against 0.3 s warm, and the
+# connection is the prime suspect (M2b, 2026-09-22).
+last_connect_ms: dict[str, float] = {}
+
 
 def shared_connection(**kwargs) -> psycopg.Connection:
     """One connection per execution environment, reopened if it has died.
@@ -106,6 +117,7 @@ def shared_connection(**kwargs) -> psycopg.Connection:
     global _shared
     if _shared is None or _shared.closed:
         _shared = connect(**kwargs)
+        logger.info("database connected", extra=dict(last_connect_ms))
     return _shared
 
 
@@ -196,12 +208,19 @@ def connect(
     endpoint = endpoint or endpoint_from_env()
     region = region or os.environ.get("AWS_REGION") or "ca-central-1"
 
-    return psycopg.connect(
+    # Timed in two parts. The token is signed locally, but auth_token() also
+    # builds a boto3 client, which is slow at 128 MB. The connection is a TLS
+    # handshake plus DSQL checking the token.
+    started = time.monotonic()
+    token = auth_token(endpoint, region, admin=(role == ADMIN_ROLE))
+    token_done = time.monotonic()
+
+    conn = psycopg.connect(
         host=endpoint,
         port=5432,
         dbname=DATABASE,
         user=role,
-        password=auth_token(endpoint, region, admin=(role == ADMIN_ROLE)),
+        password=token,
         # DSQL requires TLS. verify-full also checks the hostname against the
         # certificate, which is what makes it resistant to a redirected DNS
         # record rather than merely encrypted.
@@ -213,3 +232,10 @@ def connect(
         autocommit=autocommit,
         connect_timeout=10,
     )
+    finished = time.monotonic()
+    last_connect_ms.clear()
+    last_connect_ms.update(
+        token_ms=round((token_done - started) * 1000, 1),
+        connect_ms=round((finished - token_done) * 1000, 1),
+    )
+    return conn
