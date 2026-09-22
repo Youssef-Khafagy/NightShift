@@ -27,6 +27,7 @@ import psycopg
 
 from common import dsql, service_client
 from common.context import correlation_id_from_sqs_record, get_logger
+from common.flags import flags
 
 SERVICE = "fulfillment"
 logger = get_logger(SERVICE)
@@ -34,6 +35,9 @@ logger = get_logger(SERVICE)
 PAYMENTS_FUNCTION_NAME = os.environ["PAYMENTS_FUNCTION_NAME"]
 DB_ROLE = os.environ.get("DSQL_ROLE", "fulfillment_service")
 PAYMENT_TIMEOUT_SECONDS = float(os.environ.get("PAYMENT_TIMEOUT_SECONDS", "3.0"))
+# The full SSM parameter name. This function's IAM policy allows reading this
+# one parameter and no other.
+DEGRADED_MODE_PARAMETER = os.environ["PAYMENTS_DEGRADED_MODE_PARAMETER"]
 
 
 def order_total(conn: psycopg.Connection, order_id: str) -> int | None:
@@ -86,12 +90,22 @@ def mark_paid(conn: psycopg.Connection, order_id: str) -> bool:
     return dsql.retry_on_conflict(attempt, on_retry=on_retry)
 
 
-def process(record: dict[str, Any]) -> None:
+def process(record: dict[str, Any], *, degraded: bool = False) -> None:
     correlation_id = correlation_id_from_sqs_record(record, record["messageId"])
     logger.append_keys(correlation_id=correlation_id)
 
     body = json.loads(record["body"])
     order_id = body["order_id"]
+
+    if degraded:
+        # Payments degraded mode: do not call the provider at all. The order
+        # stays in `placed` and this message is acknowledged, so it neither
+        # piles up retrying against a sick provider nor walks itself into the
+        # DLQ. scripts/replay_placed_orders.py republishes these once the flag
+        # is cleared. No database read either: the replay only picks up orders
+        # still in `placed`, so there is nothing to check here.
+        logger.warning("payment deferred", extra={"order_id": order_id})
+        return
 
     conn = dsql.shared_connection(role=DB_ROLE)
     total = order_total(conn, order_id)
@@ -130,9 +144,12 @@ def process(record: dict[str, Any]) -> None:
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     failures: list[dict[str, str]] = []
 
+    # Read once per batch, so every message in a batch is handled the same way.
+    degraded = flags.get_bool(DEGRADED_MODE_PARAMETER, False)
+
     for record in event.get("Records", []):
         try:
-            process(record)
+            process(record, degraded=degraded)
         except psycopg.OperationalError:
             logger.warning("database connection lost, reconnecting")
             dsql.reset_connection()
