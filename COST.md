@@ -401,6 +401,22 @@ First run, 2026-09-22 23:17 UTC: 0 ALERT, 0 WATCH, 18 OK. DSQL 1,874 DPU (1.9%),
 
 Not covered: Logs Insights bytes scanned (no metric exists; the scripts that query print their own `bytesScanned`) and DSQL storage.
 
+### The $0.03 (found 2026-09-22)
+
+The Billing console's Cost and usage widget showed **$0.03** for September with credits at $139.97, while this project had been reporting "$0.00 month to date, confirmed with Cost Explorer". Both were true, and the gap is a lesson.
+
+**What generated the $0.03:** three Cost Explorer API calls. CloudTrail `LookupEvents` (free) for `ce.amazonaws.com` in us-east-1 showed 91 Cost Explorer events in September. 86 came from the console, which is free. 2 came from AWS Resource Explorer's service-linked role. **3 were `GetCostAndUsage` from the AWS CLI** as `youssef-admin`, on 2026-09-21 at 04:13, 23:50 and 00:02 UTC. The Cost Explorer API costs $0.01 per request, so 3 x $0.01 = $0.03. They are the checks that produced "$0.00, confirmed with Cost Explorer": checking the spend was the spend.
+
+**Why they reported $0.00:** CloudTrail records their request parameters: `UnblendedCost`, monthly, 2026-09-01 to 2026-09-22, and no filter on record type. An unfiltered Cost Explorer query includes credit records, so any charge is netted against an equal credit and the total reads $0.00. Each call's window also ended at the start of the day it ran, so its own charge was not in it yet. The console widget shows usage charges before credits ($0.03) and the credit balance separately ($139.97 of $140.00).
+
+**Not settled by free APIs:** whether anything else adds fractions of a cent (the state bucket's S3 requests, or `GetMetricData` calls made by CloudWatch console graphs). The Bills page in the console, free, shows the per-service line items. The tripwire budget ($0.01, `IncludeCredit=false`) should fire on $0.03 of gross charges, which makes this an unplanned but real test of whether a budget email arrives (open item in the upgrade plan).
+
+**Rules that follow:** never call the Cost Explorer API from a script or the CLI; use the console, which is free, or `scripts/cost_check.py`, which uses only free APIs. A cost check that reports net of credits hides exactly the charges the budgets are set up to catch.
+
+### SQS polling with a concurrency cap (measured 2026-09-22)
+
+The placed-orders mapping now has `scaling_config { maximum_concurrency = 2 }`, equal to fulfillment's reserved concurrency. AWS documents that with a cap set, Lambda cannot scale idle polling down to 2 concurrent invokes, so polling could have risen. Measured over 5 idle minutes with the consumer enabled: **6 empty receives per minute**, steady. That is below the ~20 per minute seen before, although that earlier figure included a load run, so the two are not like for like. If the consumer were left on around the clock at 6 per minute, that would be about 259K requests a month, 26% of the allowance; it stays enabled only for runs. The generator keeps its 20 per minute as a conservative figure.
+
 ## Not Always Free
 
 | Item | Cost | Plan |
