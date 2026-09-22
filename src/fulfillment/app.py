@@ -26,11 +26,15 @@ from typing import Any
 import psycopg
 
 from common import dsql, service_client
-from common.context import correlation_id_from_sqs_record, get_logger
+from common.context import correlation_id_from_sqs_record, get_logger, get_metrics
 from common.flags import flags
 
 SERVICE = "fulfillment"
 logger = get_logger(SERVICE)
+# Two metrics, both in the COST.md ledger: OrdersPaid and PaymentFailures.
+# Not SerializationRetries: the ledger budgets that for orders only, and
+# emitting it here would create a sixth metric.
+metrics = get_metrics(SERVICE)
 
 PAYMENTS_FUNCTION_NAME = os.environ["PAYMENTS_FUNCTION_NAME"]
 DB_ROLE = os.environ.get("DSQL_ROLE", "fulfillment_service")
@@ -121,16 +125,23 @@ def process(record: dict[str, Any], *, degraded: bool = False) -> None:
         logger.info("order already settled", extra={"order_id": order_id})
         return
 
-    payment = service_client.call(
-        PAYMENTS_FUNCTION_NAME,
-        "POST",
-        "/charge",
-        {"order_id": order_id, "amount_cents": total},
-        correlation_id=correlation_id,
-        timeout=PAYMENT_TIMEOUT_SECONDS,
-    )
+    try:
+        payment = service_client.call(
+            PAYMENTS_FUNCTION_NAME,
+            "POST",
+            "/charge",
+            {"order_id": order_id, "amount_cents": total},
+            correlation_id=correlation_id,
+            timeout=PAYMENT_TIMEOUT_SECONDS,
+        )
+    except Exception:
+        # Errors and timeouts alike. The handler logs the details and reports
+        # the message for redelivery.
+        metrics.add_metric(name="PaymentFailures", unit="Count", value=1)
+        raise
 
     if mark_paid(conn, order_id):
+        metrics.add_metric(name="OrdersPaid", unit="Count", value=1)
         logger.info(
             "order paid",
             extra={"order_id": order_id, "payment_id": payment.get("payment_id")},
@@ -141,6 +152,7 @@ def process(record: dict[str, Any], *, degraded: bool = False) -> None:
         )
 
 
+@metrics.log_metrics
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     failures: list[dict[str, str]] = []
 
