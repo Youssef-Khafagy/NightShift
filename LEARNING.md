@@ -1297,3 +1297,62 @@ After PR #11 was merged, GitHub marked #13 (which contained #11's commits) as co
    Found during this step: orders catches cart failures and returns 502, and Lambda only counts raised exceptions and timeouts as errors. So the fix belongs in the alarm design, for example alarming on cart's own errors, or counting 5xx responses, which would cost a metric and has to go through the ledger.
 5. **What did EMF cost in log volume?**
    Measured, 204 to 214 bytes per line, one line per checkout and one per fulfilment batch of up to ten. About 234 bytes per order on top of about 1.8 KB of ordinary logs, or roughly 0.02 GB across a full benchmark pass.
+
+## M2b step 4: proving the correlation ID end to end (2026-09-22)
+
+A correlation ID is only useful if it survives every hop. Most of this was built in M2a: each service reads `x-correlation-id` from the request (or mints one), appends it to every log line with `logger.append_keys`, and passes it on. Step 4 is the proof, and it is a script rather than a claim: `scripts/trace_correlation.py`.
+
+### The hop most likely to break
+
+HTTP headers carry the ID from orders to cart and from fulfillment to payments. They cannot cross the SQS queue between orders and fulfillment. There, orders copies the ID onto the message as a message attribute (`correlationId`) and fulfillment reads it back. If either side got that wrong, every log line after the queue would carry some other ID (fulfillment falls back to the SQS message ID), and in M5 the agent would see an order that apparently stopped at checkout. That is why the check looks at both sides of the queue.
+
+### What the script does
+
+1. Refuses to start unless the queue consumer is enabled.
+2. Stores a cart and checks out with a fresh ID, `trace-<random>`, through the Lambda API like every internal caller.
+3. Waits for fulfillment to log `order paid`, using `FilterLogEvents` on one log group, so waiting does not repeatedly scan four.
+4. Runs two Logs Insights queries over the four log groups, bounded to this run's window:
+   - by correlation ID, expecting `cart stored`, `cart read`, `checkout complete`, `charge approved`, `order paid`, in that order;
+   - by order ID, requiring every line that names the order to carry the same correlation ID.
+5. Prints the bytes Logs Insights scanned.
+
+The second query catches something the first cannot. If fulfillment had logged `order paid` under the wrong ID, the first query would simply come back short. The second finds the line anyway and names the ID it carried, which says where the chain broke.
+
+The pass or fail decision is two pure functions, `check_chain` and `check_order_lines`, so `tests/test_trace_correlation.py` can feed them broken chains without AWS: the chain stopping at the queue, steps out of order, a line with another ID, a line with no ID. A check that has never been seen to fail is not a check.
+
+One detail: Powertools log lines have their own `timestamp` field, so the query selects Insights' `@timestamp` and renames it in Python rather than aliasing it with `as timestamp`, which could collide.
+
+The plan said "five log groups". An order touches four: cart, orders, payments, fulfillment. The fifth, hello, is the M1 smoke-test function and takes no part.
+
+### The live result
+
+Consumer enabled through Terraform, script run, consumer disabled again through Terraform:
+
+| Time (UTC) | Service | Line |
+|---|---|---|
+| 22:19:40.156 | cart | cart stored |
+| 22:19:42.940 | cart | cart read |
+| 22:19:44.221 | orders | checkout complete |
+| 22:20:05.010 | payments | charge approved |
+| 22:20:05.101 | fulfillment | order paid |
+
+All from `trace-39e86b797f4f` alone. The 3 lines that name the order all carry it. The two Logs Insights queries scanned **4,492 bytes** together.
+
+That number is small because the log groups were almost idle. Insights bills every byte in the time range across every group named, matching or not, so during a benchmark incident the same query over the same window would scan whatever traffic landed in it. At 2 requests/s, the step 1 estimate is about 2 MB per 15 minutes on the orders group alone. The 25 MB cap per investigation stays the real constraint; this run just confirms the query shape works.
+
+**Not measured:** the 21 seconds between `checkout complete` and `charge approved`. The consumer had just been enabled, and its 5-second batching window adds to that. Queue latency under steady state is a separate measurement, not taken here.
+
+**A false alarm handled calmly.** Right after the run, SQS reported 1 message in flight. Both expected messages were already handled (the logs showed `order already settled` for the leftover smoke message and `order paid` for the trace), so rather than disable the consumer on top of a possibly real message, the queue was watched: 0 in flight at every 20-second check for two minutes. SQS's `Approximate...` counters lag; the name is literal.
+
+### Interview questions
+
+1. **How do you know a request can be followed across your whole system?**
+   A script places a real order with a fresh correlation ID, waits for it to be paid, and rebuilds its story from the logs using only that ID. It expects five specific lines across four services in order, and separately checks that every line mentioning the order carries the same ID. It passed on 2026-09-22.
+2. **How does the ID get across the queue?**
+   HTTP headers stop at SQS, so orders puts the ID in a message attribute, `correlationId`, and fulfillment reads it back before logging anything. That is the hop most likely to break, which is why both services on the far side of the queue are in the expected chain.
+3. **Why two queries instead of one?**
+   Querying by correlation ID shows what is present. It cannot show a line that carries the wrong ID, because that line never matches. Querying by order ID finds those lines and reports which ID they carried, which tells you where the chain broke rather than only that it did.
+4. **How did you test a script that needs AWS to run?**
+   The decision is separated into two pure functions over log rows, tested with broken chains: stopping at the queue, out of order, a wrong ID, a missing ID. The AWS part only fetches rows. The live run then showed it passing on real data.
+5. **What does it cost to search the logs this way?**
+   Logs Insights bills bytes in the queried time range across all named groups, matching or not. This run scanned 4,492 bytes for two queries over near-idle groups. Under benchmark traffic the same window would hold far more, which is why M5 bounds every query to one short window and carries a 25 MB scan cap per investigation.
