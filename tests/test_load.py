@@ -64,8 +64,9 @@ def test_the_planned_incident_projects_as_documented(load):
     """2/s for 20 minutes, the incident shape in COST.md."""
     p = load.projection(2, 1200)
     assert p["orders"] == 2400
-    assert p["lambda_invocations"] == pytest.approx(9840)
-    assert p["dsql_dpu"] == pytest.approx(512.16)
+    assert p["lambda_invocations"] == pytest.approx(11_280)
+    assert p["sqs_requests"] == pytest.approx(2400 * 2.2 + 20 * 20)
+    assert p["dsql_dpu"] == pytest.approx(600)
     assert p["log_mb"] == pytest.approx(4.83, abs=0.01)
 
 

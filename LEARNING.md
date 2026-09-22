@@ -1414,3 +1414,61 @@ The topology includes the DSQL cluster identifier, which lives in SSM, not in th
    The flags are controls that people change during incidents, and an apply must not undo that. The topology is derived from the configuration and nobody should edit it; if it drifted, Terraform putting it back is the correct behaviour.
 5. **How do you know the parameter holds what Terraform intended?**
    After deploying, I read the value back from SSM and compared it byte for byte with `local.topology_json` from `terraform console`. They were identical, and `terraform plan` was clean.
+
+## M2b step 6: the traffic generator (2026-09-22)
+
+`scripts/load.py` is the only thing in the project that sends traffic in bulk, so it is also the easiest way to spend a month's free allowance by accident. Most of it is about refusing.
+
+### Refuse first, send second
+
+It is a dry run unless `--run` is passed. Before anything is sent it plans every cart from a seed, projects Lambda invocations, SQS requests, DSQL DPU and log volume, and refuses if any of these is true:
+
+- More than 5 orders/s, 30 minutes or 3,600 orders in one run.
+- DSQL DPU or Lambda invocations, month to date plus this run, above half the free allowance. Month to date is read live with `GetMetricStatistics` (free); the account-wide `AWS/Lambda Invocations` total with no dimension was checked to equal the sum over all functions.
+- Any product would run out of stock. An out-of-stock 409 storm looks exactly like a fault, so it refuses and prints one `seed_catalogue.py --restock` command sized to the largest shortfall. `--restock` sets every product to one quantity, so five different suggested quantities (an earlier version) would have been useless.
+- The queue consumer is disabled, unless `--checkout-only`.
+
+Every refusal is reported, not just the first, so one dry run shows everything that needs fixing. The first real dry run of a 20-minute incident was refused for stock on all five products and for the disabled consumer, which is the check doing its job.
+
+### Open loop, and why it matters
+
+A closed-loop generator sends the next request when the previous one returns. When the system slows down, so does the generator, and the load it reports quietly drops: the slowdown it was meant to expose hides itself. This is called coordinated omission.
+
+`load.py` is open loop. Order `i` is due at `start + i/rate`, however long earlier orders took. Sends go to a thread pool, with at most 8 in flight. A tick that finds 8 already out is counted as **dropped by the generator**, not queued, so an overloaded store shows up as a number instead of as a lower rate.
+
+The first version of the test for this was wrong in an instructive way. Its `submit` advanced the fake clock by 3 seconds, which blocks the scheduler, which is exactly closed-loop behaviour, and it asserted the closed-loop result. In the real code `submit` hands work to the pool and returns at once, so the corrected test has requests that stay in flight while sends still go out at 0, 1 and 2 seconds.
+
+A second bug caught by a test: nearest-rank percentile is `ceil(p/100 * n)`. I wrote `round(p/100 * n + 0.5)`, and `round(99.5)` is `100` in Python, because `round` rounds halves to even (banker's rounding). So p99 of 1 to 100 came out as 100.
+
+### The live check, and what it corrected
+
+60 orders at 1/s, consumer enabled only for the run. Full numbers are in COST.md under "Traffic generator live check". Three of the four projections were off, and each for a reason worth knowing:
+
+- **Batching.** I assumed fulfillment batches of ten. Actual: 33 invocations for 56 orders, 1.7 per batch. At low rates, several SQS pollers each pick up whatever is there before the batching window fills.
+- **Idle polling.** 119 empty receives in 6 minutes. While the consumer is on it polls about 20 times a minute whether or not there is work, which at 1/s was more SQS traffic than the orders. The projection had no term for it.
+- **DPU per order**, 15% above the M2a batch number. One small run, so the constant is rounded up to 0.25 rather than replaced.
+
+The generator's constants now come from this run, rounded up so the guard over-estimates.
+
+### Four throttles at 1 order per second
+
+The run was 56 placed and **4 Lambda throttles**: orders 3, cart 1. At 1/s that looked wrong. Per-minute CloudWatch metrics settled it: all four were in the first minute, when orders and cart each reached their reserved concurrency of 2, alongside one 3,125 ms orders invocation. In the second minute the slowest orders call was 381 ms, concurrency peaked at 1, and nothing was throttled. A start-of-run transient, not a steady-state limit.
+
+The likely cause is a fresh execution environment opening its first DSQL connection inside a request. I could not confirm it, and finding out why was its own lesson:
+
+**The Lambda platform lines are not logged at all.** The module sets `system_log_level = "WARN"`. Lambda writes START, REPORT and the init report at INFO, so none of them reach CloudWatch: no per-invocation duration and no init duration in the logs. It also means a claim I wrote into COST.md in step 1, that the report line's `initDurationMs` could replace a cold-start metric, was wrong, and it explains the M2a note that "the platform report lines did not surface". COST.md is corrected. Lowering the level to INFO would add a REPORT line to every invocation; that trade is for the owner to decide.
+
+Consequence for M4 and M7: every incident needs a warm-up period before injection, or start-of-run throttles could be mistaken for scenario 9 (throttling). The eval harness design already has one; this is the evidence for it.
+
+### Interview questions
+
+1. **How do you stop a load test from blowing your free tier?**
+   The generator is a dry run by default. It projects each cost from measured per-order numbers, reads month-to-date DSQL and Lambda usage live from CloudWatch, and refuses above per-run caps or above half of the monthly allowance. It also refuses if a product would run out of stock, because that would contaminate the incident.
+2. **What is coordinated omission and how did you avoid it?**
+   A generator that waits for each response slows down when the system does, so it under-reports load exactly when it matters. Mine sends on a fixed schedule with a cap on requests in flight, and counts any tick that hits the cap as dropped, so overload is visible.
+3. **Your projection was off. What did you learn?**
+   Fulfillment batches averaged 1.7 orders, not 10, because at low rates several pollers each take what is there. And an enabled consumer polls about 20 times a minute regardless of load, which the model did not include at all. Both are now in the projection, with constants rounded up so the guard errs toward refusing.
+4. **Why did you get throttles at one request per second?**
+   Reserved concurrency is 2 per function. All four throttles came in the first minute, alongside a 3.1-second orders invocation, and none after. So a slow first request in a new environment held one of only two slots. I could not see the init duration directly, because platform log lines are filtered at WARN, so the conclusion is stated as likely, not proven.
+5. **Why keep the result JSON in the repo?**
+   Every number in the README has to come from a real run with a date, a commit and a model. The summary records the run ID, date, commit, seed, projection and outcome, so the number and its provenance travel together.
