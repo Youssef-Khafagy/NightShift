@@ -1549,3 +1549,54 @@ Nothing was lost this time (all 60 paid, DLQ empty). The standard fix is `scalin
    An HTTP caller sees a 429 and can retry. A throttled SQS batch silently goes back to the queue with its receive count raised, so repeated throttling can move healthy messages into the dead-letter queue, where they look like poison.
 5. **What does the slow first request tell you?**
    That a new environment's first request pays for more than init: about 2 to 3 s of handler time against 0.3 s warm. The likely cause is the lazily opened database connection, which is testable by timing the connection and, if confirmed, moving it to module scope like the project's rule says.
+
+## Closing M2b: tracing, the connection, and the $0.03 (2026-09-22)
+
+### Tracing: decided by research, before any code
+
+The plan was to hand-build OpenTelemetry with an X-Ray UDP span exporter and drop it if it added more than 300 ms of init. Reading AWS's Python migration guide and PyPI first made the measurement unnecessary. AWS recommends its Lambda layer for Python, which is loaded through an exec wrapper and has an ARN containing an AWS-owned account ID that this repo's hook blocks. The manual path exports to a collector that a Lambda function does not have. The only packaged Python UDP exporter lives in `aws-opentelemetry-distro`, with 62 runtime dependencies. Meanwhile Lambda active tracing was already on, costing nothing at init. The owner chose active tracing only, recorded in `docs/decisions/0001-no-in-code-tracing.md`.
+
+The general lesson: a go/no-go gate is not only a measurement. If the thing to be measured has no simple, documented form, that is evidence too, and it is cheaper to collect.
+
+### Timing the DSQL connection
+
+The slow first request in a new environment (about 2 to 3 s against 0.3 s warm) had one suspect: the DSQL connection, opened lazily on the first request. `shared_connection` now logs one `database connected` line per new connection, with the time split in two:
+
+- `token_ms`: signing the IAM auth token, which also builds a boto3 client inside `auth_token()`.
+- `connect_ms`: the TLS handshake plus DSQL checking the token.
+
+After the deploy, the first requests measured orders at 37 ms token and 915 ms connect, inside a 2,915 ms handler run, and fulfillment at 94 ms and 878 ms inside 2,190 ms. So the connection is real, about 0.9 s, but it is **less than half** of the slow first request. The rest is most likely the function each one calls (cart for orders, payments for fulfillment) cold-starting at the same moment, because a deploy replaces every environment together. That is stated as likely, not proven. The suspicion was only half right, and the timing line showed that before anything was changed on the strength of it.
+
+### The concurrency cap and polling
+
+`scaling_config { maximum_concurrency = 2 }` on the queue mapping, set from the same local as fulfillment's reserved concurrency, stops the poller invoking above the reservation. AWS warns that with a cap, idle polling cannot scale down to its cheapest level. Measured anyway: 6 empty receives a minute over 5 idle minutes, lower than before, not higher.
+
+### The $0.03, and a cost check that cost money
+
+The owner saw $0.03 in the Billing console while I had been reporting $0.00. CloudTrail event history (free) for the Cost Explorer service answered it:
+
+```bash
+aws cloudtrail lookup-events --region us-east-1 \
+  --lookup-attributes AttributeKey=EventSource,AttributeValue=ce.amazonaws.com
+```
+
+91 events. Split by user agent: 86 from the console (free), 2 from AWS Resource Explorer, and **3 `GetCostAndUsage` calls from the AWS CLI**, at $0.01 each. Those three calls were the checks that had produced "$0.00, confirmed with Cost Explorer". CloudTrail also kept their request parameters, which explain the $0.00: `UnblendedCost` with no filter on record type includes credit records, so the charge and the credit cancel out. The console shows usage before credits and the credit balance separately.
+
+Three things to take from it:
+
+- **Know which API calls cost money.** The Cost Explorer API is $0.01 a request even from the CLI; its console is free. `GetMetricData` is billed even inside the free tier; `GetMetricStatistics` is not.
+- **Net and gross are different questions.** "What will I be charged?" is net of credits. "Am I inside the free tier?" is gross, and that is the one this project cares about, which is why the budgets exclude credits.
+- **A number copied forward is not a measurement.** "$0.00 month to date" was carried from an earlier session's status into later reports without being re-checked. The rule now is to re-read live figures before stating them.
+
+### Interview questions
+
+1. **Why did you drop in-code tracing?**
+   Research showed no small, documented Python exporter works inside Lambda without a collector: the options were an AWS layer with a foreign ARN and an exec wrapper, a package with 62 dependencies, or copying an undocumented wire format. Lambda active tracing was already on at zero init cost, and correlated logs with timing lines cover what traces would add. It is recorded in an ADR with the conditions for revisiting it.
+2. **What makes a new Lambda environment's first request slow here?**
+   Measured: about 1 s of init, then about 0.9 s to open the DSQL connection inside the first request, plus most likely the downstream function's own cold start, because a deploy replaces every environment at once. The connection is under half of it, which I only know because I timed it before changing anything.
+3. **Your console showed $0.03 while you reported $0.00. What happened?**
+   Three Cost Explorer API calls from the CLI, $0.01 each, found in CloudTrail event history. They were the calls that reported $0.00, because an unfiltered query nets charges against credits. I stopped using that API, and the cost check uses only free APIs and reports usage before credits.
+4. **How do you tell console usage from API usage in CloudTrail?**
+   Each event records its user agent and whether the session came from the console. Console Cost Explorer is free and API calls are billed, so splitting on that field turned 91 events into 3 billable ones.
+5. **Why does it matter whether a cost figure includes credits?**
+   Credits absorb charges, so a net figure reads $0.00 while real usage is happening. The free tier question is about gross usage, which is why both budgets exclude credits and why the $0.01 tripwire should have fired on this $0.03.
