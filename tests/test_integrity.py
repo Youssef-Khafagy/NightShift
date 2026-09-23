@@ -43,3 +43,16 @@ def test_the_word_check_can_fail():
     assert BANNED.search("the payment scenario")
     assert BANNED.search("Injected a FAULT")
     assert not BANNED.search("default injector_free faultless")
+
+
+def test_the_agent_never_imports_the_chaos_package():
+    """The agent reads the store the way an on-call engineer would. Importing
+    chaos would put scenario files and ground truth one attribute away."""
+    files = sorted((REPO_ROOT / "agent").rglob("*.py"))
+    assert files, "found no agent source files"
+    for path in files:
+        text = path.read_text()
+        assert not re.search(
+            r"^\s*(from|import)\s+(chaos|results)\b", text, re.MULTILINE
+        ), path
+        assert "results/chaos" not in text, path
