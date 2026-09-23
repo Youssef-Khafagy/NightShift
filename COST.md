@@ -318,21 +318,30 @@ The free allowance is **10 alarm metrics**: standard resolution alarms that list
 
 | Alarm | Namespace | Metric | Dimensions | Statistic | Alarm metrics | Why it exists | Status |
 |---|---|---|---|---|---|---|---|
-| `orders-errors` | `AWS/Lambda` | `Errors` | `FunctionName=nightshift-orders` | Sum | 1 | Checkout raising or timing out: bad deploy, IAM regression, timeout regression | Planned |
-| `cart-errors` | `AWS/Lambda` | `Errors` | `FunctionName=nightshift-cart` | Sum | 1 | Cart failing: config regression (wrong table name), IAM regression | Planned |
-| `payments-errors` | `AWS/Lambda` | `Errors` | `FunctionName=nightshift-payments` | Sum | 1 | The payment provider failing | Planned |
-| `fulfillment-errors` | `AWS/Lambda` | `Errors` | `FunctionName=nightshift-fulfillment` | Sum | 1 | Worker crashes and timeouts only (see note 1) | Planned |
-| `checkout-latency` | `AWS/Lambda` | `Duration` | `FunctionName=nightshift-orders` | p99 | 1 | Slow checkout: slow query from a dropped index, hot-row retries, slow dependency | Planned |
-| `queue-age` | `AWS/SQS` | `ApproximateAgeOfOldestMessage` | `QueueName=nightshift-placed-orders` | Maximum | 1 | Orders not being fulfilled: slow payment provider, stuck consumer (see note 2) | Planned |
-| `dlq-depth` | `AWS/SQS` | `ApproximateNumberOfMessagesVisible` | `QueueName=nightshift-placed-orders-dlq` | Maximum | 1 | Any message in the DLQ: poison message | Planned |
-| `throttles` | `AWS/Lambda` | `Throttles` | none (account-wide) | Sum | 1 | Any function throttled: throttling scenario, retry storm | Planned |
-| `serialization-retries` | `NightShift` | `SerializationRetries` | `service=orders` | Sum | 1 | Hot-row contention, visible before latency moves | Planned |
-| `payment-failures` | `NightShift` | `PaymentFailures` | `service=fulfillment` | Sum | 1 | Payment calls failing inside the worker, which `fulfillment-errors` cannot see (note 1) | Planned |
+| `orders-errors` | `AWS/Lambda` | `Errors` | `FunctionName=nightshift-orders` | Sum | 1 | Checkout raising or timing out: bad deploy, IAM regression, timeout regression | **Live** (2026-09-23) |
+| `cart-errors` | `AWS/Lambda` | `Errors` | `FunctionName=nightshift-cart` | Sum | 1 | Cart failing: config regression (wrong table name), IAM regression | **Live** (2026-09-23) |
+| `payments-errors` | `AWS/Lambda` | `Errors` | `FunctionName=nightshift-payments` | Sum | 1 | The payment provider failing | **Live** (2026-09-23) |
+| `fulfillment-errors` | `AWS/Lambda` | `Errors` | `FunctionName=nightshift-fulfillment` | Sum | 1 | Worker crashes and timeouts only (see note 1) | **Live** (2026-09-23) |
+| `checkout-latency` | `AWS/Lambda` | `Duration` | `FunctionName=nightshift-orders` | p99 | 1 | Slow checkout: slow query from a dropped index, hot-row retries, slow dependency | **Live** (2026-09-23) |
+| `queue-age` | `AWS/SQS` | `ApproximateAgeOfOldestMessage` | `QueueName=nightshift-placed-orders` | Maximum | 1 | Orders not being fulfilled: slow payment provider, stuck consumer (see note 2) | **Live** (2026-09-23) |
+| `dlq-depth` | `AWS/SQS` | `ApproximateNumberOfMessagesVisible` | `QueueName=nightshift-placed-orders-dlq` | Maximum | 1 | Any message in the DLQ: poison message | **Live** (2026-09-23) |
+| `throttles` | `AWS/Lambda` | `Throttles` | none (account-wide) | Sum | 1 | Any function throttled: throttling scenario, retry storm | **Live** (2026-09-23) |
+| `serialization-retries` | `NightShift` | `SerializationRetries` | `service=orders` | Sum | 1 | Hot-row contention, visible before latency moves | **Live** (2026-09-23) |
+| `payment-failures` | `NightShift` | `PaymentFailures` | `service=fulfillment` | Sum | 1 | Payment calls failing inside the worker, which `fulfillment-errors` cannot see (note 1) | **Live** (2026-09-23) |
 | **Allocated** | | | | | **10** | | |
 | **Free allowance** | | | | | **10** | | |
 | **Unallocated** | | | | | **0** | | |
 
 The last slot went to `payment-failures` (step 5), because note 1 leaves payment failures otherwise invisible to alarms. The orders 502 gap is mostly covered by `cart-errors`: a cart failure raises in cart first, so it counts there. Covering the remainder would need a new custom metric as well as an alarm slot, and neither is left. Any new alarm now means removing one.
+
+**If M4 to M7 need more alarms.** The allowance is full, and the next alarm metric would be $0.10 a month, which the cost rules say needs the owner's approval first. Before paying, free a slot. In the order I would do it:
+
+1. **Merge the four per-function error alarms into one account-wide `Errors` alarm** (`AWS/Lambda Errors` with no dimension, the same trick `throttles` uses). Frees 3 slots. What is lost: the alarm no longer says which function failed. The agent gets that back for free by reading per-function `Errors` with `GetMetricStatistics` during the investigation, so the page is less specific but the diagnosis is not. This is the strongest candidate.
+2. **Drop `payments-errors`.** The payment provider's failures already surface in `payment-failures` (the worker counts every failed or timed-out call) and then in `queue-age` and `dlq-depth`. Frees 1 slot. What is lost: a provider crash that the worker never calls into (with the consumer off) would not page, which during a run cannot happen.
+3. **Drop `serialization-retries`.** Sustained contention also shows as `checkout-latency` a little later. Frees 1 slot. What is lost: the early warning, which is the reason it exists; the agent can still read the metric.
+
+Not options: metric math or anomaly detection (each costs more slots, not fewer), composite alarms ($0.50 a month each), and log metric filters (each is a custom metric and still needs an alarm). Alarms are only the trigger; the agent's tools read any metric for free, so more alarms are rarely what an investigation needs. M5's trigger is an EventBridge rule on alarm state changes, which needs no new alarm.
+
 
 Notes, and how step 5 resolved each:
 
