@@ -8,8 +8,8 @@ The transaction is retried on SQLSTATE 40001. Aurora DSQL uses optimistic
 concurrency control, so two checkouts touching the same inventory row do not
 queue behind each other, they both proceed and the loser fails at commit.
 Retrying is not an optimisation, it is the contract. Every retry is logged,
-because a rising retry count is the earliest visible symptom of the hot-row
-contention scenario.
+because a rising retry count is the earliest visible symptom of hot-row
+contention.
 
 Publishing to SQS happens after the commit, deliberately. Publishing inside
 the transaction would mean a message for an order that might still roll back.
