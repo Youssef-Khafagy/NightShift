@@ -483,8 +483,34 @@ data "aws_iam_policy_document" "ci_apply" {
       "iam:UntagRole",
       "iam:ListRoleTags",
       "iam:PassRole",
+      # Setting a permissions boundary on a project role (the Investigator
+      # role, M5). The deny below still keeps both off the CI roles.
+      "iam:PutRolePermissionsBoundary",
+      "iam:DeleteRolePermissionsBoundary",
     ]
     resources = [local.project_roles]
+  }
+
+  # Customer managed policies named nightshift-*. A permissions boundary
+  # must be a managed policy, not an inline one; the Investigator role's
+  # boundary is the first. Customer managed IAM policies are free (not to
+  # be confused with customer managed KMS keys, which are forbidden).
+  statement {
+    sid    = "ProjectManagedPolicies"
+    effect = "Allow"
+    actions = [
+      "iam:CreatePolicy",
+      "iam:DeletePolicy",
+      "iam:GetPolicy",
+      "iam:GetPolicyVersion",
+      "iam:ListPolicyVersions",
+      "iam:CreatePolicyVersion",
+      "iam:DeletePolicyVersion",
+      "iam:TagPolicy",
+      "iam:UntagPolicy",
+      "iam:ListPolicyTags",
+    ]
+    resources = ["arn:aws:iam::${local.account_id}:policy/${var.project}-*"]
   }
 
   statement {
