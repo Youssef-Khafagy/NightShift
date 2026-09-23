@@ -180,6 +180,9 @@ data "aws_iam_policy_document" "ci_apply" {
       "lambda:GetFunctionCodeSigningConfig",
       "lambda:GetFunctionConcurrency",
       "lambda:GetFunctionEventInvokeConfig",
+      "lambda:PutFunctionEventInvokeConfig",
+      "lambda:UpdateFunctionEventInvokeConfig",
+      "lambda:DeleteFunctionEventInvokeConfig",
       "lambda:GetRuntimeManagementConfig",
       "lambda:PutRuntimeManagementConfig",
       "lambda:UpdateFunctionCode",
@@ -521,6 +524,26 @@ data "aws_iam_policy_document" "ci_apply" {
       "iam:ListOpenIDConnectProviderTags",
     ]
     resources = [aws_iam_openid_connect_provider.github.arn]
+  }
+
+  # EventBridge rules named nightshift-*: the alarm-to-agent trigger (M5).
+  statement {
+    sid    = "ProjectEventRules"
+    effect = "Allow"
+    actions = [
+      "events:PutRule",
+      "events:DeleteRule",
+      "events:DescribeRule",
+      "events:EnableRule",
+      "events:DisableRule",
+      "events:PutTargets",
+      "events:RemoveTargets",
+      "events:ListTargetsByRule",
+      "events:TagResource",
+      "events:UntagResource",
+      "events:ListTagsForResource",
+    ]
+    resources = ["arn:aws:events:${local.region}:${local.account_id}:rule/${var.project}-*"]
   }
 
   # CloudWatch Logs for this project's functions.

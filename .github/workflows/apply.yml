@@ -69,10 +69,11 @@ jobs:
       # The layer zip has to exist before Terraform can hash it. Building from
       # the hash-pinned lock file means this produces the same bytes as a local
       # build, which is what keeps the plan empty when nothing changed.
-      - name: Build the dependency layer
+      - name: Build the dependency layers
         run: |
           python -m pip install --upgrade pip
           python scripts/lambda_deps.py build
+          python scripts/lambda_deps.py --layer agent build
 
       - name: Terraform init
         working-directory: terraform
