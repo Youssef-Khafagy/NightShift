@@ -1600,3 +1600,36 @@ Three things to take from it:
    Each event records its user agent and whether the session came from the console. Console Cost Explorer is free and API calls are billed, so splitting on that field turned 91 events into 3 billable ones.
 5. **Why does it matter whether a cost figure includes credits?**
    Credits absorb charges, so a net figure reads $0.00 while real usage is happening. The free tier question is about gross usage, which is why both budgets exclude credits and why the $0.01 tripwire should have fired on this $0.03.
+
+## M3 step 1: the alarm budget (2026-09-22)
+
+M3 adds alarms, paging and a recorded deploy path. Step 1 re-read the free allowances and budgeted every alarm before any exists.
+
+**What counts as an alarm metric.** CloudWatch gives 10 alarm metrics free. An alarm on one metric is 1. A metric math alarm is billed for every metric in its expression, so an error *rate* (errors divided by invocations) costs 2, and four of them would cost 8. Anomaly detection adds 2 more per alarm, and a composite alarm is $0.50 a month. So the plan uses plain error counts, one metric each, and nothing fancier: 9 alarms, 9 alarm metrics, 1 spare.
+
+**Sources, and checking a summary against the source.** The pricing pages for CloudWatch and DynamoDB were fetched and quoted. The SNS pricing page's tables did not render, so the free tier came from the SNS FAQ instead, quoted verbatim: 1M requests, 100,000 HTTP and 1,000 email notifications a month. One summary claimed the DynamoDB free tier was "not Always Free"; the page does not say that, and `aws freetier get-free-tier-usage` reports `freeTierType: Always Free` for it. When a summary and the account's own data disagree, the account wins.
+
+**Writing the ledger found three problems before any alarm was built:**
+
+1. fulfillment catches each message's exception and reports it in `batchItemFailures`, so the invocation succeeds and Lambda's `Errors` metric stays 0. An errors alarm on fulfillment would miss every payment failure.
+2. The deploy smoke test places a real order. With the consumer off between runs, its message sits in the queue ageing forever, so a queue-age alarm would page after every deploy.
+3. An idle store publishes no data at all, so every alarm must treat missing data as not breaching.
+
+That is the value of budgeting before building: each row needed a sentence saying why the alarm exists, and writing those sentences exposed where the alarm would not do its job.
+
+**The budget email.** The $0.01 tripwire budget fired on the $0.03 of Cost Explorer API calls and the owner received it. That was the open item "test that a budget email actually arrives", tested by a real charge.
+
+**The ledger test** parses the table in COST.md and checks it has 9 rows, unique names, a total within 10, and an Allocated row that matches the rows. It was checked by changing one row's count and watching it fail. Step 5 extends it to check Terraform's alarms against the ledger.
+
+### Interview questions
+
+1. **Why error counts instead of error rates in your alarms?**
+   A rate is metric math over two metrics, and CloudWatch bills an alarm for every metric in its expression, so four rates would use 8 of the 10 free alarm metrics. Counts cost 1 each. At this project's traffic a count is also easier to reason about than a percentage.
+2. **What does an alarm do when there is no traffic?**
+   There is no data, and the alarm's missing-data setting decides. Here every alarm treats missing data as not breaching, because the store is idle most of the time and an idle store must not page anyone.
+3. **Why would an errors alarm miss failures in your queue worker?**
+   The worker handles each message's failure itself and reports it back to SQS as a partial batch failure, so the invocation succeeds. Lambda's Errors metric only counts invocations that raise or time out. Those failures are visible in a custom metric, queue age and the DLQ instead.
+4. **How did you confirm your budget alerts actually work?**
+   A real $0.03 charge from Cost Explorer API calls crossed the $0.01 tripwire budget, which excludes credits, and the email arrived. That confirmed both the budget setup and the delivery path.
+5. **Why budget alarms before building them?**
+   Each alarm is a line in a ledger with a reason, a metric and a cost. Writing the reason for each one found three alarms that would have been wrong: one blind to the failures it was meant for, one that would page after every deploy, and all of them paging on an idle system.
