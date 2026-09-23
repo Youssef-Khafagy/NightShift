@@ -240,7 +240,11 @@ Later the dependency layer's zip differed between my laptop and the CI runner. I
 
 ### Commands that gate things must fail loudly
 
-**What we got wrong, three times.** A `trivy ... | tail -6; echo $?` reported `tail`'s exit status, not trivy's, so a failed scan looked clean. Fast IAM results were read as evidence (section 4). And a commit went in over a failing test because the test and the commit were joined with `;`. The rule now: gating commands run under `set -euo pipefail`, the command whose status matters is never piped, and conclusions come from exit statuses or explicit assertions.
+**What we got wrong, four times.** A `trivy ... | tail -6; echo $?` reported `tail`'s exit status, not trivy's, so a failed scan looked clean. Fast IAM results were read as evidence (section 4). A commit went in over a failing test because the test and the commit were joined with `;`. So a rule was written: gating commands run under `set -euo pipefail`.
+
+Then the rule itself failed. A chain meant to apply a permission locally, then push, merge and deploy, hit an expired login on its first command and carried on anyway: it pushed, merged the pull request and started the deploy. The deploy failed safely (CI lacked the permission the skipped step would have added, and nothing was created), but the chain should never have got there. The cause: in the tool I run commands through, `set -e` at the top level of the shell is silently ignored. `set -e; false; echo x` prints `x`. The same lines run in a child shell (`bash <<'EOF' ... EOF`) stop at `false`.
+
+The lesson is older than this project: a safety mechanism that has never been seen to fire is a guess. The hooks, the lock file's hashes and the metrics ledger were all tested by making them fail; the fail-loudly rule was not, until it failed for real. Now every gating pattern is checked with a deliberate `false` before it is trusted.
 
 **Questions about the pipeline**
 
@@ -582,7 +586,7 @@ orders was moved 17 → 16 → 17 → 16 → 17 through both scripts: an explici
 | Imports inside the handler, 11.9 s at 128 MB | A timeout, then timing each import | Imports at module scope: 0.7 s (7) |
 | "128 MB is too small" | A memory sweep | CPU work costs the same GB-seconds at any size (7) |
 | A 403 "fixed" by cached decisions | Results that flipped | Verify with the policy simulator; stop changing things when results alternate (4) |
-| `pipe \| tail` hid a failed scan; a commit over a failing test | Reading the output again | Gating commands fail loudly (6) |
+| `pipe \| tail` hid a failed scan; a commit over a failing test; `set -e` silently ignored by the tool's shell | Reading the output again; a chain that merged after an expired login | Gating chains run in a child shell, verified with a deliberate `false` (6) |
 | Two points fit a line | A third batch size | Three points minimum for a fit (8) |
 | Artifacts differed between machines | A non-empty plan; a per-file manifest | Allowlisted zips; RECORD pruned (6) |
 | `$0.00` reported, $0.03 real | The console; CloudTrail | Never call the Cost Explorer API; report gross (3) |
