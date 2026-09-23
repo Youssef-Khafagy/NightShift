@@ -111,12 +111,20 @@ Its first run found AWS Glue requests, which this project does not use. CloudTra
 - **S3 for Terraform state** has no Always Free tier for new accounts. It is a fraction of a cent a month, the one accepted exception, covered by credits for now.
 - **Logs Insights queries** bill every byte in the queried time range, whether or not it matches. The log budget is dominated by the agent's future searches, not by ingestion.
 
+### Pause and destroy
+
+**Pause** (`scripts/pause.py`) brings idle usage to zero and proves it. Almost nothing here costs anything while unused, so pausing is small: make sure the queue trigger is off (through Terraform, never the CLI, so state never drifts), then check that nothing can start by itself (no EventBridge rules or schedules, no provisioned concurrency) and that the last 10 minutes show zero invocations and zero SQS polls. Its first live run correctly refused to call the store paused: a deploy's smoke test had run 6 minutes earlier. Ten quiet minutes later it passed.
+
+**Destroy** (`scripts/destroy.py`) removes the 65 resources Terraform manages, but first writes a real destroy plan and groups it by consequence: data lost for good (the DSQL cluster, the cart and deployments tables), CI that stops working (the OIDC provider and CI roles, which CI itself can never recreate), paging that stops (alarms and the email subscription, which would need the confirmation click again), and everything else. It is a dry run unless `--apply`, and then needs the project name typed out; it applies the exact plan it showed. It runs locally only. What survives: the state bucket, the budgets, the IAM user and group, and the raised concurrency quota, because Terraform never owned them. In M3 it was only ever run as a dry run.
+
 **Questions about cost**
 
 - *How do you guarantee $0?* Nothing is guaranteed by one control, so it is layered. I only use services with an Always Free allowance, each verified and budgeted in a ledger before it exists. Nothing runs continuously. Every per-order cost is measured, and a load generator refuses runs that would cross half of any allowance. Then detection: a $0.01 tripwire budget on gross charges, which has already fired once and reached my inbox.
 - *Your console showed $0.03 while you reported $0.00. What happened?* Three Cost Explorer API calls from the CLI at $0.01 each, which I found in CloudTrail by splitting the calls into console and programmatic. They were the calls that reported $0.00, because an unfiltered query nets charges against credits. I stopped using that API and my cost check reports gross usage from free APIs only.
 - *Why exclude credits from your budgets?* Credits absorb charges, so a net figure reads $0 while real usage is happening. Whether I am inside the free tier is a question about gross usage.
 - *Why doesn't the queue consumer run all the time?* An idle SQS trigger polls around the clock and would spend about two thirds of the free SQS allowance doing nothing. I enable it for a run and disable it afterwards, always through Terraform so state never drifts.
+- *How do you know the system is really idle?* A pause script checks that nothing can start by itself and that the last ten minutes had zero invocations and zero queue polls. It refused to say "paused" the first time because a deploy's smoke test had just run, which is the kind of honesty I want from it.
+- *What would destroy lose?* It tells you before it does anything: every order and the deployments history, CI's access to AWS, and the alarms. The state bucket and budgets survive because Terraform doesn't own them, on purpose.
 
 ---
 
@@ -600,6 +608,8 @@ The p99 alarm needs three bad minutes in a row, because one cold start (about 3 
 **The topic is unencrypted, deliberately.** CloudWatch alarms cannot publish to a topic encrypted with AWS's managed SNS key: that key's policy does not let CloudWatch use it, it cannot be edited, and the alarm action fails silently. The only fix is a customer managed KMS key, which costs $1 a month and is forbidden here. The messages carry alarm names and metric values from synthetic data. The security scanner flags an unencrypted topic, so that one finding is suppressed next to the reason.
 
 **Only our alarms may publish.** The topic policy allows `cloudwatch.amazonaws.com` to publish only when the source is an alarm in this account whose name starts with `nightshift-`.
+
+**Proven live.** After the deploy, `nightshift-dlq-depth` was forced into ALARM with `aws cloudwatch set-alarm-state` and back to OK 20 seconds later. The alarm history showed "Successfully executed action" for both, and both emails arrived. At the same moment `queue-age` sat in ALARM with actions disabled, because smoke-test orders were waiting while the consumer was off: the exact situation it was designed to stay quiet about.
 
 **What we got wrong getting email delivered.** AWS will not deliver to an email subscription until someone clicks a confirmation link, and the first confirmation email was nowhere to be found. It was in Spam: Gmail's search skips Spam unless you add `in:anywhere`. After resending it (`aws sns subscribe` again on a pending subscription sends a fresh email) and marking it "not spam", a test message landed in the inbox. The confirmation page is also why alarm emails carry an unsubscribe link: clicking it would silently stop paging, so alarm emails should never be forwarded.
 
