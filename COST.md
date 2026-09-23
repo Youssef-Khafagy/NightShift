@@ -271,7 +271,7 @@ The free allowance is 25 RCU and 25 WCU **per region across the whole account**,
 |---|---|---|---|---|---|
 | `nightshift-cart` | M2a | 5 | 5 | none | **Live** (created 2026-09-21, TTL on `expires_at`) |
 | `nightshift-deployments` | M3 | 1 | 1 | none | **Live** (created 2026-09-22) |
-| `nightshift-investigations` | M5 | 5 | 5 | none | Planned. One table for metadata, journal steps and checkpoint, keyed by investigation ID (owner decision 2026-09-23; replaces the planned separate `nightshift-journal`) |
+| `nightshift-investigations` | M5 | 5 | 5 | none | **Live** (created 2026-09-23). One table for metadata, journal steps and checkpoint, keyed by investigation ID (owner decision 2026-09-23; replaces the planned separate `nightshift-journal`) |
 | **Allocated** | | **11** | **11** | | |
 | **Free allowance** | | **25** | **25** | | |
 | **Unallocated** | | **14** | **14** | | |
