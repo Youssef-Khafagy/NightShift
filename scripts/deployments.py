@@ -31,8 +31,10 @@ ALIAS = "live"
 # Leaves first: a service is moved before anything that calls it, so during
 # a deploy a new caller never talks to an old dependency for longer than it
 # has to. cart and payments call nothing; orders calls cart; fulfillment calls
-# payments; hello is independent.
-SERVICES = ("cart", "payments", "orders", "fulfillment", "hello")
+# payments; hello and agent (the investigator, M5) are independent. The
+# agent's own moves are recorded like any other, but its tools list only the
+# store's services, so it never reads its own deploys as evidence.
+SERVICES = ("cart", "payments", "orders", "fulfillment", "hello", "agent")
 
 
 def function_name(service: str) -> str:

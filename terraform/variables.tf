@@ -93,3 +93,25 @@ variable "operator_user_name" {
   type        = string
   default     = "youssef-admin"
 }
+
+variable "agent_trigger_enabled" {
+  description = "Whether alarms start investigations. Default false: every chaos run would otherwise spend LLM quota. Turn on for a run, off afterwards, like the queue consumer."
+  type        = bool
+  default     = false
+}
+
+variable "agent_provider" {
+  description = "LLM provider the investigator Lambda uses: groq, gemini or mistral. The model defaults per provider (agent/config.py); set agent_model to override."
+  type        = string
+  default     = "groq"
+  validation {
+    condition     = contains(["groq", "gemini", "mistral"], var.agent_provider)
+    error_message = "agent_provider must be groq, gemini or mistral."
+  }
+}
+
+variable "agent_model" {
+  description = "Model override for the investigator Lambda. Empty means the provider's default."
+  type        = string
+  default     = ""
+}
