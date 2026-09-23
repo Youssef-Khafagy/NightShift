@@ -87,7 +87,7 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 
 ### 4. The agent
 - From scratch in Python. No agent frameworks (no LangChain, LangGraph, CrewAI).
-- LLM provider interface with two implementations: Gemini API free tier and Groq free tier. No Ollama or local models. Swapping models is a config change. Handle 429 with backoff.
+- LLM provider interface with three implementations: Gemini API free tier, Groq free tier and Mistral La Plateforme free mode (Mistral added 2026-09-23). No Ollama or local models. Swapping models is a config change. Handle 429 with backoff.
 - Trigger: CloudWatch alarm state change, EventBridge rule, investigator Lambda.
 - Incident correlation: related alarms in a short window join one investigation via idempotent DynamoDB conditional writes.
 - Durable loop: checkpoint state (hypotheses, evidence, tool calls, token usage) to DynamoDB after every step; resume from last checkpoint after a crash or timeout.
@@ -154,8 +154,8 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - The Cost Explorer API costs $0.01 per request, even from the CLI; the Cost Explorer console is free. Never call the API from scripts or the CLI. An unfiltered `GetCostAndUsage` includes credit records and nets charges to $0.00.
 - Lambda logs appear to count against the 5 GB CloudWatch Logs free tier (September 2026 bill, checked 2026-09-22; docs are silent since the May 2025 vended-logs pricing). **Evidence, not settled:** the bill quantities were 0 GB, so rounding could hide a vended logs line, and the Free plan bill may present usage differently after the upgrade. Re-check after the first traffic generator run and on the first Paid-plan bill. EMF metrics are ordinary custom metrics plus log bytes, and are not extracted in the Infrequent Access log class. `aws freetier get-free-tier-usage` is free; the Cost Explorer API is $0.01 per request.
 
-## Current status (2026-09-23 afternoon session)
-M0 to M3 complete and approved. **M4 steps 1 to 4 done (PRs #38 to #44); the live batch passed on 2026-09-23. The consumer was turned off through Terraform at 16:11:42 UTC (owner's yes, plan 0/2/0), `terraform plan` is clean, and `pause.py` passed at 16:23:16 UTC (0 invocations, 0 SQS polls in 10 minutes). M4 close written (LEARNING.md section 17, chaos, with interview questions; mistakes index is now section 18). Waiting for the owner's M4 review; M5 starts after approval.** The stock is 5,000 per product, minus what the batch used.
+## Current status (2026-09-23)
+M0 to M4 complete and approved (M4 approved 2026-09-23). **M5 in progress: step 1 done 2026-09-23; step 2 next, once the owner's API keys are in `.env`.** The store is idle: consumer off since 16:11:42 UTC, `terraform plan` clean, `pause.py` passed at 16:23:16 UTC. The stock is 5,000 per product, minus what the M4 batch used.
 
 **Step 4 results (batch 14:33 to 15:48 UTC, commit 66184f1, results in `results/chaos/`):**
 
@@ -301,6 +301,19 @@ Reviewed after step 3 and at the end.
 
 Why the deploy/rollback split: if Terraform owns the alias's version, any rollback outside Terraform (the rollback script, or the M6 agent's `rollback_alias`) is drift, and the next routine apply silently undoes it.
 
+## M5 plan (approved 2026-09-23, in progress)
+
+Reviewed after step 3 (permissions) and at the end.
+
+1. **Budget, no AWS changes.** **Done 2026-09-23.** One table `nightshift-investigations` at 5/5 in the capacity ledger (11 of 25 allocated). Logs Insights scan cap 20 MB per investigation (Logs budget 3.41 GB of 5). Waiting on rate limits inside Lambda recorded with its cost. Mistral and Cerebras checked on official pages (COST.md "LLM providers"). Token budget is a config value, default 40K. **Pending from the owner:** Gemini per-model limits from AI Studio, and Mistral limits from the Admin panel Limits page.
+2. **LLM provider interface**, Groq, Gemini and Mistral: standard-library HTTPS, no SDKs, 429 handled from `retry-after`, tested against recorded responses, then one live tool call per provider (which is also the proof that Mistral free mode does function calling). Keys in gitignored `.env` locally, SSM SecureString (AWS managed key) for Lambda.
+3. **Read-only tools and the Investigator role.** The ten tools, output capped and summarised, marked untrusted. Terraform role with a permissions boundary and explicit denies on IAM, Terraform state and all writes, verified with `simulate-principal-policy`. Locally the agent assumes this role. **Owner review point.**
+4. **The loop.** Hypotheses, journal, checkpoint to DynamoDB after every step, hard limits on steps, tokens and wall clock. Every run logs actual tokens used. Tested by killing it mid-run.
+5. **Report and postmortem.** Pydantic report, markdown postmortem, deterministic grader run by the harness against `result.json`, which the agent never reads.
+6. **Trigger.** EventBridge rule on `nightshift-*` alarm state changes invokes the investigator Lambda; related alarms join one investigation through a conditional write. The rule ships disabled.
+7. **Live check, not the benchmark.** Scenarios 1, 2, 4, 5 and 11 once each on one model. Before it, tell the owner if any run so far used more than 50K tokens.
+8. **Close:** LEARNING.md section, interview questions, owner review.
+
 ## Decisions log
 (Record each decision here with a one-line reason as it is made. "Proposed" means not yet approved.)
 - Approved 2026-09-18: Free plan via the standard sign-up flow; upgrade in February 2027 (hard deadline 2027-02-15). Reason: no charges possible while learning; Always Free applies on both plans. Reminder plan in COST.md.
@@ -337,4 +350,11 @@ Why the deploy/rollback split: if Terraform owns the alias's version, any rollba
 - Approved 2026-09-22: M3 plan, including the deploy/rollback split (Terraform publishes versions, `scripts/deploy.py` and `scripts/rollback.py` move aliases and record every move in the deployments table) and a 9 of 10 alarm budget. Reason: an alias moved outside Terraform would otherwise be reverted by the next apply, and the deployments table is what the agent's `list_recent_deployments` reads.
 - Approved 2026-09-21: M2b is reviewed in two halves, after step 3 and at the end. Reason: the same logic that split M2 into M2a and M2b. Steps 2 and 3 carry the irreversible cost consequences, so a wrong turn there should surface before everything is built on top of it.
 - Approved 2026-09-21: DSQL connections default to `autocommit=True`, and code that needs several statements to be atomic asks for a transaction explicitly with `with conn.transaction():`. Reason: DSQL bills compute by how long a transaction stays open (measured, one DPU per transaction-second), and psycopg's normal default leaves a transaction open after any lone statement, which costs up to 315 DPU each time a Lambda freezes afterwards. Four such leaks were already in the code and had no functional symptom.
+- Approved 2026-09-23: M4 closed and the M5 plan approved.
+- Approved 2026-09-23: one DynamoDB table for investigations (metadata, journal steps, checkpoint) instead of two. Reason: fewer resources and one IAM grant; 14 RCU/WCU stay unallocated.
+- Approved 2026-09-23: the agent may wait out LLM rate limits inside its Lambda invocation. Reason: worst case about 14,200 GB-s for the whole benchmark (3.5% of the allowance), and rescheduling would add EventBridge Scheduler or a delay queue.
+- Approved 2026-09-23: Pydantic ships in the Lambda layer. Reason: the report must be validated where it is produced; init time is re-measured against the 712 ms baseline.
+- Approved 2026-09-23: Mistral La Plateforme is a third LLM provider. Reason: owner's choice, for more free quota; its limits are recorded only from the Admin panel, not from third-party posts.
+- Approved 2026-09-23: the Logs Insights scan cap is 20 MB per investigation. Reason: brings the Logs budget from 4.04 GB to 3.41 GB of 5.
+- Approved 2026-09-23: the token budget per investigation is a config value (default 40K), and every run logs actual tokens from M5 step 4. Reason: the budget is an estimate; the owner is told before step 7 if a run exceeds 50K.
 - Approved 2026-09-20: the SQS event source mapping ships disabled and is enabled explicitly for a run. Reason: an idle triggered queue spends about two thirds of the free SQS allowance doing nothing, and this makes most of M3's pause command already built.
