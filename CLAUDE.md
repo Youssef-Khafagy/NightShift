@@ -154,18 +154,21 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - The Cost Explorer API costs $0.01 per request, even from the CLI; the Cost Explorer console is free. Never call the API from scripts or the CLI. An unfiltered `GetCostAndUsage` includes credit records and nets charges to $0.00.
 - Lambda logs appear to count against the 5 GB CloudWatch Logs free tier (September 2026 bill, checked 2026-09-22; docs are silent since the May 2025 vended-logs pricing). **Evidence, not settled:** the bill quantities were 0 GB, so rounding could hide a vended logs line, and the Free plan bill may present usage differently after the upgrade. Re-check after the first traffic generator run and on the first Paid-plan bill. EMF metrics are ordinary custom metrics plus log bytes, and are not extracted in the Infrequent Access log class. `aws freetier get-free-tier-usage` is free; the Cost Explorer API is $0.01 per request.
 
-## Current status (2026-09-22)
-M0 and M1 complete. **M2a complete and approved by the owner. M2b complete and approved by the owner (2026-09-22). M3 steps 1 to 6 done (2026-09-23); step 7 (close and owner review) next.** Everything below is verified.
+## Current status (end of the 2026-09-22/23 session)
+M0 to M3 complete and approved. **M4 in progress: steps 1 to 3 done (PRs #38 to #41); step 4's live batch stopped for the night. Next session restarts the batch from scenario 1** (`bash batch.sh` equivalent: for each of 1, 2, 4, 5, 11, wait for quiet alarms, then `python -m chaos.run --scenario N --run`, stopping at the first failure). The batch is already approved by the owner; re-enable the consumer through Terraform first (plan shown), and the stock is already 5,000 per product.
 
-**Shut down cleanly. Nothing is polling or scheduled:**
-- The only event source mapping is `nightshift-fulfillment` on `nightshift-placed-orders`, state `Disabled`. It has been enabled for measurements and checks and disabled again each time, always through Terraform rather than the CLI, so state never drifted. Last cycle: the idle-polling measurement at 23:47 to 23:53 UTC on 2026-09-22. The mapping has `maximum_concurrency = 2`.
-- Both flags at their defaults: `checkout_rate_limit` = `0`, `payments_degraded_mode` = `false`.
-- No EventBridge rules exist. No provisioned concurrency on any function. Reserved concurrency: orders 5, cart 5, payments 2, fulfillment 2, hello 2 (16 reserved, 984 unreserved). Platform log lines at INFO on every function.
-- Both queues are empty, DLQ included. DSQL holds 222 paid orders (56 from load run `363e7f2a`, 60 from `af75ed97`, the rest smoke tests and checks; counted 2026-09-22 after the last deploy) and nothing in `placed`; stock is too low for a full 20-minute incident; `scripts/load.py`'s dry run prints the exact restock command, far under the 1 GB free storage, and an idle cluster costs nothing.
-- Both budgets still armed with `IncludeCredit=false`. **Correction 2026-09-22:** September has $0.03 of usage charges, absorbed by credits ($139.97 of $140.00 left). All of it is three Cost Explorer API calls made from the CLI on 2026-09-21 ($0.01 each), the same calls that reported "$0.00" because they included credit records. See COST.md, "The $0.03". The $0.01 tripwire fired on it and its email arrived (owner confirmed 2026-09-22), the first real test of budget delivery.
-- `terraform plan` clean after the last consumer cycle. PRs #11 to #26 are merged; the M2b close-out PR is open.
-- Custom metrics in the account: 4 of 10 (`list-metrics`), all in `NightShift`; `PaymentFailures` has not been emitted yet.
-- 2026-09-22 used **39.9 DPU** (TotalDPU for the day): smoke tests, two 60-order load runs and the live checks for steps 2 to 7. Month to date about 1,900 DPU, under 2% of the allowance.
+**Where step 4 got to:**
+- First batch, scenario 1: detected (`orders-errors` fired 94 s after the bad deploy), recovered, alarms OK, smoke test passed, but `terraform plan` was not clean. Cause: the injected version (orders 19) was still the newest published version, which is what Terraform's `function_versions` output reports and what `deploy.py` deploys, so the next deploy would have shipped the bad code again. Version 19 deleted by hand; recovery now deletes the injected version itself (PR #41). The failed run's result is kept in `results/chaos/01-bad-deploy-20260923T022105Z/`.
+- Second batch: stopped by the owner during scenario 1's warm-up, at 02:38:27 UTC, about 40 seconds before injection. No `state.json` was written: nothing was injected.
+- Scenarios 2, 4, 5 and 11 have not run live yet.
+
+**Left idle and verified (2026-09-23 ~02:45 UTC):**
+- Queue consumer `Disabled` (through Terraform). `terraform plan` clean.
+- Every alias on its newest published version, which equals `function_versions`: cart 15, payments 7, orders 18, fulfillment 7, hello 9. No injection in place; last deployments rows are orders deploy 17->18, deploy 18->19 (injected), rollback 19->18.
+- All 10 alarms `OK`. Both queues empty (nothing to drain). Flags at defaults.
+- `pause.py` idle proof: scheduled for 02:49 UTC, 10 minutes after the last warm-up traffic; result recorded in the next session.
+- No EventBridge rules, schedules or provisioned concurrency. Reserved concurrency: orders 5, cart 5, payments 2, fulfillment 2, hello 2.
+- Month-to-date spend: $0.03 of usage, absorbed by credits (all of it Cost Explorer API calls on 2026-09-21). DSQL about 2,000 DPU month to date.
 
 Done:
 - AWS account: Free plan, ACTIVE, $100 credits, ends 2027-03-18. Root has MFA and no access keys. Daily identity is IAM user `youssef-admin` (MFA, no access keys, permissions only via group `nightshift-admins` with AdministratorAccess). CLI auth via `aws login --profile nightshift-admin`.
