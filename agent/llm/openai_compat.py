@@ -19,6 +19,7 @@ from agent.llm.base import (
     ToolCall,
     ToolSpec,
     Usage,
+    bounded,
     post_json,
 )
 
@@ -133,13 +134,19 @@ class OpenAICompatible:
             raw=reply,
         )
 
-    def complete(self, messages: list[Message], tools: list[ToolSpec]) -> Completion:
+    def complete(
+        self,
+        messages: list[Message],
+        tools: list[ToolSpec],
+        *,
+        max_wait: float | None = None,
+    ) -> Completion:
         kwargs = {"opener": self._opener} if self._opener else {}
         reply, headers = post_json(
             self._url,
             {"authorization": f"Bearer {self._api_key}"},
             self.request_body(messages, tools),
-            retry=self._retry,
+            retry=bounded(self._retry, max_wait),
             **kwargs,
         )
         return self.parse(reply, headers)

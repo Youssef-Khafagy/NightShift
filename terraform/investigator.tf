@@ -11,8 +11,12 @@
 #    changes a message's visibility, so it is not a read). An explicit deny
 #    beats any allow, including one added later by mistake.
 # 3. A permissions boundary: the most this role can ever do, whatever policy
-#    is attached to it later. It lists the same read actions and nothing else,
-#    so attaching an admin policy to this role would still grant only reads.
+#    is attached to it later. It lists the same read actions plus the two
+#    checkpoint actions and nothing else, so attaching an admin policy to
+#    this role would still grant only reads.
+#
+# The one write: GetItem and PutItem on nightshift-investigations, the
+# agent's own checkpoints (M5 step 4). Every other DynamoDB write is denied.
 #
 # Locally the owner's user assumes it (agent/aws.py); in step 6 the
 # investigator Lambda will run as it.
@@ -44,6 +48,9 @@ locals {
     "lambda:ListEventSourceMappings",
     "ssm:GetParameter",
     "ssm:GetParameters",
+    # The agent's own checkpoints, in the investigations table only.
+    "dynamodb:GetItem",
+    "dynamodb:PutItem",
   ]
 }
 
@@ -132,6 +139,15 @@ data "aws_iam_policy_document" "investigator" {
     resources = [aws_dynamodb_table.deployments.arn]
   }
 
+  # The one write this role makes: its own checkpoints. No tool exposes it
+  # to the model; agent/store.py is the only caller.
+  statement {
+    sid       = "OwnCheckpoints"
+    effect    = "Allow"
+    actions   = ["dynamodb:GetItem", "dynamodb:PutItem"]
+    resources = [aws_dynamodb_table.investigations.arn]
+  }
+
   statement {
     sid       = "Queues"
     effect    = "Allow"
@@ -188,10 +204,6 @@ data "aws_iam_policy_document" "investigator" {
       "lambda:Put*",
       "lambda:Invoke*",
       "lambda:Publish*",
-      "dynamodb:Delete*",
-      "dynamodb:Put*",
-      "dynamodb:Update*",
-      "dynamodb:BatchWrite*",
       "sqs:Delete*",
       "sqs:Purge*",
       "sqs:Send*",
@@ -210,6 +222,22 @@ data "aws_iam_policy_document" "investigator" {
       "sns:*",
     ]
     resources = ["*"]
+  }
+
+  # Every DynamoDB write is denied except on the investigations table, so
+  # the deployments and cart tables stay out of reach whatever else changes.
+  statement {
+    sid    = "DenyTableWritesExceptCheckpoints"
+    effect = "Deny"
+    actions = [
+      "dynamodb:Delete*",
+      "dynamodb:Put*",
+      "dynamodb:Update*",
+      "dynamodb:BatchWrite*",
+      "dynamodb:PartiQL*",
+      "dynamodb:TransactWrite*",
+    ]
+    not_resources = [aws_dynamodb_table.investigations.arn]
   }
 }
 

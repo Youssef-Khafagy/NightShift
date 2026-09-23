@@ -16,7 +16,7 @@ import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Literal, Protocol
 
 Role = Literal["system", "user", "assistant", "tool"]
@@ -92,8 +92,15 @@ class Provider(Protocol):
     model: str
 
     def complete(
-        self, messages: list[Message], tools: list[ToolSpec]
-    ) -> Completion: ...
+        self,
+        messages: list[Message],
+        tools: list[ToolSpec],
+        *,
+        max_wait: float | None = None,
+    ) -> Completion:
+        """`max_wait` caps time spent waiting out rate limits in this call,
+        so a caller with a deadline is never held past it."""
+        ...
 
 
 class ProviderError(RuntimeError):
@@ -184,3 +191,9 @@ def post_json(
             retry.sleep(wait)
             waited += wait
     raise AssertionError("unreachable")
+
+
+def bounded(retry: RetryPolicy, max_wait: float | None) -> RetryPolicy:
+    if max_wait is None:
+        return retry
+    return replace(retry, max_total_wait=min(retry.max_total_wait, max(0.0, max_wait)))
