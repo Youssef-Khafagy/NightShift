@@ -203,7 +203,9 @@ def preflight(scenario: Scenario, c: Clients) -> list[str]:
 def run_step(step, injector: Injector, loads: list, run_dir: Path, reason: str) -> None:
     a = step.args
     if step.do == "set_env":
-        injector.set_env(a["service"], a["name"], a["value"])
+        injector.set_env(
+            a["service"], a["name"], a["value"], a.get("record_deploy", True)
+        )
     elif step.do == "deploy_patch":
         injector.deploy_patch(a["service"], a["file"], a["find"], a["with"])
     elif step.do == "send_message":

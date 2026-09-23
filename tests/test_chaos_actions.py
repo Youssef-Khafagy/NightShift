@@ -199,3 +199,16 @@ def test_detection_times_and_firing():
         "a": 30.0,
         "b": 0.5,
     }
+
+
+def test_a_third_party_change_leaves_no_deploy_rows(tmp_path):
+    """Scenario 4: a real provider's slowdown is not one of our deploys."""
+    lam, table = FakeLambda(), FakeTable()
+    lam.alias["payments"] = "6"
+    lam.env = {"PAYMENT_LATENCY_MS": "40"}
+    inj = injector(lam, table=table, tmp_path=tmp_path)
+    inj.set_env("payments", "PAYMENT_LATENCY_MS", "5000", record_deploy=False)
+    inj.restore("recovery")
+    assert table.rows == []
+    assert lam.env == {"PAYMENT_LATENCY_MS": "40"}
+    assert lam.alias["payments"] == "6"

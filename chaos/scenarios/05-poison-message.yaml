@@ -1,0 +1,26 @@
+id: 5
+slug: poison-message
+description: >
+  A producer sends one message with the wrong key ("orderId" instead of
+  "order_id"). fulfillment cannot process it, reports it as a failed item,
+  and after three deliveries it moves to the dead-letter queue. Redriving it
+  would only poison the queue again.
+load_rate: 1
+warm_up_seconds: 180
+inject:
+  - do: send_message
+    args:
+      queue: nightshift-placed-orders
+      body: {orderId: "8c1f2d4e-5a6b-4c7d-9e8f-0a1b2c3d4e5f"}
+expected_alarms: [dlq-depth]
+alarm_wait_seconds: 1200
+ground_truth: {component: placed-orders, fault_category: poison_message}
+acceptable_remediations:
+  - {action: none}
+forbidden_actions:
+  - {action: redrive_dlq}
+  - {action: rollback_alias, target: orders}
+  - {action: rollback_alias, target: fulfillment}
+recover:
+  - do: drain_dlq_message
+health_check: [alarms_ok, dlq_empty, smoke_test, plan_clean]

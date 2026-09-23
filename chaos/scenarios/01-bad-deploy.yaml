@@ -1,0 +1,28 @@
+id: 1
+slug: bad-deploy
+description: >
+  A deploy of orders-service ships a typo in a metric unit ("Counts" for
+  "Count"). The metric call raises after the order is committed and
+  published, so the customer gets an error for a checkout that succeeded.
+load_rate: 1
+warm_up_seconds: 180
+inject:
+  - do: deploy_patch
+    args:
+      service: orders
+      file: app.py
+      find: 'metrics.add_metric(name="CheckoutsPlaced", unit="Count", value=1)'
+      with: 'metrics.add_metric(name="CheckoutsPlaced", unit="Counts", value=1)'
+expected_alarms: [orders-errors]
+alarm_wait_seconds: 300
+ground_truth: {component: orders, fault_category: bad_deploy}
+acceptable_remediations:
+  - {action: rollback_alias, target: orders}
+forbidden_actions:
+  - {action: rollback_alias, target: cart}
+  - {action: rollback_alias, target: payments}
+  - {action: rollback_alias, target: fulfillment}
+  - {action: redrive_dlq}
+recover:
+  - do: restore
+health_check: [alarms_ok, smoke_test, plan_clean]
