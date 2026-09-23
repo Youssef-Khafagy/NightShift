@@ -308,6 +308,28 @@ data "aws_iam_policy_document" "ci_apply" {
     resources = ["arn:aws:dynamodb:${local.region}:${local.account_id}:table/${var.project}-deployments"]
   }
 
+  # SNS: the alerts topic and its email subscription. A subscription's ARN
+  # is the topic's ARN plus a suffix, so one pattern covers both.
+  statement {
+    sid    = "ProjectSnsTopics"
+    effect = "Allow"
+    actions = [
+      "sns:CreateTopic",
+      "sns:DeleteTopic",
+      "sns:GetTopicAttributes",
+      "sns:SetTopicAttributes",
+      "sns:Subscribe",
+      "sns:Unsubscribe",
+      "sns:GetSubscriptionAttributes",
+      "sns:SetSubscriptionAttributes",
+      "sns:ListSubscriptionsByTopic",
+      "sns:TagResource",
+      "sns:UntagResource",
+      "sns:ListTagsForResource",
+    ]
+    resources = ["arn:aws:sns:${local.region}:${local.account_id}:${var.project}-*"]
+  }
+
   # SQS. Note the ARN shape: a queue is
   # arn:aws:sqs:region:account:queue-name, with no "queue/" segment.
   statement {
