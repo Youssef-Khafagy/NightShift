@@ -44,7 +44,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import deployments
 
-from chaos.actions import BUILD, Injector, code_sha256
+from chaos.actions import BUILD, ROLLBACK_REASON, Injector, code_sha256
 from chaos.schema import Scenario, load_all
 
 REGION = os.environ.get("AWS_REGION", "ca-central-1")
@@ -326,9 +326,7 @@ def run(scenario: Scenario, *, dry_run: bool) -> int:
     print("Recover:")
     recover_started = time.time()
     for step in scenario.recover:
-        run_step(
-            step, injector, loads, run_dir, f"recovery after scenario run {run_id}"
-        )
+        run_step(step, injector, loads, run_dir, ROLLBACK_REASON)
 
     health: dict[str, bool] = {}
     if not dry_run:
@@ -384,7 +382,7 @@ def main() -> None:
             state_path=args.restore,
         )
         injector.injections = json.loads(args.restore.read_text())
-        injector.restore("recovery after an interrupted run")
+        injector.restore(ROLLBACK_REASON)
         injector.drain_dlq_message(f"{PROJECT}-placed-orders-dlq")
         return
 

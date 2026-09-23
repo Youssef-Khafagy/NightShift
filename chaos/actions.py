@@ -38,6 +38,13 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 import deployments
 
 BUILD = REPO_ROOT / "terraform" / ".build"
+
+# The reason recorded on every rollback this package makes. The agent reads
+# the deployments table, so this text is evidence it sees: it must read like
+# any operator's rollback and never name a run, a scenario or the staging.
+# The run ID stays in results/chaos/<run>/state.json, which the agent never
+# reads. tests/test_integrity.py holds it to the banned-words rule.
+ROLLBACK_REASON = "rolled back by the operator"
 ZIP_EPOCH = (1980, 1, 1, 0, 0, 0)
 
 

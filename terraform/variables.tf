@@ -87,3 +87,9 @@ variable "log_retention_days" {
   type        = number
   default     = 3
 }
+
+variable "operator_user_name" {
+  description = "The IAM user allowed to assume the Investigator role, so the agent runs locally with read-only rights instead of the owner's admin rights."
+  type        = string
+  default     = "youssef-admin"
+}
