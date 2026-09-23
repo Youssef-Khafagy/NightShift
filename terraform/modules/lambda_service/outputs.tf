@@ -14,8 +14,8 @@ output "alias_arn" {
 }
 
 output "published_version" {
-  description = "Version number the live alias currently points at."
-  value       = aws_lambda_alias.live.function_version
+  description = "Newest version Terraform published. scripts/deploy.py moves the live alias to it; Terraform does not."
+  value       = aws_lambda_function.this.version
 }
 
 output "function_url" {
