@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -11,7 +12,32 @@ from pydantic import ValidationError
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from chaos.schema import Scenario
+from chaos.schema import Scenario, load_all
+
+SCENARIOS = REPO_ROOT / "chaos" / "scenarios"
+
+
+def terraform_alarm_names() -> set[str]:
+    text = (REPO_ROOT / "terraform" / "alarms.tf").read_text()
+    block = text[text.index("  alarms = {") :]
+    return set(re.findall(r'^\s+"([a-z0-9-]+)" = \{', block, re.MULTILINE))
+
+
+def test_every_scenario_file_validates():
+    scenarios = load_all(SCENARIOS)
+    assert scenarios, "no scenario files found"
+    ids = [s.id for s in scenarios]
+    assert len(ids) == len(set(ids)), "duplicate scenario ids"
+
+
+def test_scenarios_name_only_real_alarms():
+    real = terraform_alarm_names()
+    for s in load_all(SCENARIOS):
+        assert set(s.expected_alarms) <= real, (s.slug, set(s.expected_alarms) - real)
+
+
+def test_the_m4_scenarios_are_present():
+    assert {s.id for s in load_all(SCENARIOS)} >= {1, 2, 4, 5, 11}
 
 
 def valid(**overrides):
