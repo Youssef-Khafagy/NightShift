@@ -190,6 +190,16 @@ resource "aws_lambda_alias" "live" {
   description      = "The version callers actually reach."
   function_name    = aws_lambda_function.this.function_name
   function_version = aws_lambda_function.this.version
+
+  # Terraform creates the alias and publishes new versions, but never moves
+  # it afterwards. scripts/deploy.py and scripts/rollback.py move it and
+  # record every move in the deployments table. If Terraform owned this
+  # value, a rollback done outside Terraform (by the rollback script, or by
+  # the agent in M6) would be drift, and the next routine apply would
+  # silently undo it.
+  lifecycle {
+    ignore_changes = [function_version]
+  }
 }
 
 # A function URL is an HTTPS endpoint managed by Lambda itself. It is free,

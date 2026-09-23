@@ -94,13 +94,15 @@ jobs:
         working-directory: terraform
         run: terraform output
 
-      # A green apply means the infrastructure matches the configuration. It
-      # says nothing about whether a customer can buy anything, and the gap
-      # between those two is where the interesting failures live. This buys a
-      # real cart, checks out against the real database, and fails the job if
-      # it does not get a 201, so a change that breaks checkout cannot sit on
-      # main unnoticed.
-      - name: Smoke test checkout
+      # Terraform published new versions but does not move the live aliases
+      # (ignore_changes in the lambda_service module). deploy.py moves each
+      # alias to exactly the version this apply published, records every move
+      # in the deployments table, then runs the checkout smoke test. A green
+      # apply says the infrastructure matches the configuration, not that a
+      # customer can buy anything; if the smoke test fails, deploy.py puts
+      # every alias back, records the rollback, and fails the job.
+      - name: Deploy, smoke test, roll back on failure
         run: |
           python -m pip install --quiet boto3
-          python scripts/smoke_checkout.py
+          terraform -chdir=terraform output -json function_versions > versions.json
+          python scripts/deploy.py --versions versions.json --sha "$GITHUB_SHA" --actor "$GITHUB_ACTOR"
