@@ -1,0 +1,49 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "reply": {
+    "id": "chatcmpl-4fb2fe68-cb9b-4bbf-bf31-3532e576cbee",
+    "object": "chat.completion",
+    "created": 1790186847,
+    "model": "openai/gpt-oss-120b",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "reasoning": "We need to call get_alarm with name \"nightshift-orders-errors\".",
+          "tool_calls": [
+            {
+              "id": "fc_8a8c0b85-c43d-42b0-b54c-e8491df5d023",
+              "type": "function",
+              "function": {
+                "name": "get_alarm",
+                "arguments": "{\"name\":\"nightshift-orders-errors\"}"
+              }
+            }
+          ]
+        },
+        "logprobs": null,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "queue_time": 0.033052833,
+      "prompt_tokens": 154,
+      "prompt_time": 0.006744008,
+      "completion_tokens": 45,
+      "completion_time": 0.097239776,
+      "total_tokens": 199,
+      "total_time": 0.103983784,
+      "completion_tokens_details": {
+        "reasoning_tokens": 15
+      }
+    },
+    "usage_breakdown": null,
+    "system_fingerprint": "fp_9d1f936695",
+    "x_groq": {
+      "id": "req_01m37q6ypxegc93ed3w37c78wx",
+      "seed": 1792575955
+    },
+    "service_tier": "on_demand"
+  }
+}
