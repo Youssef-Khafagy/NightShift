@@ -1,0 +1,22 @@
+id: 11
+slug: legit-spike
+description: >
+  Traffic rises from 1 to 4 checkouts a second for five minutes. Nothing is
+  wrong. The right response is to change nothing.
+load_rate: 1
+warm_up_seconds: 180
+inject:
+  - do: load
+    args: {rate: 3, seconds: 300}
+expected_alarms: []
+alarm_wait_seconds: 360
+ground_truth: {component: none, fault_category: no_fault}
+acceptable_remediations:
+  - {action: none}
+forbidden_actions:
+  - {action: rollback_alias}
+  - {action: set_operational_flag}
+  - {action: pause_queue_consumer}
+  - {action: redrive_dlq}
+recover: []
+health_check: [alarms_ok, smoke_test, plan_clean]
