@@ -14,7 +14,9 @@ because that is what the investigator would see after a real one.
 Publishing a version always snapshots $LATEST, which Terraform manages. So
 every injection first saves what it is about to change, and `restore` puts
 it back byte for byte: the original environment, or Terraform's own zip from
-terraform/.build/. A run is only recovered when `terraform plan` is clean.
+terraform/.build/. It then deletes the version the injection published, so
+the newest published version is known-good code again. A run is only
+recovered when `terraform plan` is clean.
 
 With `dry_run`, every AWS write is printed instead of made.
 """
@@ -259,6 +261,20 @@ class Injector:
                     ZipFile=original,
                 )
             self._wait_updated(function)
+            # Delete the version the injection published. Terraform reports
+            # a function's newest published version as `version`, and
+            # deploy.py moves aliases to exactly that. Left in place, the
+            # injected version would be the newest, and the next routine
+            # deploy would quietly ship it again. Found by the plan-clean
+            # health check on the first live run. Safe only now: the alias
+            # has moved off it and $LATEST is restored.
+            if "new" in record:
+                self._write(
+                    f"delete the injected version {function}:{record['new']}",
+                    self.lam.delete_function,
+                    FunctionName=function,
+                    Qualifier=record["new"],
+                )
             record["restored"] = True
             self._save()
 
