@@ -145,14 +145,14 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Lambda logs appear to count against the 5 GB CloudWatch Logs free tier (September 2026 bill, checked 2026-09-22; docs are silent since the May 2025 vended-logs pricing). **Evidence, not settled:** the bill quantities were 0 GB, so rounding could hide a vended logs line, and the Free plan bill may present usage differently after the upgrade. Re-check after the first traffic generator run and on the first Paid-plan bill. EMF metrics are ordinary custom metrics plus log bytes, and are not extracted in the Infrequent Access log class. `aws freetier get-free-tier-usage` is free; the Cost Explorer API is $0.01 per request.
 
 ## Current status (2026-09-22)
-M0 and M1 complete. **M2a complete and approved by the owner. M2b steps 1 to 8 done (2026-09-22); step 8 closed by ADR 0001 (no in-code tracing). Waiting for the owner's end-of-M2b review; M3 starts after it.** Everything below is verified.
+M0 and M1 complete. **M2a complete and approved by the owner. M2b complete and approved by the owner (2026-09-22). M3 plan approved the same day; step 1 done; next is step 2 (deployments table and deploy script).** Everything below is verified.
 
 **Shut down cleanly. Nothing is polling or scheduled:**
 - The only event source mapping is `nightshift-fulfillment` on `nightshift-placed-orders`, state `Disabled`. It has been enabled for measurements and checks and disabled again each time, always through Terraform rather than the CLI, so state never drifted. Last cycle: the idle-polling measurement at 23:47 to 23:53 UTC on 2026-09-22. The mapping has `maximum_concurrency = 2`.
 - Both flags at their defaults: `checkout_rate_limit` = `0`, `payments_degraded_mode` = `false`.
 - No EventBridge rules exist. No provisioned concurrency on any function. Reserved concurrency: orders 5, cart 5, payments 2, fulfillment 2, hello 2 (16 reserved, 984 unreserved). Platform log lines at INFO on every function.
 - Both queues are empty, DLQ included. DSQL holds 222 paid orders (56 from load run `363e7f2a`, 60 from `af75ed97`, the rest smoke tests and checks; counted 2026-09-22 after the last deploy) and nothing in `placed`; stock is too low for a full 20-minute incident; `scripts/load.py`'s dry run prints the exact restock command, far under the 1 GB free storage, and an idle cluster costs nothing.
-- Both budgets still armed with `IncludeCredit=false`. **Correction 2026-09-22:** September has $0.03 of usage charges, absorbed by credits ($139.97 of $140.00 left). All of it is three Cost Explorer API calls made from the CLI on 2026-09-21 ($0.01 each), the same calls that reported "$0.00" because they included credit records. See COST.md, "The $0.03". The $0.01 tripwire should fire on it; whether its email arrived is unconfirmed.
+- Both budgets still armed with `IncludeCredit=false`. **Correction 2026-09-22:** September has $0.03 of usage charges, absorbed by credits ($139.97 of $140.00 left). All of it is three Cost Explorer API calls made from the CLI on 2026-09-21 ($0.01 each), the same calls that reported "$0.00" because they included credit records. See COST.md, "The $0.03". The $0.01 tripwire fired on it and its email arrived (owner confirmed 2026-09-22), the first real test of budget delivery.
 - `terraform plan` clean after the last consumer cycle. PRs #11 to #26 are merged; the M2b close-out PR is open.
 - Custom metrics in the account: 4 of 10 (`list-metrics`), all in `NightShift`; `PaymentFailures` has not been emitted yet.
 - 2026-09-22 used **39.9 DPU** (TotalDPU for the day): smoke tests, two 60-order load runs and the live checks for steps 2 to 7. Month to date about 1,900 DPU, under 2% of the allowance.
@@ -263,6 +263,20 @@ The rule that keeps it there: separate metric names, never variable dimensions. 
 
 Later (tracked, not blocking): test that a budget email actually arrives before the Feb 2027 upgrade (COST.md upgrade plan).
 
+## M3 plan (approved 2026-09-22)
+
+Reviewed after step 3 and at the end.
+
+1. **Done 2026-09-22.** Re-verified alarm, SNS and DynamoDB free tiers. Alarm ledger in COST.md: 9 of 10 alarm metrics, all single-metric, with `tests/test_alarm_ledger.py` (verified by mutating a row). It records three problems step 5 must solve: fulfillment's `Errors` misses per-message payment failures (they are reported as `batchItemFailures`), `queue-age` would page after every deploy because the smoke test leaves a message while the consumer is off, and every alarm must treat missing data as not breaching.
+2. **Deployments table and deploy script.** `nightshift-deployments` (1 RCU, 1 WCU, in the capacity ledger), keyed by service and deploy time. `ignore_changes` on each alias's `function_version`, so Terraform publishes versions but never moves aliases. `scripts/deploy.py` moves each alias to its newest version, writes one row per service (previous version, new version, git SHA, time, actor), runs the smoke test, and rolls back automatically if it fails. `apply.yml` calls it.
+3. **Rollback script.** `scripts/rollback.py --service NAME` moves the alias to the previous version recorded in the table and records the rollback. Live test: roll orders back one version and forward again. **Owner review point.**
+4. **SNS topic and email subscription.** The owner clicks the confirmation link.
+5. **Alarms**, each with a written reason, wired to SNS, missing data not breaching. Decide the tenth slot (orders 502 gap or `PaymentFailures`). Extend the ledger test to check Terraform against the ledger. Test the email path with `set-alarm-state` (free).
+6. **`pause` and `destroy` commands.** Pause turns the consumer off and checks that nothing polls. Destroy is verified by plan only in M3: it shows what would be removed, requires typing the project name, and warns that it removes the CI roles too.
+7. **Close:** write-up, interview questions, owner review.
+
+Why the deploy/rollback split: if Terraform owns the alias's version, any rollback outside Terraform (the rollback script, or the M6 agent's `rollback_alias`) is drift, and the next routine apply silently undoes it.
+
 ## Decisions log
 (Record each decision here with a one-line reason as it is made. "Proposed" means not yet approved.)
 - Approved 2026-09-18: Free plan via the standard sign-up flow; upgrade in February 2027 (hard deadline 2027-02-15). Reason: no charges possible while learning; Always Free applies on both plans. Reminder plan in COST.md.
@@ -296,6 +310,7 @@ Later (tracked, not blocking): test that a budget email actually arrives before 
 - Approved 2026-09-22: no in-code tracing; Lambda active tracing only (ADR 0001). Reason: no small, documented Python exporter works in Lambda without a collector; the options are a foreign-ARN layer, 62 dependencies, or an undocumented wire format, and active tracing is already on at zero init cost.
 - Approved 2026-09-22: the placed-orders mapping's `maximum_concurrency` equals fulfillment's reserved concurrency (2), from one local. Reason: without it the poller invoked above the reservation, and throttled receives count toward `maxReceiveCount`, risking healthy orders in the DLQ. Idle polling measured at 6 per minute with the cap.
 - Approved 2026-09-22: commands that gate a commit, merge, deploy or conclusion must fail loudly (rule under Safety and workflow). Reason: three misread exit statuses in M2b.
+- Approved 2026-09-22: M3 plan, including the deploy/rollback split (Terraform publishes versions, `scripts/deploy.py` and `scripts/rollback.py` move aliases and record every move in the deployments table) and a 9 of 10 alarm budget. Reason: an alias moved outside Terraform would otherwise be reverted by the next apply, and the deployments table is what the agent's `list_recent_deployments` reads.
 - Approved 2026-09-21: M2b is reviewed in two halves, after step 3 and at the end. Reason: the same logic that split M2 into M2a and M2b. Steps 2 and 3 carry the irreversible cost consequences, so a wrong turn there should surface before everything is built on top of it.
 - Approved 2026-09-21: DSQL connections default to `autocommit=True`, and code that needs several statements to be atomic asks for a transaction explicitly with `with conn.transaction():`. Reason: DSQL bills compute by how long a transaction stays open (measured, one DPU per transaction-second), and psycopg's normal default leaves a transaction open after any lone statement, which costs up to 315 DPU each time a Lambda freezes afterwards. Four such leaks were already in the code and had no functional symptom.
 - Approved 2026-09-20: the SQS event source mapping ships disabled and is enabled explicitly for a run. Reason: an idle triggered queue spends about two thirds of the free SQS allowance doing nothing, and this makes most of M3's pause command already built.
