@@ -65,6 +65,9 @@ class FakeLambda:
     def get_waiter(self, name):
         return Waiter()
 
+    def delete_function(self, FunctionName, Qualifier):
+        self.writes.append(("delete", FunctionName, Qualifier))
+
 
 class FakeTable:
     def __init__(self):
@@ -212,3 +215,17 @@ def test_a_third_party_change_leaves_no_deploy_rows(tmp_path):
     assert table.rows == []
     assert lam.env == {"PAYMENT_LATENCY_MS": "40"}
     assert lam.alias["payments"] == "6"
+
+
+def test_restore_deletes_the_injected_version_after_moving_off_it(tmp_path):
+    """Otherwise the bad version stays the newest published one, and deploy.py
+    (which targets the newest) would ship it again on the next deploy."""
+    lam = FakeLambda()
+    inj = injector(lam, tmp_path=tmp_path)
+    inj.set_env("cart", "CART_TABLE_NAME", "nightshift-carts")
+    inj.restore("recovery")
+    writes = [w[0] for w in lam.writes]
+    assert ("delete", "nightshift-cart", "21") in lam.writes
+    assert writes.index("delete") > max(
+        i for i, w in enumerate(lam.writes) if w[0] == "alias"
+    )
