@@ -252,7 +252,9 @@ def test_get_alarm_accepts_short_names_and_reads_history():
     )
     assert out["state"] == "ALARM"
     assert out["metric"]["dimensions"] == {"FunctionName": "nightshift-orders"}
-    assert out["recent_state_changes"] == [{"at": "15:00:00", "summary": "OK to ALARM"}]
+    assert out["recent_state_changes"] == [
+        {"at": "2026-09-23T15:00:00Z", "summary": "OK to ALARM"}
+    ]
 
 
 def test_get_metrics_percentiles_use_extended_statistics():
@@ -275,7 +277,7 @@ def test_get_metrics_percentiles_use_extended_statistics():
     assert sent["Dimensions"] == [
         {"Name": "FunctionName", "Value": "nightshift-orders"}
     ]
-    assert out["points"] == [["15:00:00", 2.5]]
+    assert out["points"] == [["15:00:00Z", 2.5]]
 
 
 def test_get_metrics_rejects_a_malformed_dimension():
@@ -483,3 +485,12 @@ def test_the_topology_is_read_once():
     call("get_topology", {}, ctx)
     call("get_topology", {}, ctx)
     assert len(ctx.client("ssm").calls) == 1
+
+
+def test_times_are_reported_in_utc_whatever_zone_boto3_uses():
+    from datetime import timedelta, timezone
+
+    from agent.tools.aws_read import hhmm
+
+    edt = timezone(timedelta(hours=-4))
+    assert hhmm(datetime(2026, 9, 23, 11, 0, tzinfo=edt)) == "15:00:00Z"

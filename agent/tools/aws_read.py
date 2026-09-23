@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import re
 import time
-from datetime import timedelta
+from datetime import UTC, timedelta
 from typing import Any
 
 from agent.tools.context import ToolContext, ToolError
@@ -24,7 +24,21 @@ PERCENTILE = re.compile(r"^p\d{1,2}(\.\d+)?$")
 
 
 def hhmm(value: Any) -> str:
-    return value.strftime("%H:%M:%S") if hasattr(value, "strftime") else str(value)
+    """A time of day, always in UTC and marked Z. boto3 hands back datetimes
+    in the machine's local zone, so on the laptop they were EDT while every
+    log line and deployment row is UTC; the model would compare the two."""
+    if not hasattr(value, "astimezone"):
+        return str(value)
+    return value.astimezone(UTC).strftime("%H:%M:%SZ")
+
+
+def stamp(value: Any) -> str:
+    """A full UTC timestamp, for one-off moments (an alarm's last change, a
+    flag's last write) that may be days old. Metric points keep hhmm, since
+    they all sit inside one short window and the date would only cost tokens."""
+    if not hasattr(value, "astimezone"):
+        return str(value)
+    return value.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def full_alarm_name(name: str) -> str:
@@ -43,7 +57,7 @@ def get_alarm(ctx: ToolContext, name: str | None = None) -> dict:
                 {
                     "name": a["AlarmName"],
                     "state": a["StateValue"],
-                    "since": hhmm(a["StateUpdatedTimestamp"]),
+                    "since": stamp(a["StateUpdatedTimestamp"]),
                 }
                 for a in alarms
             ]
@@ -60,7 +74,7 @@ def get_alarm(ctx: ToolContext, name: str | None = None) -> dict:
         "name": name,
         "state": a["StateValue"],
         "reason": a.get("StateReason", ""),
-        "since": hhmm(a["StateUpdatedTimestamp"]),
+        "since": stamp(a["StateUpdatedTimestamp"]),
         "metric": {
             "namespace": a.get("Namespace"),
             "name": a.get("MetricName"),
@@ -71,7 +85,7 @@ def get_alarm(ctx: ToolContext, name: str | None = None) -> dict:
         "fires_when": f"{a.get('ComparisonOperator')} {a.get('Threshold')} "
         f"for {a.get('EvaluationPeriods')} period(s)",
         "recent_state_changes": [
-            {"at": hhmm(h["Timestamp"]), "summary": h["HistorySummary"]}
+            {"at": stamp(h["Timestamp"]), "summary": h["HistorySummary"]}
             for h in history
         ],
     }
@@ -285,7 +299,7 @@ def lookup_recent_changes(ctx: ToolContext, minutes: int = 120) -> dict:
             if any("nightshift" in n for n in names):
                 events.append(
                     {
-                        "at": hhmm(e["EventTime"]),
+                        "at": stamp(e["EventTime"]),
                         "event": f"{e.get('EventSource', '').split('.')[0]}:{e['EventName']}",
                         "by": e.get("Username"),
                         "resources": sorted(set(names))[:3],
@@ -398,7 +412,7 @@ def get_flag_values(ctx: ToolContext) -> dict:
         "flags": {
             p["Name"]: {
                 "value": p["Value"],
-                "last_modified": hhmm(p["LastModifiedDate"]),
+                "last_modified": stamp(p["LastModifiedDate"]),
             }
             for p in reply["Parameters"]
         },
