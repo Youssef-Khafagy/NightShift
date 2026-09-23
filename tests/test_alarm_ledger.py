@@ -2,8 +2,8 @@
 
 CloudWatch gives 10 alarm metrics free, and a metric math alarm is billed for
 every metric in its expression. The ledger is where each alarm is budgeted
-before Terraform creates it. This checks the ledger itself; M3 step 5 adds
-the check that every alarm in Terraform has a row here.
+before Terraform creates it. This checks the ledger itself, and that the
+alarms defined in terraform/alarms.tf are exactly the ledger's rows.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ def ledger_rows() -> list[tuple[str, str, str, int]]:
 
 def test_the_ledger_parses():
     """A reformatted table must fail here, not become an empty ledger."""
-    assert len(ledger_rows()) == 9
+    assert len(ledger_rows()) == 10
 
 
 def test_the_ledger_fits_the_free_allowance():
@@ -51,3 +51,23 @@ def test_the_allocated_total_matches_the_rows():
     allocated = re.search(r"\| \*\*Allocated\*\* \|(?: \|)* \*\*(\d+)\*\* \|", section)
     assert allocated, "the Allocated row is missing"
     assert int(allocated[1]) == sum(count for *_, count in ledger_rows())
+
+
+# `"orders-errors" = {` inside the alarms map in terraform/alarms.tf.
+TF_ALARM = re.compile(r'^\s+"([a-z0-9-]+)" = \{', re.MULTILINE)
+
+
+def terraform_alarms() -> set[str]:
+    text = (REPO_ROOT / "terraform" / "alarms.tf").read_text()
+    block = text[text.index("  alarms = {") :]
+    return set(TF_ALARM.findall(block))
+
+
+def test_terraform_alarms_match_the_ledger():
+    """An alarm in Terraform without a ledger row, or a ledger row with no
+    alarm, fails here. Adding an alarm means budgeting it first."""
+    ledger = {name for name, *_ in ledger_rows()}
+    tf = terraform_alarms()
+    assert tf, "no alarms parsed from terraform/alarms.tf"
+    assert tf - ledger == set(), f"alarms missing from the ledger: {tf - ledger}"
+    assert ledger - tf == set(), f"ledger rows with no alarm: {ledger - tf}"
