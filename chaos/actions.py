@@ -108,7 +108,7 @@ class Injector:
         """Written after every change, so a crash mid-run can still be undone."""
         if self.state_path and not self.dry_run:
             self.state_path.parent.mkdir(parents=True, exist_ok=True)
-            self.state_path.write_text(json.dumps(self.injections, indent=2))
+            self.state_path.write_text(json.dumps(self.injections, indent=2) + "\n")
 
     def _write(self, description: str, call, *args, **kwargs):
         print(("  WOULD " if self.dry_run else "  ") + description, flush=True)
