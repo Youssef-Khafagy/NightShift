@@ -42,6 +42,11 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Never commit the AWS account ID. Docs use `<ACCOUNT_ID>`; Terraform reads it from `data "aws_caller_identity"`. A pre-commit hook blocks ARNs with real IDs.
 - One milestone at a time. At the start: explain concepts in plain language, propose the plan, wait for approval. At the end: summarize what was built, how to verify it, cost impact; add concepts plus 5 likely interview questions with answers (based on our actual design) to LEARNING.md.
 - Small, logical commits with clear messages.
+- **How to report to the owner** (owner rule, 2026-09-22):
+  - Lead every check-in with a short block, under 100 words, in plain language: what needs approval, the Terraform plan counts, and any cost impact. Reasoning and detail go below it.
+  - If a decision is genuinely the owner's, say so in one sentence. If it is a judgment call with a clearly better option, recommend it and give the reason in one line.
+  - Do not ask for decisions the rules in this file already answer. Apply the rules and report what was done. Escalate only when rules conflict, or when something costs money, deletes data, or widens permissions. The Terraform apply and AWS write rule above still applies: show the plan, get a yes.
+- **LEARNING.md is the owner's most important file.** It teaches a reader who knows Python and web development but has never used AWS how this system works and why. Organised by topic, not by date. Every section answers: what is this, why does it exist, what would break without it, and what did we get wrong before getting it right. Each major section ends with the questions someone could ask the owner about it, answered in the owner's own voice. No filler, no restating the code, no "as discussed". Update the relevant section as work lands, instead of appending a diary entry.
 - **Commands that gate a commit, merge, deploy or conclusion must fail loudly.** Owner rule, 2026-09-22, after three misread exit statuses in M2b (the trivy pipeline, the Lambda auth cache, and a commit made over a failing test).
   - Run the chain under `set -euo pipefail`.
   - Never pipe the command whose status matters. `pytest -q | tail -1` reports `tail`'s status, not pytest's. Run it unpiped, or save its output to a file and read that afterwards.
