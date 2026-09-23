@@ -330,6 +330,28 @@ data "aws_iam_policy_document" "ci_apply" {
     resources = ["arn:aws:sns:${local.region}:${local.account_id}:${var.project}-*"]
   }
 
+  # CloudWatch alarms, only those named with the project prefix.
+  statement {
+    sid    = "ProjectAlarms"
+    effect = "Allow"
+    actions = [
+      "cloudwatch:PutMetricAlarm",
+      "cloudwatch:DeleteAlarms",
+      "cloudwatch:TagResource",
+      "cloudwatch:UntagResource",
+      "cloudwatch:ListTagsForResource",
+    ]
+    resources = ["arn:aws:cloudwatch:${local.region}:${local.account_id}:alarm:${var.project}-*"]
+  }
+
+  # DescribeAlarms is how Terraform reads alarms back; it is a list call.
+  statement {
+    sid       = "DescribeAlarms"
+    effect    = "Allow"
+    actions   = ["cloudwatch:DescribeAlarms"]
+    resources = ["*"]
+  }
+
   # SQS. Note the ARN shape: a queue is
   # arn:aws:sqs:region:account:queue-name, with no "queue/" segment.
   statement {

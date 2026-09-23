@@ -559,18 +559,53 @@ orders was moved 17 → 16 → 17 → 16 → 17 through both scripts: an explici
 
 ## 16. Alarms and paging
 
-**What it is (in progress).** CloudWatch alarms on single metrics, emailing me through SNS. Budgeted before any exists.
+**What it is.** Ten CloudWatch alarms, each watching one metric. When one changes state it publishes to the SNS topic `nightshift-alerts`, which emails me. In M5 the same state change will also start an investigation.
 
-**The budget.** 10 alarm metrics are free. A metric math alarm is billed for every metric it uses, so an error *rate* (errors / invocations) costs 2 and four of them would cost 8. So the plan uses nine single-metric alarms: errors on each of the four functions, checkout p99 latency, oldest message age on the queue, DLQ depth, throttles across the account, and serialization retries.
+**Why it exists.** Something has to notice a fault before the agent can investigate it. Every scenario in the benchmark starts with an alarm firing.
 
-**What writing the ledger caught before anything was built.** fulfillment's `Errors` misses payment failures (they are reported per message). A queue-age alarm would page after every deploy, because the smoke test leaves a message while the consumer is off. And an idle system publishes no data, so every alarm must treat missing data as fine.
+**What would break without it.** The agent would have no trigger, and a fault would be found by whoever next looked.
 
-**SNS email needs a click.** AWS will not deliver to an email subscription until someone confirms it from the email; Terraform cannot do that.
+### The budget decides the shape
+
+10 alarm metrics are free. A metric math alarm is billed for every metric in its expression, so an error *rate* (errors ÷ invocations) costs 2, and four of them would cost 8. So every alarm watches one plain metric, and the ledger in COST.md is exactly full:
+
+| Alarm | Watches | Fires when |
+|---|---|---|
+| `orders-errors`, `cart-errors`, `payments-errors`, `fulfillment-errors` | `AWS/Lambda Errors` per function | ≥ 1 in a minute |
+| `checkout-latency` | orders `Duration` p99 | ≥ 2,000 ms for 3 minutes in a row |
+| `queue-age` | `ApproximateAgeOfOldestMessage` | ≥ 5 minutes |
+| `dlq-depth` | DLQ `ApproximateNumberOfMessagesVisible` | ≥ 1 |
+| `throttles` | account-wide `AWS/Lambda Throttles` | ≥ 1 in a minute |
+| `serialization-retries` | `NightShift SerializationRetries` | ≥ 10 a minute for 2 minutes |
+| `payment-failures` | `NightShift PaymentFailures` | ≥ 3 in a minute |
+
+`tests/test_alarm_ledger.py` checks that the alarm names in `terraform/alarms.tf` and the ledger rows are the same set, so an alarm cannot exist without a budget line. It was tested by planting an unbudgeted alarm.
+
+### Three alarms that would have been wrong
+
+Writing a one-line reason for each alarm before building it found three problems:
+
+- **fulfillment's errors alarm was blind to payment failures.** The worker reports each failed message back to SQS itself (section 10), so the invocation succeeds and Lambda counts no error. The tenth slot went to `payment-failures`, which watches the custom metric the worker emits exactly when a payment call fails.
+- **`queue-age` would have paged after every deploy.** The smoke test places a real order, and with the consumer off between runs, its message sits in the queue ageing. So this alarm's notifications are switched on only while the consumer is (`actions_enabled = var.queue_consumer_enabled`). It still records its state, which the agent can read; it just doesn't email about a backlog that is expected.
+- **Silence would have paged.** An idle store publishes no data at all. Every alarm sets `treat_missing_data = "notBreaching"`.
+
+The p99 alarm needs three bad minutes in a row, because one cold start (about 3 s) can push a single quiet minute's p99 over the line on its own.
+
+### Paging through SNS
+
+**The topic is unencrypted, deliberately.** CloudWatch alarms cannot publish to a topic encrypted with AWS's managed SNS key: that key's policy does not let CloudWatch use it, it cannot be edited, and the alarm action fails silently. The only fix is a customer managed KMS key, which costs $1 a month and is forbidden here. The messages carry alarm names and metric values from synthetic data. The security scanner flags an unencrypted topic, so that one finding is suppressed next to the reason.
+
+**Only our alarms may publish.** The topic policy allows `cloudwatch.amazonaws.com` to publish only when the source is an alarm in this account whose name starts with `nightshift-`.
+
+**What we got wrong getting email delivered.** AWS will not deliver to an email subscription until someone clicks a confirmation link, and the first confirmation email was nowhere to be found. It was in Spam: Gmail's search skips Spam unless you add `in:anywhere`. After resending it (`aws sns subscribe` again on a pending subscription sends a fresh email) and marking it "not spam", a test message landed in the inbox. The confirmation page is also why alarm emails carry an unsubscribe link: clicking it would silently stop paging, so alarm emails should never be forwarded.
 
 **Questions about alarms**
 
-- *Why error counts instead of rates?* A rate is metric math over two metrics and costs two alarm slots. Counts cost one each, and at this traffic they're easier to reason about.
-- *What does an alarm do when there's no traffic?* There's no data, and I set every alarm to treat missing data as not breaching, because an idle store must not page anyone.
+- *Why error counts instead of error rates?* A rate is metric math over two metrics and costs two of my ten free alarm slots. Counts cost one each, and at this traffic "any error" is the right threshold anyway.
+- *What does an alarm do when there's no traffic?* There's no data. Every alarm treats missing data as not breaching, because an idle store must not page anyone.
+- *Why doesn't your worker's error alarm catch payment failures?* The worker reports failed messages back to SQS individually, so Lambda doesn't count an error. I found that while budgeting the alarms and spent my last slot on a payment-failures alarm on a custom metric instead.
+- *Why is your SNS topic unencrypted?* CloudWatch can't publish to a topic encrypted with AWS's managed key, and a customer managed key costs money. The messages are alarm names and numbers from synthetic data, and I suppressed the scanner finding with that reason written next to it.
+- *How do you stop a backlog alarm from firing during maintenance?* The queue-age alarm only notifies while the consumer is enabled. When I pause the store, a waiting message is expected, so it records state but doesn't page.
 
 ---
 
