@@ -17,6 +17,7 @@ import json
 import sys
 from pathlib import Path
 
+from agent import postmortem, report
 from agent.aws import investigator_session
 from agent.config import PROVIDER_DEFAULTS, for_provider
 from agent.env import load_dotenv
@@ -85,16 +86,26 @@ def main() -> None:
 
     state = investigator.run(state)
 
+    final = report.build(state)
+    report_text = postmortem.report_json(final)
+    markdown = postmortem.render(state, final)
+    store.save_report(state.investigation_id, report_text, markdown)
+
     RESULTS.mkdir(parents=True, exist_ok=True)
     out = RESULTS / f"{state.investigation_id}.json"
     out.write_text(
         json.dumps({"config": config.__dict__, "state": state.to_dict()}, indent=2)
         + "\n"
     )
+    (RESULTS / f"{state.investigation_id}.report.json").write_text(report_text)
+    (RESULTS / f"{state.investigation_id}.md").write_text(markdown)
     for step in state.steps:
         print(f"  {step.number:2}. {step.tool} {json.dumps(step.args)[:100]}")
     print(f"stop: {state.stop_reason}")
-    print(f"answer: {json.dumps(state.final)}")
+    print(
+        f"report: {final.root_cause_component} / {final.fault_category}, "
+        f"confidence {final.confidence}"
+    )
     inp = sum(c.input_tokens for c in state.calls)
     outp = sum(c.output_tokens for c in state.calls)
     print(

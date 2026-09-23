@@ -21,6 +21,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
+from agent import report
 from agent.config import AgentConfig
 from agent.llm.base import Provider, ProviderError, ToolSpec
 from agent.state import Call, InvestigationState, Step
@@ -252,6 +253,14 @@ class Investigator:
 
     def _finish(self, state: InvestigationState, args: dict[str, Any]) -> str:
         found = problems(FINISH.parameters, args)
+        if not found:
+            # The report's own rules (no_fault means component none, evidence
+            # must be real tool steps) are checked here too, so a bad answer
+            # goes back to the model instead of into the results.
+            try:
+                report.from_answer(state, args)
+            except ValueError as error:
+                found = str(error).split("; ")
         if found:
             return json.dumps(
                 {"error": "finish_investigation rejected", "problems": found}
