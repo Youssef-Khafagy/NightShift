@@ -205,11 +205,15 @@ REJECTED = ProviderError(
 
 
 def test_a_provider_rejected_tool_call_goes_back_to_the_model():
-    script = Script(REJECTED, reply(("finish_investigation", FINISH_ARGS)))
+    script = Script(
+        reply(("get_topology", {})),
+        REJECTED,
+        reply(("finish_investigation", FINISH_ARGS)),
+    )
     inv, _ = investigator(script)
     state = inv.run(inv.start(TRIGGER))
     assert state.stop_reason == "finished" and state.rejected_calls == 1
-    notice = script.seen[1][-1]
+    notice = script.seen[2][-1]
     assert notice.role == "user" and "got 100, want 50" in notice.content
 
 
@@ -226,13 +230,14 @@ def test_other_client_errors_still_end_it():
 def test_an_invalid_answer_is_sent_back_not_accepted():
     bad = dict(FINISH_ARGS, fault_category="gremlins")
     script = Script(
+        reply(("get_topology", {})),
         reply(("finish_investigation", bad)),
         reply(("finish_investigation", FINISH_ARGS)),
     )
     inv, _ = investigator(script)
     state = inv.run(inv.start(TRIGGER))
-    assert "must be one of" in state.steps[0].result
-    assert state.final == FINISH_ARGS and len(state.steps) == 2
+    assert "must be one of" in state.steps[1].result
+    assert state.final == FINISH_ARGS and len(state.steps) == 3
 
 
 def test_two_replies_without_a_tool_call_end_it():
@@ -312,3 +317,18 @@ def test_the_window_shrinks_to_fit_the_cap():
     assert estimate <= 4_000
     assert tool_contents(messages).count("R" * 4_000) < 3
     assert estimate == estimate_tokens(messages)
+
+
+def test_no_fault_with_a_component_is_sent_back():
+    """The first live Groq run answered no_fault with component orders."""
+    wrong = dict(FINISH_ARGS, fault_category="no_fault", evidence_steps="")
+    right = dict(wrong, root_cause_component="none")
+    script = Script(
+        reply(("get_topology", {})),
+        reply(("finish_investigation", wrong)),
+        reply(("finish_investigation", right)),
+    )
+    inv, _ = investigator(script)
+    state = inv.run(inv.start(TRIGGER))
+    assert "root_cause_component must be none" in state.steps[1].result
+    assert state.final == right

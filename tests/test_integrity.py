@@ -70,3 +70,11 @@ def test_chaos_rollback_reasons_do_not_give_the_game_away():
         text = path.read_text()
         assert "restore(f" not in text, f"{path.name}: a formatted rollback reason"
         assert not re.search(r"restore\(\s*\"", text), f"{path.name}: a literal reason"
+
+
+def test_the_agent_never_imports_the_grader():
+    """evaluation/ reads ground truth; the agent must not be able to."""
+    for path in sorted((REPO_ROOT / "agent").rglob("*.py")):
+        assert not re.search(
+            r"^\s*(from|import)\s+evaluation\b", path.read_text(), re.MULTILINE
+        ), path
