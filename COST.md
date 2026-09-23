@@ -34,12 +34,12 @@ Usage model for "Projected": one busy month = development plus one full benchmar
 |---|---|---|---|---|
 | Lambda | 1M requests and 400,000 GB-s per month, perpetual, **identical for x86 and arm64** (re-verified 2026-09-20) | ~475K requests (4.7 per order, measured 2026-09-22), ~60K GB-s | ~52% requests, ~85% GB-s | Share each incident across configs (separate injections per config would be ~1.5M requests, over the limit). Agent never sleeps inside Lambda while waiting on LLM rate limits; it checkpoints and reschedules. **Measured 2026-09-20, resolved:** 128 MB holds. Importing Powertools, psycopg and boto3 and building a DSQL client costs 11,910 ms at 128 MB when done lazily inside the handler, but 712 ms at the same 128 MB when done at module scope during init. Memory was not the lever; where the imports run was. See the memory sweep below. |
 | Aurora DSQL | 100,000 DPUs and 1 GB storage per month, Always Free on Free and Paid plans (re-verified 2026-09-20). Beyond: $8 per million DPUs, $0.33 per GB-month | ~25K DPUs (0.25 per order; 0.2134 in M2a batches, 0.2455 in the 2026-09-22 load run), <0.1 GB | ~75% | DSQL is NOT in AWS's list of services tracked by free tier usage alerts. `scripts/measure_dpu.py` reads the DPU metrics with GetMetricStatistics. **Measured 2026-09-21:** compute DPU is transaction open time, one DPU per transaction-second, so this allowance is really about 27.8 hours of open transaction time per month. A transaction left open until DSQL kills it costs 315 DPU. A full order lifecycle costs **0.2134 DPU**, measured end to end: 0.1366 for checkout and 0.0768 for fulfilment. The projection is built from those numbers. An idle cluster scales to zero and incurs no DPU charge, so leaving the cluster up between sessions is free as long as storage stays under 1 GB. |
-| DynamoDB | 25 RCU, 25 WCU (provisioned, Standard table class), 25 GB storage, per region | Planned total <= 20 RCU and 20 WCU across all tables and GSIs | >= 5 RCU/WCU | Provisioned mode only. No auto scaling: target tracking creates CloudWatch alarms that would use our alarm allowance. Capacity ledger kept in this file from M2. |
+| DynamoDB | 25 RCU, 25 WCU (provisioned, Standard table class), 25 GB storage, per region, Always Free (re-verified 2026-09-22) | Planned total <= 20 RCU and 20 WCU across all tables and GSIs | >= 5 RCU/WCU | Provisioned mode only. No auto scaling: target tracking creates CloudWatch alarms that would use our alarm allowance. Capacity ledger kept in this file from M2. |
 | SQS | 1M requests per month (each 64 KB chunk is one request, a batch of up to 10 messages is one request) | ~250K with the consumer enabled only for runs (2.2 per order plus ~20 polls/min while enabled, measured 2026-09-22); ~760K if the trigger is left on 24/7 | ~75% | Idle Lambda trigger polls with 5 long-poll connections. Estimate 5 x 3 per min x 43,200 min = ~648K requests/month per idle queue, for zero work. **Decided 2026-09-20:** the event source mapping ships `enabled = false` and is turned on only for a run. Only one triggered queue; DLQ has no trigger; standard (not provisioned) poller mode. Measure with NumberOfEmptyReceives in M2a. |
-| SNS | 1M requests, 1,000 email deliveries per month | ~220 emails | ~78% | Alarm actions only on ALARM transitions we care about. |
+| SNS | 1M requests, 100,000 HTTP and 1,000 email notifications per month, Always Free (re-verified 2026-09-22) | ~220 emails | ~78% | Alarm actions only on ALARM transitions we care about. |
 | EventBridge | AWS service events (including alarm state changes) on the default bus are free; Scheduler 14M invocations/month | Hundreds | Large | No custom event buses or API destinations. |
 | CloudWatch metrics | 10 metrics (custom and detailed monitoring combined); 1M API requests. GetMetricData, GetInsightRuleReport and GetMetricWidgetImage are ALWAYS charged (re-verified 2026-09-22) | 5 custom metrics budgeted, 4 live as of 2026-09-22 (`scripts/cost_check.py`); <100K API requests | 50% metrics, >90% API | Agent and dashboard use GetMetricStatistics, never GetMetricData. Every metric is budgeted in the custom metric ledger below before it is emitted. |
-| CloudWatch alarms | 10 alarm metrics (standard resolution, metrics listed directly) | <= 10 | 0 to 2 | A metric math alarm counts every metric it lists. No composite alarms ($0.50 each), no anomaly detection alarms (count as 3). No CloudWatch billing alarm; Budgets does that job. |
+| CloudWatch alarms | 10 alarm metrics (standard resolution, metrics listed directly; re-verified 2026-09-22) | 9 planned (alarm ledger below) | 1 | A metric math alarm counts every metric it lists. No composite alarms ($0.50 each), no anomaly detection alarms (count as 3). No CloudWatch billing alarm; Budgets does that job. |
 | CloudWatch Logs | 5 GB/month combined: ingestion + archive storage + Logs Insights data scanned (re-verified 2026-09-22) | ~4.0 GB, rebuilt from measurements on 2026-09-22 with platform lines at INFO (see "CloudWatch Logs budget" below) | ~19% | Retention 3 days. Log groups stay in the Standard class, because Infrequent Access cannot extract EMF metrics. Insights cost follows bytes scanned in the time range, NOT the result limit, so every query is one log group and a short window. Scan budget of 25 MB per investigation. Lambda logs appear to count against this allowance (September 2026 bill, 2026-09-22), but at 0 GB quantities that is evidence, not proof. Re-check at higher volume and after the upgrade. |
 | X-Ray | 100,000 traces recorded and 1M traces retrieved or scanned per month, perpetual (re-verified 2026-09-22; the Free Tier API lists it as always free and shows 526 traces recorded this month) | ~65K recorded | ~35% | **Correction (2026-09-20):** Lambda's sampling rate is fixed at 1 request/second plus 5% of the remainder and **cannot be configured**, so the earlier "explicit sampling rate" guardrail was wrong. The lever is how many requests we send, not what fraction is sampled. X-Ray SDK is in maintenance since 2026-02-25, end of support 2027-02-25; M2b uses OpenTelemetry with the X-Ray UDP span exporter. Never enable Transaction Search or Application Signals (paid span ingestion). |
 | CloudTrail | 90-day management event history, viewing and LookupEvents at no charge | Hundreds of lookups | Large | Never create a trail, data events, Lake, or Insights. |
@@ -312,6 +312,33 @@ Deliberately not emitted:
 | Any metric with a reason, status or error-code dimension | 1 per distinct value, unbounded | The reason goes in a log field. The agent finds it with a bounded Logs Insights query. |
 | Per-function copies of AWS metrics (errors, duration, throttles) | 1 each | `AWS/Lambda`, `AWS/SQS` and `AWS/DynamoDB` publish these free. Every M3 alarm is built from them. |
 
+### Alarm ledger (checked 2026-09-22, M3 step 1)
+
+The free allowance is **10 alarm metrics**: standard resolution alarms that list metrics directly (not a Metrics Insights query). A metric math alarm is billed for every metric in its expression, so an "error rate" (errors / invocations) costs 2. Anomaly detection adds 2 more per alarm, a composite alarm is $0.50 a month, and each alarm metric beyond 10 is $0.10 a month. None of those are used. Every alarm gets a row here before Terraform creates it; `tests/test_alarm_ledger.py` checks the table.
+
+| Alarm | Namespace | Metric | Dimensions | Statistic | Alarm metrics | Why it exists | Status |
+|---|---|---|---|---|---|---|---|
+| `orders-errors` | `AWS/Lambda` | `Errors` | `FunctionName=nightshift-orders` | Sum | 1 | Checkout raising or timing out: bad deploy, IAM regression, timeout regression | Planned |
+| `cart-errors` | `AWS/Lambda` | `Errors` | `FunctionName=nightshift-cart` | Sum | 1 | Cart failing: config regression (wrong table name), IAM regression | Planned |
+| `payments-errors` | `AWS/Lambda` | `Errors` | `FunctionName=nightshift-payments` | Sum | 1 | The payment provider failing | Planned |
+| `fulfillment-errors` | `AWS/Lambda` | `Errors` | `FunctionName=nightshift-fulfillment` | Sum | 1 | Worker crashes and timeouts only (see note 1) | Planned |
+| `checkout-latency` | `AWS/Lambda` | `Duration` | `FunctionName=nightshift-orders` | p99 | 1 | Slow checkout: slow query from a dropped index, hot-row retries, slow dependency | Planned |
+| `queue-age` | `AWS/SQS` | `ApproximateAgeOfOldestMessage` | `QueueName=nightshift-placed-orders` | Maximum | 1 | Orders not being fulfilled: slow payment provider, stuck consumer (see note 2) | Planned |
+| `dlq-depth` | `AWS/SQS` | `ApproximateNumberOfMessagesVisible` | `QueueName=nightshift-placed-orders-dlq` | Maximum | 1 | Any message in the DLQ: poison message | Planned |
+| `throttles` | `AWS/Lambda` | `Throttles` | none (account-wide) | Sum | 1 | Any function throttled: throttling scenario, retry storm | Planned |
+| `serialization-retries` | `NightShift` | `SerializationRetries` | `service=orders` | Sum | 1 | Hot-row contention, visible before latency moves | Planned |
+| **Allocated** | | | | | **9** | | |
+| **Free allowance** | | | | | **10** | | |
+| **Unallocated** | | | | | **1** | | |
+
+Candidates for the last slot, decided in step 5: the orders 502 gap (cart failures that orders returns as 502 without raising, which `orders-errors` cannot see; covering it needs a new custom metric as well, from the metric ledger), or `PaymentFailures` (already budgeted as a custom metric), which note 1 argues for.
+
+Notes that step 5 must resolve before creating anything:
+
+1. **fulfillment's `Errors` misses payment failures.** The worker catches each message's exception and reports it in `batchItemFailures`, so the invocation succeeds and Lambda's `Errors` stays 0. Only crashes outside that loop, and timeouts, count. Payment failures show up in `PaymentFailures`, `queue-age` and eventually `dlq-depth` instead.
+2. **`queue-age` would page after every deploy.** The deploy smoke test places a real order, and with the consumer disabled between runs its message sits in the queue ageing indefinitely. Either the smoke test must not leave a message, or this alarm must tolerate the consumer being off.
+3. **Idle means no data.** Lambda publishes nothing without invocations, and SQS stops publishing for queues with no activity for about six hours. Every alarm must treat missing data as not breaching, or an idle store would page.
+
 ### CloudWatch Logs budget (rebuilt from measurements, 2026-09-22)
 
 The earlier ~3.5 GB projection had no written derivation, so it was rebuilt from this month's real ingestion. Source: `IncomingBytes` per log group and `Invocations` per function, both read with GetMetricStatistics for 2026-09-01 to 2026-09-22.
@@ -461,7 +488,7 @@ Benchmark feasibility (estimate): assume a full-agent investigation is 12 LLM ca
 The Free plan ends about 6 months after sign-up. Upgrade to Paid when all of these are true, and no later than the start of month 6:
 - 30 days of measured usage inside every Always Free allowance above.
 - `pause` verified to bring idle SQS, Lambda, and X-Ray usage to about zero.
-- Both budgets tested and delivering email.
+- Both budgets tested and delivering email. **Tripwire: done 2026-09-22**, by a real charge rather than a test: the $0.03 of Cost Explorer API calls crossed the $0.01 `nightshift-tripwire` budget (credits excluded) and its email arrived, confirmed by the owner. The $1 budget has not been exercised yet.
 Remaining credits carry over after upgrade and still act as a safety net.
 
 ### Upgrade target: February 2027
@@ -480,6 +507,13 @@ Free plan end date from the Billing console after sign-up: **2027-03-18** (accou
 | 2027-02-15 | NightShift upgrade HARD DEADLINE | If not upgraded yet, upgrade now or decide on purpose to let the account close. Before closing: export results, journals, and postmortems so the Vercel replay mode keeps working without AWS. |
 
 If credits ever drop by more than $1 in a month, treat it as an incident: find the cause before doing anything else.
+
+## Sources checked 2026-09-22 (M3 step 1)
+
+- CloudWatch alarm pricing, the 10 alarm metrics and how metric math and anomaly detection count: https://aws.amazon.com/cloudwatch/pricing/
+- SNS free tier ("no charges for the first 1 million Amazon SNS requests, no charges for the first 100,000 notifications over HTTP, and no charges for the first 1,000 notifications over email"): https://aws.amazon.com/sns/faqs/
+- DynamoDB provisioned free tier, per region, Standard table class: https://aws.amazon.com/dynamodb/pricing/provisioned/
+- Always Free status of DynamoDB and SNS requests: `aws freetier get-free-tier-usage` (`freeTierType`).
 
 ## Sources checked 2026-09-22 (before M2b step 2)
 
