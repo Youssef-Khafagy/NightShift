@@ -90,12 +90,13 @@ def deploy(
                 actor=actor,
                 git_sha=sha,
             )
-            print(f"  deployed  {service:12} {old} -> {new}")
+            # flush: the smoke test subprocess would otherwise overtake it.
+            print(f"  deployed  {service:12} {old} -> {new}", flush=True)
     except Exception as exc:  # noqa: BLE001
         failure = f"deploy step failed: {exc}"
 
     if failure is None:
-        print("Smoke test:")
+        print("Smoke test:", flush=True)
         if not smoke():
             failure = "smoke test failed"
 

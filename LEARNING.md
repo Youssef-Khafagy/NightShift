@@ -523,7 +523,7 @@ Measured, an order produces about 5.9 KB of logs with platform lines on. A bench
 
 ## 15. Deploys and rollbacks
 
-**What it is.** Terraform publishes a new version of each changed function. `scripts/deploy.py` moves each `live` alias to exactly that version, records every move in the `nightshift-deployments` DynamoDB table, and runs the smoke test. If anything fails, it moves every alias it touched back, records each as `auto-rollback` with the reason, and fails the job. `scripts/rollback.py` (in progress) moves one service back to its previous recorded version.
+**What it is.** Terraform publishes a new version of each changed function. `scripts/deploy.py` moves each `live` alias to exactly that version, records every move in the `nightshift-deployments` DynamoDB table, and runs the smoke test. If anything fails, it moves every alias it touched back, records each as `auto-rollback` with the reason, and fails the job. `scripts/rollback.py` moves one service back, records it, and runs the smoke test.
 
 **Why it exists.** Rollback is the first thing an on-call agent should try, so it must be fast, safe and visible. The deployments table is what the agent reads to answer "what changed just before this started".
 
@@ -531,11 +531,29 @@ Measured, an order produces about 5.9 KB of logs with platform lines on. A bench
 
 **Details that matter.** Aliases move leaf services first (cart and payments before the services that call them). A row is never overwritten (conditional write). A service missing from the version list is an error, not a skip. If putting one alias back fails, the others are still restored and the stuck one is named.
 
+### What a rollback refuses to do
+
+By default a rollback undoes the service's last recorded move. It refuses to guess, and asks for an explicit `--to VERSION`, in three cases:
+
+- **No history** for the service.
+- **The alias is not where the table says.** Something moved it outside the recorded path, so the table's "previous" cannot be trusted.
+- **The last move was already a rollback.** Undoing a rollback re-deploys the version someone just decided was bad. This is the guard that matters most once the agent can call rollback: an agent that rolls back twice would put the fault back.
+
+A reason is required, because the record is for whoever investigates next. After moving, it runs the smoke test; if that fails it reports loudly but never moves anything again, since automatically reverting a rollback has the same problem.
+
+### Proven live
+
+orders was moved 17 → 16 → 17 → 16 → 17 through both scripts: an explicit rollback, a deploy forward, a rollback taken from history, and a deploy forward again. Both refusals fired when they should (no history at first; a second rollback in a row). Every move landed in the table with actor and reason, and each ran a smoke test that bought something. Afterwards **`terraform plan` was clean**, which is the property the whole split exists for: four alias moves outside Terraform, and the next apply would not undo any of them.
+
+**What we got wrong.** The live output printed the smoke test before the line saying the alias had moved. When stdout is a pipe, Python buffers the parent's output while the smoke test subprocess writes straight through and overtakes it. Harmless here, misleading in a CI log during an incident, so both scripts flush before running the smoke test.
+
 **Questions about deploys**
 
 - *How do you roll back?* Move the alias to the previous version recorded in the deployments table. One API call, nothing rebuilt, and the rollback itself is recorded.
 - *What if a deploy breaks checkout?* The deploy script runs a smoke test that buys something after moving the aliases. If it fails, every moved alias goes back and each reversal is recorded with the reason.
-- *Why doesn't Terraform move the aliases?* Because then a rollback done by a script or by the agent would look like drift, and the next apply would undo it.
+- *Why doesn't Terraform move the aliases?* Because then a rollback done by a script or by the agent would look like drift, and the next apply would undo it. I proved the split works: after four alias moves by the scripts, `terraform plan` was clean.
+- *What stops the agent from rolling back into a bad version?* The rollback refuses when the last move was already a rollback, and when the alias isn't where the history says. In both cases it needs an explicit version, so it can't flip back to the bad one by accident.
+- *Why record a reason?* The table is the first thing the next person, or the agent, reads to answer "what changed before this started". A move without a reason answers half the question.
 
 ---
 
@@ -569,7 +587,7 @@ Measured, an order produces about 5.9 KB of logs with platform lines on. A bench
 | Artifacts differed between machines | A non-empty plan; a per-file manifest | Allowlisted zips; RECORD pruned (6) |
 | `$0.00` reported, $0.03 real | The console; CloudTrail | Never call the Cost Explorer API; report gross (3) |
 | Platform logs dropped at WARN | Looking for REPORT lines that never came | INFO, with the cost measured (7) |
-| Terraform owned the alias | Designing the rollback | Scripts own alias moves (15) |
+| Terraform owned the alias | Designing the rollback | Scripts own alias moves; plan clean after four moves (15) |
 | Reserved concurrency 2 throttled at 1 req/s | Per-minute CloudWatch metrics | orders and cart at 5; queue trigger capped (7, 10) |
 | A dry run that wrote | Reading its own code | Only `--apply` writes (8) |
 
