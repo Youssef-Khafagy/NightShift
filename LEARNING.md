@@ -8,7 +8,7 @@ How NightShift works and why it was built this way, written for someone who know
 2. **Section 3, keeping it at $0.** The constraint that shaped every other decision.
 3. **Section 8, Aurora DSQL.** The deepest technical story in the project: a bug with no symptom, found in a billing metric.
 4. **Section 15, deploys and rollbacks.** The premise of the whole project is that an agent can roll back safely; this is how.
-5. **Section 17, mistakes that taught the most.** A one-page index of every wrong turn, which is where interview questions usually go.
+5. **Section 18, mistakes that taught the most.** A one-page index of every wrong turn, which is where interview questions usually go.
 
 Then read the rest in order when you have time. Section 2 is the AWS vocabulary the rest assumes.
 
@@ -623,7 +623,78 @@ The p99 alarm needs three bad minutes in a row, because one cold start (about 3 
 
 ---
 
-## 17. Mistakes that taught the most
+## 17. Chaos: breaking it on purpose
+
+**What it is.** A small framework in `chaos/` that breaks the store in one specific way, waits for the alarms, puts everything back exactly, and writes down what happened. Each way of breaking it is a scenario: a YAML file that says what to change, which alarm should fire, what the right answer is, and how to recover.
+
+**Why it exists.** The benchmark needs incidents with a known answer. An agent can only be scored as right or wrong if someone knows the real root cause, so the faults have to be staged and the answer recorded before the agent ever looks.
+
+**What would break without it.** There would be nothing to measure. Waiting for real outages takes too long, and nobody would know for sure what caused them.
+
+### Real mechanisms only
+
+A fault that uses a switch in the app code (`if FAIL: raise`) teaches the agent to look for the switch. So every fault goes through the same path a real mistake would take:
+
+| Scenario | What changes | How |
+|---|---|---|
+| 1 bad deploy | orders code: a metric unit typo (`"Counts"`) that raises after the order is saved | a real code deploy: build the zip the way Terraform does, publish a version, move the alias, record it in the deployments table |
+| 2 config regression | cart's table name set to `nightshift-carts` | a real configuration deploy, recorded like any other |
+| 4 slow dependency | the payment provider slows to 5 s, past fulfillment's 3 s timeout | a config change with **no** deployments row, because a real third party's slowdown would leave none in our table |
+| 5 poison message | one message with `orderId` instead of `order_id` | a real `SendMessage`: a producer bug |
+| 11 legit spike | traffic rises from 1 to 4 orders a second | the load generator. Nothing is wrong |
+
+Because each injection is a real deploy, the evidence is the evidence a real one leaves: a new version, an alias move, a row in the deployments table, errors in the logs. The agent's `list_recent_deployments` will see the bad deploy exactly as it would see mine.
+
+### Keeping the agent from seeing the answer
+
+If the agent could read the scenario file, it would be reading the answer key. So:
+
+- `chaos/` is never deployed and never imported by anything in `src/`.
+- `tests/test_integrity.py` fails the build if deployed code imports `chaos`, or contains the words chaos, inject, fault or scenario, even in a comment. A log line saying "injected fault" would give the game away. Four existing comments had to be reworded to pass it.
+- Results, including the ground truth, go to `results/chaos/`, which the agent never reads.
+- The answers use closed lists (`fault_category`, `component`, allowed actions), checked by Pydantic when the file loads. Grading compares two words from the same fixed list, so there is nothing for a judge to interpret.
+
+### A run, start to finish
+
+`python -m chaos.run --scenario N --run` (a dry run without `--run`, printing every write it would make):
+
+1. **Preflight.** The queue consumer is on, `terraform plan` is clean, no alarm is already firing, the database endpoint is set, and the live code of any function it will change is byte-identical to Terraform's zip, so putting it back cannot drift.
+2. **Warm-up.** Three minutes of normal traffic at 1 order a second, so the incident starts from a warm system and the first cold starts are not mistaken for the fault. If the traffic generator has died by the end of warm-up, the run stops here and injects nothing.
+3. **Inject.** Before each change, what it is about to change is saved to `state.json`. If the laptop dies mid-run, `--restore state.json` undoes it.
+4. **Wait for the expected alarm**, recording how long it took. A no-fault scenario waits the whole window and records anything that fires.
+5. **(M5 onwards) the agent investigates here.**
+6. **Recover and check health.** Roll the alias back and record the rollback, restore `$LATEST` byte for byte, delete the injected version, then require: alarms back to OK, the dead-letter queue empty where it matters, a smoke-test checkout, and `terraform plan` clean.
+
+### Results (2026-09-23, commit 66184f1)
+
+| Scenario | Expected alarm fired after | Also fired |
+|---|---|---|
+| 1 bad deploy | `orders-errors`, 113 s | nothing |
+| 2 config regression | `cart-errors`, 48.5 s | nothing |
+| 4 slow dependency | `payment-failures`, 79.6 s | `throttles`: payments hit its limit of 2 |
+| 5 poison message | `dlq-depth`, 698.5 s | `queue-age` at 450 s; `throttles` from one stray cart throttle |
+| 11 legit spike | nothing expected | `serialization-retries` and `throttles` |
+
+All five recovered with every health check passing. The poison message is slow by design: it has to fail three deliveries, each after a 180 s visibility timeout, before SQS moves it to the dead-letter queue.
+
+**The side alarms are part of the test, not noise to hide.** In scenario 4, each payment call most likely holds a payments environment for 5 s while fulfillment gives up at 3 s and tries again, so payments runs out of its 2 slots. A real slow dependency causes exactly that knock-on. Scenario 11 fires two alarms with nothing wrong, and it has to: the agent is only started by an alarm, so a spike that fired nothing could never test whether it can say "no fault". The hard part for M7 is that scenario 7 (hot-row contention) also fires `serialization-retries`. The agent has to tell a busy store from a contended one by looking at traffic volume.
+
+### What we got wrong
+
+- **Recovery left the bad version as the newest one.** The first live run of scenario 1 rolled the alias back and restored the code, and every check passed except `terraform plan`. The injected version was still the newest published version. That is the version Terraform reports and the one `deploy.py` ships, so the next routine deploy would have quietly shipped the bad code again. Recovery now deletes the version it published. The plan-clean check exists for exactly this: "the alarms are green" is not the same as "put back".
+- **A run with no traffic looked like a missed detection.** The first run the next day injected the bad deploy and no alarm fired. It looked like the alarm was broken. Per-minute invocation counts showed zero for orders: the traffic generator had exited in its first second because `DSQL_ENDPOINT` was not set, and the runner had sent its output to `/dev/null` and never checked its exit status. Broken code that nobody calls raises nothing. The runner now refuses to start without the variable, keeps the generator's output in a log, stops before injecting if a generator has died, and counts every generator's exit status in the health check. Both guards were tested by tripping them on the real system.
+
+**Questions about chaos**
+
+- *How do you know the agent isn't cheating?* The answer key lives in `chaos/`, which is never deployed, and a test fails the build if deployed code imports it or even uses the words chaos, inject, fault or scenario. The agent sees what a human on call would see: logs, metrics, deploy history. Nothing else.
+- *Why not just add a flag in the code that makes it fail?* Because then the agent learns to find the flag, and the benchmark measures that instead of diagnosis. My bad deploy is a real deploy with a real typo in it, recorded in the deployments table like any other, so the evidence looks like real evidence.
+- *How do you make sure a scenario doesn't leave the system broken?* The injector saves what it's about to change before changing it, restores it byte for byte afterwards, and the run only passes if `terraform plan` is clean. That check caught a real bug: after a rollback, the bad version was still the newest one, and the next deploy would have shipped it again.
+- *Your no-fault scenario fires alarms. Isn't that a false positive?* It's the point. The agent only wakes up on an alarm, so a no-fault test has to fire one. What I'm testing is whether it looks at the traffic, says "this is a legitimate spike", and changes nothing.
+- *What was the hardest bug in the framework?* A run where no alarm fired. It looked like a detection failure, but the traffic generator had died on a missing environment variable and the runner threw its output away. Nobody called the broken code, so nothing broke. Now the runner stops before injecting if traffic isn't flowing. The lesson was the same one as elsewhere in this project: a check nobody reads is not a check.
+
+---
+
+## 18. Mistakes that taught the most
 
 | Mistake | How it was found | What changed |
 |---|---|---|
@@ -639,7 +710,8 @@ The p99 alarm needs three bad minutes in a row, because one cold start (about 3 
 | Terraform owned the alias | Designing the rollback | Scripts own alias moves; plan clean after four moves (15) |
 | Reserved concurrency 2 throttled at 1 req/s | Per-minute CloudWatch metrics | orders and cart at 5; queue trigger capped (7, 10) |
 | A dry run that wrote | Reading its own code | Only `--apply` writes (8) |
-| A chaos run with no traffic read as a missed detection | Per-minute invocations: zero for orders | The runner logs load output, refuses without `DSQL_ENDPOINT`, and aborts before injecting if a load has died (6) |
+| Recovery left the bad version newest | The plan-clean health check | Recovery deletes the version it published (17) |
+| A chaos run with no traffic read as a missed detection | Per-minute invocations: zero for orders | The runner logs load output, refuses without `DSQL_ENDPOINT`, and aborts before injecting if a load has died (17) |
 
 ---
 

@@ -155,7 +155,7 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Lambda logs appear to count against the 5 GB CloudWatch Logs free tier (September 2026 bill, checked 2026-09-22; docs are silent since the May 2025 vended-logs pricing). **Evidence, not settled:** the bill quantities were 0 GB, so rounding could hide a vended logs line, and the Free plan bill may present usage differently after the upgrade. Re-check after the first traffic generator run and on the first Paid-plan bill. EMF metrics are ordinary custom metrics plus log bytes, and are not extracted in the Infrequent Access log class. `aws freetier get-free-tier-usage` is free; the Cost Explorer API is $0.01 per request.
 
 ## Current status (2026-09-23 afternoon session)
-M0 to M3 complete and approved. **M4 steps 1 to 4 done (PRs #38 to #43). The live batch passed on 2026-09-23. Next: turn the consumer off (plan shown, waiting for the owner's yes), then close M4** (write the LEARNING.md chaos section and interview questions, then the owner review). The stock is 5,000 per product, minus what the batch used.
+M0 to M3 complete and approved. **M4 steps 1 to 4 done (PRs #38 to #44); the live batch passed on 2026-09-23. The consumer was turned off through Terraform at 16:11:42 UTC (owner's yes, plan 0/2/0), `terraform plan` is clean, and `pause.py` passed at 16:23:16 UTC (0 invocations, 0 SQS polls in 10 minutes). M4 close written (LEARNING.md section 17, chaos, with interview questions; mistakes index is now section 18). Waiting for the owner's M4 review; M5 starts after approval.** The stock is 5,000 per product, minus what the batch used.
 
 **Step 4 results (batch 14:33 to 15:48 UTC, commit 66184f1, results in `results/chaos/`):**
 
