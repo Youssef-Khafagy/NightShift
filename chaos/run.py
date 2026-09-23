@@ -17,7 +17,8 @@ A run:
    it happens.
 4. **Wait for the expected alarms**, recording when each one fired. A
    no_fault scenario waits the whole window and records any alarm at all.
-5. **(M5)** The agent investigates here.
+5. **With --agent**, wait for the agent's report (the trigger rule must be
+   enabled) and grade it against the ground truth.
 6. **Recover**, then check health: smoke test, alarms back to OK, the DLQ
    empty where it matters, and `terraform plan` clean.
 
@@ -33,6 +34,7 @@ import os
 import subprocess
 import sys
 import time
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -44,8 +46,10 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import deployments
 
+from chaos import agent_wait
 from chaos.actions import BUILD, ROLLBACK_REASON, Injector, code_sha256
 from chaos.schema import Scenario, load_all
+from evaluation.grade import grade
 
 REGION = os.environ.get("AWS_REGION", "ca-central-1")
 PROJECT = "nightshift"
@@ -55,6 +59,8 @@ TERRAFORM = ["terraform", f"-chdir={REPO_ROOT / 'terraform'}"]
 PYTHON = sys.executable
 POLL = 15
 RECOVERY_MARGIN = 180
+AGENT_TRAFFIC_SECONDS = 600
+MAX_LOAD_SECONDS = 1_800
 HEALTH_WAIT = 600
 
 
@@ -218,6 +224,54 @@ def preflight(scenario: Scenario, c: Clients) -> list[str]:
     return problems
 
 
+def agent_preflight() -> list[str]:
+    problems = []
+    rule = boto3.client("events", region_name=REGION).describe_rule(
+        Name=f"{PROJECT}-alarm-to-agent"
+    )
+    if rule["State"] != "ENABLED":
+        problems.append(
+            "the alarm-to-agent rule is disabled; enable it through Terraform first"
+        )
+    ddb = boto3.client("dynamodb", region_name=REGION)
+    lock = ddb.get_item(TableName=agent_wait.TABLE, Key=agent_wait.LOCK_KEY).get("Item")
+    if lock and int(lock["expires_at"]["N"]) > time.time():
+        problems.append("an incident window is still open; a new alarm would join it")
+    return problems
+
+
+def agent_verdict(result: dict, injected_at: float, run_dir: Path) -> dict:
+    """Wait for the report, keep a copy beside the result, and grade it."""
+    ddb = boto3.client("dynamodb", region_name=REGION)
+    found = agent_wait.wait_for_report(ddb, injected_at)
+    if not found["started"]:
+        return {"started": False, "summary": "no investigation started"}
+    if found.get("timed_out"):
+        return {**found, "summary": "no report within the wait"}
+    report, state = found["report"], found["state"] or {}
+    (run_dir / "agent-report.json").write_text(json.dumps(report, indent=2) + "\n")
+    (run_dir / "agent-postmortem.md").write_text(found["postmortem"])
+    steps = state.get("steps", [])
+    verdict = grade(result, report, steps[-1]["at"] if steps else None)
+    calls = state.get("calls", [])
+    return {
+        "started": True,
+        "investigation_id": found["investigation_id"],
+        "grade": asdict(verdict),
+        "tokens": sum(c["input_tokens"] + c["output_tokens"] for c in calls),
+        "calls": len(calls),
+        "steps": len(steps),
+        "stop_reason": state.get("stop_reason"),
+        "provider": state.get("provider"),
+        "model": state.get("model"),
+        "summary": (
+            f"{report['root_cause_component']} / {report['fault_category']} "
+            f"(confidence {report['confidence']}), "
+            f"{'correct' if verdict.root_cause_correct else 'WRONG'}"
+        ),
+    }
+
+
 def run_step(step, injector: Injector, loads: list, run_dir: Path, reason: str) -> None:
     a = step.args
     if step.do == "set_env":
@@ -245,7 +299,7 @@ def run_step(step, injector: Injector, loads: list, run_dir: Path, reason: str) 
         injector.drain_dlq_message(f"{PROJECT}-placed-orders-dlq")
 
 
-def run(scenario: Scenario, *, dry_run: bool) -> int:
+def run(scenario: Scenario, *, dry_run: bool, with_agent: bool = False) -> int:
     run_id = f"{scenario.id:02d}-{scenario.slug}-{datetime.now(UTC):%Y%m%dT%H%M%SZ}"
     run_dir = RESULTS / run_id
     c = Clients()
@@ -270,6 +324,8 @@ def run(scenario: Scenario, *, dry_run: bool) -> int:
 
     if not dry_run:
         problems = preflight(scenario, c)
+        if with_agent:
+            problems += agent_preflight()
         if problems:
             print("PREFLIGHT FAILED:\n  " + "\n  ".join(problems))
             return 2
@@ -279,6 +335,10 @@ def run(scenario: Scenario, *, dry_run: bool) -> int:
     base_seconds = (
         scenario.warm_up_seconds + scenario.alarm_wait_seconds + RECOVERY_MARGIN
     )
+    if with_agent:
+        # Keep traffic flowing while the agent investigates, as it would in a
+        # real incident, within load.py's 30 minute ceiling.
+        base_seconds = min(base_seconds + AGENT_TRAFFIC_SECONDS, MAX_LOAD_SECONDS)
     print(
         f"Warm-up: {scenario.load_rate}/s, {scenario.warm_up_seconds}s, traffic runs {base_seconds}s"
     )
@@ -318,6 +378,12 @@ def run(scenario: Scenario, *, dry_run: bool) -> int:
             if expected and expected <= set(first_alarm):
                 break
             time.sleep(POLL)
+    if with_agent and dry_run:
+        print("WOULD wait for the agent's report and grade it")
+    if with_agent and not dry_run:
+        print("Waiting for the agent's report:", flush=True)
+        result["agent"] = agent_verdict(result, injected_at, run_dir)
+        print(f"  agent: {result['agent'].get('summary', result['agent'])}", flush=True)
     result["alarms_fired"] = detection(first_alarm, injected_at)
     result["expected_alarms_fired"] = bool(expected) and expected <= set(first_alarm)
     result["unexpected_alarms"] = sorted(set(first_alarm) - expected)
@@ -366,6 +432,11 @@ def main() -> None:
     parser.add_argument("--scenario", type=int)
     parser.add_argument("--run", action="store_true")
     parser.add_argument(
+        "--agent",
+        action="store_true",
+        help="wait for the agent's report (trigger rule enabled) and grade it",
+    )
+    parser.add_argument(
         "--restore", type=Path, help="state.json from an interrupted run"
     )
     args = parser.parse_args()
@@ -389,7 +460,7 @@ def main() -> None:
     by_id = {s.id: s for s in load_all(SCENARIOS)}
     if args.scenario not in by_id:
         sys.exit(f"no scenario {args.scenario}; have {sorted(by_id)}")
-    sys.exit(run(by_id[args.scenario], dry_run=not args.run))
+    sys.exit(run(by_id[args.scenario], dry_run=not args.run, with_agent=args.agent))
 
 
 if __name__ == "__main__":
