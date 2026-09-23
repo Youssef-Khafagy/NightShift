@@ -295,6 +295,19 @@ data "aws_iam_policy_document" "ci_apply" {
     resources = [local.project_tables]
   }
 
+  # The deploy step records every alias move in the deployments table, and
+  # rolls back using its history. Items only, on that one table.
+  statement {
+    sid    = "RecordDeployments"
+    effect = "Allow"
+    actions = [
+      "dynamodb:PutItem",
+      "dynamodb:GetItem",
+      "dynamodb:Query",
+    ]
+    resources = ["arn:aws:dynamodb:${local.region}:${local.account_id}:table/${var.project}-deployments"]
+  }
+
   # SQS. Note the ARN shape: a queue is
   # arn:aws:sqs:region:account:queue-name, with no "queue/" segment.
   statement {
