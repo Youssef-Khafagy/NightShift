@@ -270,7 +270,7 @@ The free allowance is 25 RCU and 25 WCU **per region across the whole account**,
 | Table | Milestone | RCU | WCU | GSIs | Status |
 |---|---|---|---|---|---|
 | `nightshift-cart` | M2a | 5 | 5 | none | **Live** (created 2026-09-21, TTL on `expires_at`) |
-| `nightshift-deployments` | M3 | 1 | 1 | none | Planned |
+| `nightshift-deployments` | M3 | 1 | 1 | none | **Live** (created 2026-09-22) |
 | `nightshift-investigations` | M5 | 5 | 5 | none | Planned |
 | `nightshift-journal` | M5 | 5 | 5 | none | Planned |
 | **Allocated** | | **16** | **16** | | |
