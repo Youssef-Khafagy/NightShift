@@ -127,14 +127,23 @@ def consumer_on(lam) -> bool:
     return any(m["State"] == "Enabled" for m in mappings["EventSourceMappings"])
 
 
-def plan_clean() -> bool:
+def run_vars(with_agent: bool) -> list[str]:
+    """The Terraform variables a run sets, so "plan clean" means "nothing
+    but what this run turned on differs"."""
+    variables = ["-var=queue_consumer_enabled=true"]
+    if with_agent:
+        variables.append("-var=agent_trigger_enabled=true")
+    return variables
+
+
+def plan_clean(with_agent: bool = False) -> bool:
     result = subprocess.run(
         [
             *TERRAFORM,
             "plan",
             "-input=false",
             "-detailed-exitcode",
-            "-var=queue_consumer_enabled=true",
+            *run_vars(with_agent),
         ],
         capture_output=True,
         check=False,
@@ -200,7 +209,7 @@ def git_sha() -> str:
 # ---------------------------------------------------------------------------
 
 
-def preflight(scenario: Scenario, c: Clients) -> list[str]:
+def preflight(scenario: Scenario, c: Clients, with_agent: bool = False) -> list[str]:
     problems = []
     if not os.environ.get("DSQL_ENDPOINT"):
         problems.append(
@@ -209,7 +218,7 @@ def preflight(scenario: Scenario, c: Clients) -> list[str]:
         )
     if not consumer_on(c.lam):
         problems.append("the queue consumer is off; enable it through Terraform first")
-    if not plan_clean():
+    if not plan_clean(with_agent):
         problems.append("terraform plan is not clean")
     for service in sorted(services_changed(scenario)):
         function = deployments.function_name(service)
@@ -323,7 +332,7 @@ def run(scenario: Scenario, *, dry_run: bool, with_agent: bool = False) -> int:
     print(f"Scenario {scenario.id} ({scenario.slug}){' [dry run]' if dry_run else ''}")
 
     if not dry_run:
-        problems = preflight(scenario, c)
+        problems = preflight(scenario, c, with_agent)
         if with_agent:
             problems += agent_preflight()
         if problems:
@@ -409,7 +418,7 @@ def run(scenario: Scenario, *, dry_run: bool, with_agent: bool = False) -> int:
         if "smoke_test" in scenario.health_check:
             health["smoke_test"] = smoke_test()
         if "plan_clean" in scenario.health_check:
-            health["plan_clean"] = plan_clean()
+            health["plan_clean"] = plan_clean(with_agent)
     result["recovery_seconds"] = round(time.time() - recover_started, 1)
     result["health"] = health
     result["finished"] = datetime.now(UTC).isoformat(timespec="seconds")
