@@ -82,10 +82,21 @@ resource "aws_iam_role" "investigator" {
 
 data "aws_iam_policy_document" "investigator" {
   statement {
+    sid       = "AlarmHistory"
+    effect    = "Allow"
+    actions   = ["cloudwatch:DescribeAlarmHistory"]
+    resources = [local.alarm_arns]
+  }
+
+  # Listing alarms by prefix is authorised against alarm:*, not against the
+  # alarms it returns, so a grant on nightshift-* alarms denies the list
+  # (found live, 2026-09-23). Every alarm in this account is the project's,
+  # and reading an alarm's definition changes nothing.
+  statement {
     sid       = "Alarms"
     effect    = "Allow"
-    actions   = ["cloudwatch:DescribeAlarms", "cloudwatch:DescribeAlarmHistory"]
-    resources = [local.alarm_arns]
+    actions   = ["cloudwatch:DescribeAlarms"]
+    resources = ["arn:aws:cloudwatch:${local.region}:${local.account_id}:alarm:*"]
   }
 
   # GetMetricStatistics, never GetMetricData: GetMetricData is always billed.
