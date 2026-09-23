@@ -1,0 +1,24 @@
+{
+  "run_id": "01-bad-deploy-20260923T022105Z",
+  "scenario": 1,
+  "slug": "bad-deploy",
+  "ground_truth": {
+    "component": "orders",
+    "fault_category": "bad_deploy"
+  },
+  "commit": "390fcb3",
+  "started": "2026-09-23T02:21:05+00:00",
+  "injected_at": "2026-09-23T02:24:15+00:00",
+  "alarms_fired": {
+    "nightshift-orders-errors": 94.3
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [],
+  "recovery_seconds": 399.8,
+  "health": {
+    "alarms_ok": true,
+    "smoke_test": true,
+    "plan_clean": false
+  },
+  "finished": "2026-09-23T02:32:29+00:00"
+}
