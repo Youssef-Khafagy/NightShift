@@ -154,21 +154,27 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - The Cost Explorer API costs $0.01 per request, even from the CLI; the Cost Explorer console is free. Never call the API from scripts or the CLI. An unfiltered `GetCostAndUsage` includes credit records and nets charges to $0.00.
 - Lambda logs appear to count against the 5 GB CloudWatch Logs free tier (September 2026 bill, checked 2026-09-22; docs are silent since the May 2025 vended-logs pricing). **Evidence, not settled:** the bill quantities were 0 GB, so rounding could hide a vended logs line, and the Free plan bill may present usage differently after the upgrade. Re-check after the first traffic generator run and on the first Paid-plan bill. EMF metrics are ordinary custom metrics plus log bytes, and are not extracted in the Infrequent Access log class. `aws freetier get-free-tier-usage` is free; the Cost Explorer API is $0.01 per request.
 
-## Current status (end of the 2026-09-22/23 session)
-M0 to M3 complete and approved. **M4 in progress: steps 1 to 3 done (PRs #38 to #41); step 4's live batch stopped for the night. Next session restarts the batch from scenario 1** (`bash batch.sh` equivalent: for each of 1, 2, 4, 5, 11, wait for quiet alarms, then `python -m chaos.run --scenario N --run`, stopping at the first failure). The batch is already approved by the owner; re-enable the consumer through Terraform first (plan shown), and the stock is already 5,000 per product.
+## Current status (2026-09-23 afternoon session)
+M0 to M3 complete and approved. **M4 steps 1 to 4 done (PRs #38 to #43). The live batch passed on 2026-09-23. Next: turn the consumer off (plan shown, waiting for the owner's yes), then close M4** (write the LEARNING.md chaos section and interview questions, then the owner review). The stock is 5,000 per product, minus what the batch used.
 
-**Where step 4 got to:**
-- First batch, scenario 1: detected (`orders-errors` fired 94 s after the bad deploy), recovered, alarms OK, smoke test passed, but `terraform plan` was not clean. Cause: the injected version (orders 19) was still the newest published version, which is what Terraform's `function_versions` output reports and what `deploy.py` deploys, so the next deploy would have shipped the bad code again. Version 19 deleted by hand; recovery now deletes the injected version itself (PR #41). The failed run's result is kept in `results/chaos/01-bad-deploy-20260923T022105Z/`.
-- Second batch: stopped by the owner during scenario 1's warm-up, at 02:38:27 UTC, about 40 seconds before injection. No `state.json` was written: nothing was injected.
-- Scenarios 2, 4, 5 and 11 have not run live yet.
+**Step 4 results (batch 14:33 to 15:48 UTC, commit 66184f1, results in `results/chaos/`):**
 
-**Left idle and verified (2026-09-23 ~02:45 UTC):**
-- Queue consumer `Disabled` (through Terraform). `terraform plan` clean.
-- Every alias on its newest published version, which equals `function_versions`: cart 15, payments 7, orders 18, fulfillment 7, hello 9. No injection in place; last deployments rows are orders deploy 17->18, deploy 18->19 (injected), rollback 19->18.
-- All 10 alarms `OK`. Both queues empty (nothing to drain). Flags at defaults.
-- `pause.py` idle proof: scheduled for 02:49 UTC, 10 minutes after the last warm-up traffic; result recorded in the next session.
-- No EventBridge rules, schedules or provisioned concurrency. Reserved concurrency: orders 5, cart 5, payments 2, fulfillment 2, hello 2.
-- Month-to-date spend: $0.03 of usage, absorbed by credits (all of it Cost Explorer API calls on 2026-09-21). DSQL about 2,000 DPU month to date.
+| Scenario | Expected alarm, time after injection | Other alarms | Health |
+|---|---|---|---|
+| 1 bad deploy | `orders-errors` 113 s | none | all pass |
+| 2 config regression | `cart-errors` 48.5 s | none | all pass |
+| 4 slow dependency | `payment-failures` 79.6 s | `throttles` 48.7 s (payments, 43 throttles, reserved 2) | all pass, DLQ empty |
+| 5 poison message | `dlq-depth` 698.5 s | `queue-age` 449.9 s; `throttles` 605.2 s (one cart throttle at 1/s) | all pass |
+| 11 legit spike (no fault) | none expected | `serialization-retries` 154.6 s (about 30/min at 4/s); `throttles` 62.2 s (orders, 4, spike start) | all pass |
+
+- Scenario 11 fires two alarms with nothing wrong. Keep it that way: the agent is started by an alarm, so a spike that fired nothing could never test the no_fault answer. But `serialization-retries` also fires in scenario 7 (hot-row contention), so M7's agent has to tell them apart by traffic volume and per-product spread.
+- Single stray throttles at 1/s (orders at 14:34, cart at 15:21, both at reserved 5) can make `throttles` fire in any scenario. Open for M7 grading: it counts as noise, not as a false diagnosis.
+- **What went wrong first:** the first run of the day (`01-bad-deploy-20260923T141915Z`) injected with no traffic. `DSQL_ENDPOINT` was unset, `load.py` exited, and the runner discarded its output and never checked it. No alarm fired. PR #43 makes the runner refuse without the variable, log load output, abort before injection if a load has died, and count load exit codes in health. Both guards were tripped live.
+- Last night's first batch: scenario 1 left the injected version as the newest published version, which is what `deploy.py` would ship next. Fixed in PR #41. Its result is kept in `results/chaos/01-bad-deploy-20260923T022105Z/`.
+
+**`pause.py` idle proof (from GetMetricStatistics, read 2026-09-23 14:17 UTC):** zero Lambda invocations from 02:39 UTC onward. 23 SQS empty receives in the 02:39 minute while the consumer was being disabled, then zero in every minute. A run at exactly 02:49 would therefore have exited 1, because its 10 minute window includes 02:39. Any run from 02:50 would have passed. SQS stopped publishing the idle queue's metrics after about 6 hours, which is documented behaviour and not a gap.
+
+**Cost after the batch (`cost_check.py`, 15:49 UTC):** DSQL 3,187 DPU month to date (3.2%), Lambda 26,768 invocations (2.7%), SQS at most 23,600 requests (2.4%), Logs 34.5 MB ingested. Custom metrics 5 of 10. Alarm metrics 10 of 10: this is the planned M3 ledger at the free limit, not an overrun, but the script reports it as ALERT.
 
 Done:
 - AWS account: Free plan, ACTIVE, $100 credits, ends 2027-03-18. Root has MFA and no access keys. Daily identity is IAM user `youssef-admin` (MFA, no access keys, permissions only via group `nightshift-admins` with AdministratorAccess). CLI auth via `aws login --profile nightshift-admin`.
