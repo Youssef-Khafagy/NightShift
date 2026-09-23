@@ -488,12 +488,47 @@ Groq free plan, per model, per organization (verified):
 
 429 responses include a `retry-after` header. Cached tokens do not count toward limits.
 
-Gemini API: free tier input and output are available for gemini-3.8-flash, gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.1-flash-lite, gemini-2.5-pro, gemini-2.5-flash, gemini-2.5-flash-lite. Not free: gemini-3.1-pro-preview. The per-model RPM/TPM/RPD numbers are only shown in AI Studio for your project, so they are PENDING until you sign in. Limits are per project; RPD resets at midnight Pacific. Free tier content may be used by Google to improve products; all our data is synthetic.
+**Confirmed live 2026-09-23** (one tool call, `scripts/llm_check.py`): gpt-oss-120b returned `x-ratelimit-limit-requests: 1000` (per day) and `x-ratelimit-limit-tokens: 8000` (per minute), matching the table. Tool calling works. **Consequence: 8K TPM caps a single request.** A request with more than about 8K tokens (prompt plus requested output) can never be sent, however long we wait. So on Groq, the conversation sent on each call has to stay under 8K tokens. That, not the 40K budget, is the tighter constraint on how much tool output and journal the agent keeps in context. Groq's Cloudflare front end also rejects Python's default `Python-urllib` user agent (HTTP 403, error code 1010); the client sends `nightshift-agent/0.1`.
 
-Mistral La Plateforme (added as a third provider, owner decision 2026-09-23). Checked 2026-09-23 on official pages:
+Gemini API: free tier content may be used by Google to improve products; all our data is synthetic. Limits are per project; RPD resets at midnight Pacific. Per-model limits are shown only in AI Studio. **Read by the owner in AI Studio (Default Gemini Project), 2026-09-23:**
+
+| Model | RPM | TPM | RPD |
+|---|---|---|---|
+| Gemini 3.5 Flash Lite | 15 | 250K | 500 |
+| Gemini 3.1 Flash Lite | 15 | 250K | 500 |
+| Gemini 2.5 Flash Lite | 10 | 250K | 20 |
+| Gemini 3.8, 3.7, 3.6, 3.5, 3 and 2.5 Flash | 5 | 250K | 20 |
+| Gemma 4 26B and 31B | 30 | 16K | 14.4K |
+| Gemini 2 Flash, 2.5 Pro, 3.1 Pro | 0 | 0 | 0 (no free quota on this project) |
+
+**Plan around Flash Lite, not full Flash** (owner decision 2026-09-23). At about 12 calls per investigation, 20 RPD is one or two investigations a day; 500 RPD is about 40. **Function calling confirmed live 2026-09-23** on `gemini-3.5-flash-lite` and `gemini-3.1-flash-lite` (and on both Gemma 4 models): each returned the expected `get_alarm` call. The API lists both Flash Lite models with a 1,048,576-token input limit.
+
+**Gemma 4 evaluated:** 16K TPM is workable, and less tight than Groq's 8K. As with Groq, TPM caps a single request, so on Gemma each call's conversation must stay under about 16K tokens. A 40K-token investigation then needs at least 2.5 minutes of token budget, inside one Lambda invocation. 30 RPM and 14.4K RPD are the most generous request limits of any free model here. Tool calling works on `gemma-4-31b-it` and `gemma-4-26b-a4b-it` through the same generateContent API (the API lists a 262,144-token input limit). It is a different model family from Gemini, but from the same vendor. Use: a reserve model if a Flash Lite daily cap binds, not a first choice.
+
+Mistral La Plateforme (added as a third provider, owner decision 2026-09-23).
+
+**Measured live 2026-09-23 from response headers** (the owner's key; no phone verification or training opt-in was requested at sign-up, and no limits page with numbers was found). The quota is set per model, and several models have none:
+
+| Model | Chat requests | `x-ratelimit-limit-req-minute` | `x-ratelimit-limit-tokens-minute` |
+|---|---|---|---|
+| ministral-3b-latest | 200 | 750 | 1,300,000 |
+| ministral-8b-latest | 200 | 188 | 625,000 |
+| ministral-14b-latest | 200 | 30 | 937,500 |
+| codestral-latest | 200 | 125 | 625,000 |
+| open-mistral-nemo | 200 (not in the model list, but served) | 188 | 625,000 |
+| mistral-small-latest | **429** | **0** | (none) |
+| mistral-medium-latest | **429** | **0** | (none) |
+| magistral-small-latest | **429** | **0** | (none) |
+
+- **This is a restricted tier.** Every general-purpose flagship tried (Small, Medium, Magistral) has a limit of zero requests per minute. The models that answer are the small Ministral models, Codestral and Nemo.
+- **Tool calling works on `ministral-14b-latest`** (live, expected `get_alarm` call). It is the default Mistral model for the agent.
+- **No monthly cap is visible.** No response carried a per-month header, so the "about 1B tokens a month" figure is still unverified. It could only be measured by using it up. The agent logs every `x-ratelimit-*` header per call from step 4, so a monthly limit appears in the journal before it binds.
+- Each response reports `x-ratelimit-tokens-query-cost`, which equalled the request's total tokens.
+
+Checked 2026-09-23 on official pages:
 - Free mode is the default for every organization: "Free mode lets you create API keys and use included monthly usage within the limits shown on the Limits page." Limits are RPS, tokens per minute and tokens per month, and vary by model.
-- **The numbers are not published.** The docs and the help centre both point to the Limits page of the Admin panel (admin.mistral.ai/plateforme/limits), which needs the owner's login. The widely quoted "about 1B tokens/month, 1 req/s, 500K TPM" is **not verified**; it comes from third-party posts. PENDING until the owner reads the Limits page. Step 2 will also record the rate-limit headers from one live response, as corroboration, not a substitute.
-- Function calling: the docs list it for Mistral Large 3, Medium 3.5, Small 3.2, Devstral, Magistral, Codestral and Ministral, with `tools`, `tool_choice` (`auto`, `any`, `none`) and `parallel_tool_calls`. No tier restriction is mentioned. **Proof on the free tier comes from a live tool call in step 2**, not from the docs' silence.
+- **The numbers are not published.** The docs and the help centre both point to the Limits page of the Admin panel (admin.mistral.ai/plateforme/limits), which needs the owner's login; the owner found no numbers there. The widely quoted "about 1B tokens/month, 1 req/s, 500K TPM" comes from third-party posts and does not match this account: the live headers above are the record.
+- Function calling: the docs list it for Mistral Large 3, Medium 3.5, Small 3.2, Devstral, Magistral, Codestral and Ministral, with `tools`, `tool_choice` (`auto`, `any`, `none`) and `parallel_tool_calls`. No tier restriction is mentioned, but in practice Small, Medium and Magistral have no free quota at all on this account (table above).
 - Free mode data may be used for training. Accepted by the owner: all our data is synthetic.
 
 Cerebras: **not ruled out by context length; the "8K context on free" premise is wrong.** Checked 2026-09-23: the rate limits page gives the free tier 5 RPM, 30K uncached TPM (90K total), 1M TPH and 1M TPD for gpt-oss-120b and qwen-3.8-27b. The models page gives a free-tier context of 65K (gpt-oss-120b) and 64K (qwen-3.8-27b), half the paid 131K/128K but far above the ~40K budget per investigation. The binding limit would be 5 RPM: at about 12 calls per investigation, that is at least 2.4 minutes of waiting per investigation, and it is fine within one invocation. Not added: it duplicates Groq's models (gpt-oss-120b, qwen), so it adds quota, not a new model family. Revisit if Groq's 200K TPD becomes the bottleneck in M7.
