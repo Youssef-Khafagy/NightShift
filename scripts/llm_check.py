@@ -26,8 +26,8 @@ from agent.llm.factory import KEY_VARIABLES
 
 DEFAULT_MODELS = {
     "groq": "openai/gpt-oss-120b",
-    "gemini": "gemini-3.8-flash",
-    "mistral": "mistral-small-latest",
+    "gemini": "gemini-3.5-flash-lite",
+    "mistral": "ministral-14b-latest",
 }
 FIXTURES = REPO_ROOT / "tests" / "fixtures" / "llm"
 

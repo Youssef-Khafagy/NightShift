@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
 Role = Literal["system", "user", "assistant", "tool"]
+USER_AGENT = "nightshift-agent/0.1"
 
 
 @dataclass(frozen=True)
@@ -150,7 +151,13 @@ def post_json(
         request = urllib.request.Request(
             url,
             data=data,
-            headers={"content-type": "application/json", **headers},
+            # A named User-Agent: Groq's Cloudflare front end rejects the
+            # default "Python-urllib/3.x" with 403, error code 1010.
+            headers={
+                "content-type": "application/json",
+                "user-agent": USER_AGENT,
+                **headers,
+            },
             method="POST",
         )
         try:
