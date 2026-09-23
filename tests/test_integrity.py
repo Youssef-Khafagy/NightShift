@@ -56,3 +56,17 @@ def test_the_agent_never_imports_the_chaos_package():
             r"^\s*(from|import)\s+(chaos|results)\b", text, re.MULTILINE
         ), path
         assert "results/chaos" not in text, path
+
+
+def test_chaos_rollback_reasons_do_not_give_the_game_away():
+    """Rollback reasons are written to the deployments table, which the agent
+    reads. On 2026-09-23 they named the scenario ("recovery after scenario
+    run 02-config-regression-..."), which is the answer key in plain text."""
+    from chaos.actions import ROLLBACK_REASON
+
+    assert not BANNED.search(ROLLBACK_REASON)
+    assert not re.search(r"\d{8}T\d{6}Z", ROLLBACK_REASON)  # no run IDs
+    for path in (REPO_ROOT / "chaos").glob("*.py"):
+        text = path.read_text()
+        assert "restore(f" not in text, f"{path.name}: a formatted rollback reason"
+        assert not re.search(r"restore\(\s*\"", text), f"{path.name}: a literal reason"
