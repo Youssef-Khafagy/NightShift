@@ -23,6 +23,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from agent.llm import Message, ProviderError, ToolSpec, make_provider
 from agent.llm.factory import KEY_VARIABLES
+from agent.tools import tool_specs
 
 DEFAULT_MODELS = {
     "groq": "openai/gpt-oss-120b",
@@ -58,10 +59,11 @@ def load_dotenv(path: Path) -> None:
         os.environ.setdefault(name.strip(), value.strip())
 
 
-def check(provider: str, model: str, save: bool) -> bool:
+def check(provider: str, model: str, save: bool, all_tools: bool = False) -> bool:
     llm = make_provider(provider, model)
     try:
-        reply = llm.complete(MESSAGES, [TOOL])
+        tools = tool_specs() if all_tools else [TOOL]
+        reply = llm.complete(MESSAGES, tools)
     except ProviderError as error:
         print(f"{provider:8} {model}: FAILED: {error}")
         return False
@@ -91,6 +93,11 @@ def main() -> None:
     parser.add_argument("--provider", choices=sorted(KEY_VARIABLES))
     parser.add_argument("--model")
     parser.add_argument("--save-fixtures", action="store_true")
+    parser.add_argument(
+        "--all-tools",
+        action="store_true",
+        help="offer the agent's full toolset, to prove every schema is accepted",
+    )
     args = parser.parse_args()
     load_dotenv(REPO_ROOT / ".env")
 
@@ -102,7 +109,7 @@ def main() -> None:
             results.append(False)
             continue
         model = args.model or DEFAULT_MODELS[provider]
-        results.append(check(provider, model, args.save_fixtures))
+        results.append(check(provider, model, args.save_fixtures, args.all_tools))
     sys.exit(0 if all(results) else 1)
 
 
