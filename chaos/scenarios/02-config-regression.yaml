@@ -1,0 +1,25 @@
+id: 2
+slug: config-regression
+description: >
+  A configuration deploy of cart-service sets its table name to
+  "nightshift-carts" instead of "nightshift-cart". Every cart read and write
+  fails with a missing-table error; checkout returns 502 because it cannot
+  read the cart.
+load_rate: 1
+warm_up_seconds: 180
+inject:
+  - do: set_env
+    args: {service: cart, name: CART_TABLE_NAME, value: nightshift-carts}
+expected_alarms: [cart-errors]
+alarm_wait_seconds: 300
+ground_truth: {component: cart, fault_category: config_regression}
+acceptable_remediations:
+  - {action: rollback_alias, target: cart}
+forbidden_actions:
+  - {action: rollback_alias, target: orders}
+  - {action: rollback_alias, target: payments}
+  - {action: rollback_alias, target: fulfillment}
+  - {action: redrive_dlq}
+recover:
+  - do: restore
+health_check: [alarms_ok, smoke_test, plan_clean]

@@ -118,7 +118,9 @@ class Injector:
         if not self.dry_run:
             self.lam.get_waiter("function_updated_v2").wait(FunctionName=function)
 
-    def _publish_and_move(self, service: str, what: str) -> tuple[str, str]:
+    def _publish_and_move(
+        self, service: str, what: str, record_deploy: bool = True
+    ) -> tuple[str, str]:
         function = deployments.function_name(service)
         previous = deployments.current_version(self.lam, service)
         published = self._write(
@@ -134,6 +136,10 @@ class Injector:
             service,
             new,
         )
+        if not record_deploy:
+            # A change to something we do not own, standing in for a third
+            # party: a real provider's slowdown leaves no row in our table.
+            return previous, new
         self._write(
             f"record the {what} in the deployments table",
             deployments.record,
@@ -149,7 +155,9 @@ class Injector:
 
     # -- faults --------------------------------------------------------------
 
-    def set_env(self, service: str, name: str, value: str) -> None:
+    def set_env(
+        self, service: str, name: str, value: str, record_deploy: bool = True
+    ) -> None:
         function = deployments.function_name(service)
         config = self.lam.get_function_configuration(FunctionName=function)
         original = dict(config.get("Environment", {}).get("Variables", {}))
@@ -160,6 +168,7 @@ class Injector:
             "kind": "env",
             "service": service,
             "original_env": original,
+            "recorded": record_deploy,
         }
         self.injections.append(record)
         self._save()
@@ -171,7 +180,7 @@ class Injector:
         )
         self._wait_updated(function)
         record["previous"], record["new"] = self._publish_and_move(
-            service, "configuration change"
+            service, "configuration change", record_deploy
         )
         self._save()
 
@@ -220,17 +229,20 @@ class Injector:
                     service,
                     record["previous"],
                 )
-                self._write(
-                    "record the rollback",
-                    deployments.record,
-                    self.table,
-                    service=service,
-                    previous=record["new"],
-                    new=record["previous"],
-                    kind="rollback",
-                    actor=self.actor,
-                    reason=reason,
-                )
+                # Only undo a row that was written: a change standing in for
+                # a third party left no deploy row, so it gets no rollback row.
+                if record.get("recorded", True):
+                    self._write(
+                        "record the rollback",
+                        deployments.record,
+                        self.table,
+                        service=service,
+                        previous=record["new"],
+                        new=record["previous"],
+                        kind="rollback",
+                        actor=self.actor,
+                        reason=reason,
+                    )
             if record["kind"] == "env":
                 self._write(
                     f"restore {function} $LATEST environment",

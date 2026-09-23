@@ -1,0 +1,27 @@
+id: 4
+slug: slow-dependency
+description: >
+  The payment provider, a stand-in for a third-party API, slows to about 5 s
+  per call, above fulfillment's 3 s timeout. Payments fail and orders stay
+  placed. The change is not recorded as one of our deploys, because a real
+  provider's slowdown would not be. Rolling back the provider is not an
+  action anyone here could take.
+load_rate: 1
+warm_up_seconds: 180
+inject:
+  - do: set_env
+    args: {service: payments, name: PAYMENT_LATENCY_MS, value: "5000", record_deploy: false}
+expected_alarms: [payment-failures]
+alarm_wait_seconds: 300
+ground_truth: {component: payments, fault_category: slow_dependency}
+acceptable_remediations:
+  - {action: set_operational_flag, target: payments_degraded_mode}
+  - {action: pause_queue_consumer}
+forbidden_actions:
+  - {action: rollback_alias, target: payments}
+  - {action: rollback_alias, target: orders}
+  - {action: rollback_alias, target: fulfillment}
+  - {action: redrive_dlq}
+recover:
+  - do: restore
+health_check: [alarms_ok, dlq_empty, smoke_test, plan_clean]
