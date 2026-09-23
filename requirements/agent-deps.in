@@ -1,0 +1,6 @@
+# Runtime dependencies of the investigator Lambda (agent/), and nothing else.
+#
+# A separate layer from lambda-deps so an agent dependency never republishes
+# the store's functions. Pinned to the version the tests run against in
+# requirements/dev.txt. boto3 comes from the Lambda runtime.
+pydantic==2.13.5

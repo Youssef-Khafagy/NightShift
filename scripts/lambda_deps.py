@@ -45,15 +45,42 @@ import shutil
 import subprocess
 import sys
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-REQUIREMENTS_IN = REPO_ROOT / "requirements" / "lambda-deps.in"
-LOCK_FILE = REPO_ROOT / "requirements" / "lambda-deps.lock"
 BUILD_DIR = REPO_ROOT / "build"
-LAYER_ROOT = BUILD_DIR / "layer"
-LAYER_ZIP = BUILD_DIR / "nightshift-deps-layer.zip"
-MANIFEST = BUILD_DIR / "layer-manifest.txt"
+
+
+@dataclass(frozen=True)
+class Layer:
+    requirements_in: Path
+    lock_file: Path
+    root: Path
+    zip: Path
+    manifest: Path
+
+
+# Two layers. `deps` is shared by the store's functions; `agent` holds only
+# what the investigator needs (Pydantic), so adding an agent dependency never
+# republishes the store's functions. The deps paths are the original ones, so
+# its artifact is byte-identical to before this option existed.
+LAYERS = {
+    "deps": Layer(
+        REPO_ROOT / "requirements" / "lambda-deps.in",
+        REPO_ROOT / "requirements" / "lambda-deps.lock",
+        BUILD_DIR / "layer",
+        BUILD_DIR / "nightshift-deps-layer.zip",
+        BUILD_DIR / "layer-manifest.txt",
+    ),
+    "agent": Layer(
+        REPO_ROOT / "requirements" / "agent-deps.in",
+        REPO_ROOT / "requirements" / "agent-deps.lock",
+        BUILD_DIR / "agent-layer",
+        BUILD_DIR / "nightshift-agent-deps-layer.zip",
+        BUILD_DIR / "agent-layer-manifest.txt",
+    ),
+}
 
 # Must match the runtime and architecture in terraform/modules/lambda_service.
 PYTHON_VERSION = "3.14"
@@ -107,7 +134,7 @@ def platform_args() -> list[str]:
     return args
 
 
-def cmd_lock() -> None:
+def cmd_lock(layer: Layer) -> None:
     """Resolve the .in file for the Lambda platform and write the lock file."""
     require_pip()
     download_dir = BUILD_DIR / "wheels"
@@ -116,12 +143,12 @@ def cmd_lock() -> None:
     download_dir.mkdir(parents=True)
 
     print(
-        f"Resolving {REQUIREMENTS_IN.name} for {IMPLEMENTATION}{PYTHON_VERSION.replace('.', '')} aarch64"
+        f"Resolving {layer.requirements_in.name} for {IMPLEMENTATION}{PYTHON_VERSION.replace('.', '')} aarch64"
     )
     pip(
         "download",
         "-r",
-        str(REQUIREMENTS_IN),
+        str(layer.requirements_in),
         "--dest",
         str(download_dir),
         *platform_args(),
@@ -147,10 +174,10 @@ def cmd_lock() -> None:
         version, digest = entries[name]
         lines.append(f"{name}=={version} \\")
         lines.append(f"    --hash=sha256:{digest}")
-    LOCK_FILE.write_text("\n".join(lines) + "\n")
+    layer.lock_file.write_text("\n".join(lines) + "\n")
 
     print(
-        f"\nWrote {LOCK_FILE.relative_to(REPO_ROOT)} with {len(entries)} pinned wheels:"
+        f"\nWrote {layer.lock_file.relative_to(REPO_ROOT)} with {len(entries)} pinned wheels:"
     )
     for name in sorted(entries):
         print(f"  {name}=={entries[name][0]}")
@@ -249,24 +276,26 @@ def write_deterministic_zip(source_root: Path, out_path: Path) -> str:
     return hashlib.sha256(out_path.read_bytes()).hexdigest()
 
 
-def cmd_build() -> None:
+def cmd_build(layer: Layer) -> None:
     """Install the locked wheels and write the layer zip."""
     require_pip()
-    if not LOCK_FILE.exists():
+    if not layer.lock_file.exists():
         sys.exit(
-            f"{LOCK_FILE} is missing. Run: {sys.executable} scripts/lambda_deps.py lock"
+            f"{layer.lock_file} is missing. Run: {sys.executable} scripts/lambda_deps.py lock --layer NAME"
         )
 
-    if LAYER_ROOT.exists():
-        shutil.rmtree(LAYER_ROOT)
-    target = LAYER_ROOT / LAYER_PYTHON_DIR
+    if layer.root.exists():
+        shutil.rmtree(layer.root)
+    target = layer.root / LAYER_PYTHON_DIR
     target.mkdir(parents=True)
 
-    print(f"Installing from {LOCK_FILE.name} into {target.relative_to(REPO_ROOT)}")
+    print(
+        f"Installing from {layer.lock_file.name} into {target.relative_to(REPO_ROOT)}"
+    )
     pip(
         "install",
         "-r",
-        str(LOCK_FILE),
+        str(layer.lock_file),
         "--target",
         str(target),
         "--require-hashes",
@@ -280,23 +309,23 @@ def cmd_build() -> None:
     )
 
     pruned = prune(target)
-    contents = content_digest(LAYER_ROOT)
-    write_manifest(LAYER_ROOT, MANIFEST)
-    digest = write_deterministic_zip(LAYER_ROOT, LAYER_ZIP)
+    contents = content_digest(layer.root)
+    write_manifest(layer.root, layer.manifest)
+    digest = write_deterministic_zip(layer.root, layer.zip)
 
     unpacked = sum(p.stat().st_size for p in target.rglob("*") if p.is_file())
     print(f"\nPruned {pruned} build artefacts")
-    print(f"Files:          {len(sorted_files(LAYER_ROOT))}")
+    print(f"Files:          {len(sorted_files(layer.root))}")
     print(
         f"Layer unpacked: {unpacked / 1024 / 1024:.1f} MiB (250 MiB limit, layers plus function)"
     )
     print(
-        f"Layer zipped:   {LAYER_ZIP.stat().st_size / 1024 / 1024:.1f} MiB (50 MiB limit)"
+        f"Layer zipped:   {layer.zip.stat().st_size / 1024 / 1024:.1f} MiB (50 MiB limit)"
     )
     print(f"content sha256: {contents}")
     print(f"zip sha256:     {digest}")
     print(
-        f"\nWrote {LAYER_ZIP.relative_to(REPO_ROOT)} and {MANIFEST.relative_to(REPO_ROOT)}"
+        f"\nWrote {layer.zip.relative_to(REPO_ROOT)} and {layer.manifest.relative_to(REPO_ROOT)}"
     )
 
 
@@ -304,11 +333,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
+    parser.add_argument(
+        "--layer",
+        choices=sorted(LAYERS),
+        default="deps",
+        help="which layer (default deps)",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("lock", help="resolve requirements and write the lock file")
     sub.add_parser("build", help="install locked wheels and write the layer zip")
     args = parser.parse_args()
-    {"lock": cmd_lock, "build": cmd_build}[args.command]()
+    {"lock": cmd_lock, "build": cmd_build}[args.command](LAYERS[args.layer])
 
 
 if __name__ == "__main__":

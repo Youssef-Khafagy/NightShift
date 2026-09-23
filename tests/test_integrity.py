@@ -48,7 +48,9 @@ def test_the_word_check_can_fail():
 def test_the_agent_never_imports_the_chaos_package():
     """The agent reads the store the way an on-call engineer would. Importing
     chaos would put scenario files and ground truth one attribute away."""
-    files = sorted((REPO_ROOT / "agent").rglob("*.py"))
+    files = sorted((REPO_ROOT / "agent").rglob("*.py")) + sorted(
+        (REPO_ROOT / "agent_lambda").rglob("*.py")
+    )
     assert files, "found no agent source files"
     for path in files:
         text = path.read_text()
@@ -74,7 +76,9 @@ def test_chaos_rollback_reasons_do_not_give_the_game_away():
 
 def test_the_agent_never_imports_the_grader():
     """evaluation/ reads ground truth; the agent must not be able to."""
-    for path in sorted((REPO_ROOT / "agent").rglob("*.py")):
+    agent_files = sorted((REPO_ROOT / "agent").rglob("*.py"))
+    agent_files += sorted((REPO_ROOT / "agent_lambda").rglob("*.py"))
+    for path in agent_files:
         assert not re.search(
             r"^\s*(from|import)\s+evaluation\b", path.read_text(), re.MULTILINE
         ), path

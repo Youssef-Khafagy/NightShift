@@ -18,8 +18,8 @@
 # The one write: GetItem and PutItem on nightshift-investigations, the
 # agent's own checkpoints (M5 step 4). Every other DynamoDB write is denied.
 #
-# Locally the owner's user assumes it (agent/aws.py); in step 6 the
-# investigator Lambda will run as it.
+# Locally the owner's user assumes it (agent/aws.py); in Lambda the agent
+# function's own role assumes it (agent.tf).
 
 locals {
   investigator_role_name = "${var.project}-investigator"
@@ -59,8 +59,14 @@ data "aws_iam_policy_document" "investigator_trust" {
     effect  = "Allow"
     actions = ["sts:AssumeRole"]
     principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${local.account_id}:user/${var.operator_user_name}"]
+      type = "AWS"
+      identifiers = [
+        "arn:aws:iam::${local.account_id}:user/${var.operator_user_name}",
+        # The investigator Lambda's own role (agent.tf). Read from the module
+        # so Terraform creates that role first: IAM rejects a trust policy
+        # that names a principal which does not exist yet.
+        module.agent.execution_role_arn,
+      ]
     }
   }
 }
