@@ -1,0 +1,143 @@
+{
+  "config": {
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "max_tokens_per_investigation": 40000,
+    "max_steps": 15,
+    "max_wall_seconds": 840,
+    "input_token_cap": 6000,
+    "max_output_tokens": 1500,
+    "full_results_kept": 3,
+    "max_tool_output_chars": 2500,
+    "log_scan_cap_bytes": 20971520,
+    "max_log_query_minutes": 60
+  },
+  "state": {
+    "investigation_id": "093c625f474d",
+    "trigger": {
+      "name": "nightshift-orders-errors",
+      "state": "OK",
+      "reason": "Threshold Crossed: 1 datapoint [0.0 (23/09/26 14:40:00)] was not greater than or equal to the threshold (1.0).",
+      "since": "2026-09-23T14:41:51Z",
+      "metric": {
+        "namespace": "AWS/Lambda",
+        "name": "Errors",
+        "dimensions": {
+          "FunctionName": "nightshift-orders"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 1.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-09-23T14:41:51Z",
+          "summary": "Alarm updated from ALARM to OK"
+        },
+        {
+          "at": "2026-09-23T14:38:51Z",
+          "summary": "Alarm updated from OK to ALARM"
+        },
+        {
+          "at": "2026-09-23T02:27:40Z",
+          "summary": "Alarm updated from ALARM to OK"
+        },
+        {
+          "at": "2026-09-23T02:25:40Z",
+          "summary": "Alarm updated from OK to ALARM"
+        },
+        {
+          "at": "2026-09-23T01:32:40Z",
+          "summary": "Alarm updated from INSUFFICIENT_DATA to OK"
+        }
+      ]
+    },
+    "started_at": "2026-09-23T18:50:41+00:00",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "turn": 2,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-09-23T18:50:41+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "dimensions": "FunctionName=nightshift-orders",
+          "metric": "Errors",
+          "minutes": 60,
+          "namespace": "AWS/Lambda",
+          "period": 60,
+          "statistic": "Sum"
+        },
+        "call_id": "fc_697d6f43-d58e-4650-a879-e64c975a6db9",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Errors {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":60,\"points\":[],\"summary\":\"no data in this window (an idle metric publishes nothing)\"}}",
+        "summary": "{\"metric\":\"AWS/Lambda Errors {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":60,\"points\":[],\"summary\":\"no data in this window (an idle metric publishes nothing)\"}",
+        "reasoning": "",
+        "provider_data": {}
+      },
+      {
+        "number": 2,
+        "turn": 2,
+        "at": "2026-09-23T18:50:43+00:00",
+        "tool": "query_logs",
+        "args": {
+          "limit": 20,
+          "minutes": 30,
+          "query": "fields @timestamp, @message, level, error, correlation_id | filter @timestamp >= '2026-09-23T14:30:00Z' and @timestamp <= '2026-09-23T14:45:00Z' | filter level = 'ERROR' | sort @timestamp desc",
+          "service": "orders"
+        },
+        "call_id": "fc_47fa4f45-a602-4d2b-b643-9eaa16abf329",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":0,\"scan_budget_left_bytes\":20971520}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":0,\"scan_budget_left_bytes\":20971520}",
+        "reasoning": "",
+        "provider_data": {}
+      }
+    ],
+    "calls": [
+      {
+        "turn": 1,
+        "at": "2026-09-23T18:50:41+00:00",
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "input_tokens": 1855,
+        "output_tokens": 180,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2034,
+        "rate_limit_headers": {
+          "x-ratelimit-limit-requests": "1000",
+          "x-ratelimit-limit-tokens": "8000",
+          "x-ratelimit-remaining-requests": "998",
+          "x-ratelimit-remaining-tokens": "5885",
+          "x-ratelimit-reset-requests": "2m52.8s",
+          "x-ratelimit-reset-tokens": "15.862s"
+        }
+      },
+      {
+        "turn": 2,
+        "at": "2026-09-23T18:50:42+00:00",
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "input_tokens": 1977,
+        "output_tokens": 177,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2147,
+        "rate_limit_headers": {
+          "x-ratelimit-limit-requests": "1000",
+          "x-ratelimit-limit-tokens": "8000",
+          "x-ratelimit-remaining-requests": "997",
+          "x-ratelimit-remaining-tokens": "3812",
+          "x-ratelimit-reset-requests": "4m19.2s",
+          "x-ratelimit-reset-tokens": "31.409s"
+        }
+      }
+    ],
+    "hypotheses": [],
+    "hypothesis_changes": [],
+    "log_bytes_scanned": 0,
+    "wall_seconds_used": 4.037336614004744,
+    "finished": true,
+    "stop_reason": "provider_error: HTTP 400 from https://api.groq.com/openai/v1/chat/completions: {\"error\":{\"message\":\"Tool call validation failed: tool call validation failed: parameters for tool query_logs did not match schema: errors: [`/limit`: maximum: got 100, want 50, `/minutes`: maximum: got 120, want 60]\",\"ty",
+    "final": null
+  }
+}

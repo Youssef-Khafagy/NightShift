@@ -21,6 +21,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+from agent.env import load_dotenv
 from agent.llm import Message, ProviderError, ToolSpec, make_provider
 from agent.llm.factory import KEY_VARIABLES
 from agent.tools import tool_specs
@@ -45,18 +46,6 @@ MESSAGES = [
     Message("system", "You investigate alarms. Always start by reading the alarm."),
     Message("user", "The alarm nightshift-orders-errors just fired. Read it."),
 ]
-
-
-def load_dotenv(path: Path) -> None:
-    """KEY=value lines only; values already in the environment win."""
-    if not path.exists():
-        return
-    for line in path.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        name, value = line.split("=", 1)
-        os.environ.setdefault(name.strip(), value.strip())
 
 
 def check(provider: str, model: str, save: bool, all_tools: bool = False) -> bool:
