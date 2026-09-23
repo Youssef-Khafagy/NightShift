@@ -639,6 +639,7 @@ The p99 alarm needs three bad minutes in a row, because one cold start (about 3 
 | Terraform owned the alias | Designing the rollback | Scripts own alias moves; plan clean after four moves (15) |
 | Reserved concurrency 2 throttled at 1 req/s | Per-minute CloudWatch metrics | orders and cart at 5; queue trigger capped (7, 10) |
 | A dry run that wrote | Reading its own code | Only `--apply` writes (8) |
+| A chaos run with no traffic read as a missed detection | Per-minute invocations: zero for orders | The runner logs load output, refuses without `DSQL_ENDPOINT`, and aborts before injecting if a load has died (6) |
 
 ---
 

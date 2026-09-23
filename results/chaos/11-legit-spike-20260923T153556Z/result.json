@@ -1,0 +1,33 @@
+{
+  "run_id": "11-legit-spike-20260923T153556Z",
+  "scenario": 11,
+  "slug": "legit-spike",
+  "ground_truth": {
+    "component": "none",
+    "fault_category": "no_fault"
+  },
+  "commit": "f7e0ed8",
+  "started": "2026-09-23T15:35:56+00:00",
+  "injected_at": "2026-09-23T15:39:09+00:00",
+  "alarms_fired": {
+    "nightshift-serialization-retries": 154.6,
+    "nightshift-throttles": 62.2
+  },
+  "expected_alarms_fired": false,
+  "unexpected_alarms": [
+    "nightshift-serialization-retries",
+    "nightshift-throttles"
+  ],
+  "load_exit_codes": [
+    0,
+    0
+  ],
+  "recovery_seconds": 191.2,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-09-23T15:48:32+00:00"
+}

@@ -1,0 +1,34 @@
+{
+  "run_id": "05-poison-message-20260923T150859Z",
+  "scenario": 5,
+  "slug": "poison-message",
+  "ground_truth": {
+    "component": "placed-orders",
+    "fault_category": "poison_message"
+  },
+  "commit": "f7e0ed8",
+  "started": "2026-09-23T15:08:59+00:00",
+  "injected_at": "2026-09-23T15:12:10+00:00",
+  "alarms_fired": {
+    "nightshift-dlq-depth": 698.5,
+    "nightshift-queue-age": 449.9,
+    "nightshift-throttles": 605.2
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [
+    "nightshift-queue-age",
+    "nightshift-throttles"
+  ],
+  "load_exit_codes": [
+    0
+  ],
+  "recovery_seconds": 725.0,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "dlq_empty": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-09-23T15:35:54+00:00"
+}

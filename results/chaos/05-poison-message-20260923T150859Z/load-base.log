@@ -1,0 +1,37 @@
+Run ab6e66e0: 1.0/s for 1560s, seed 2876139232
+  orders                   1,560
+  Lambda invocations       7,332   month to date     13,239   cap 500,000
+  SQS requests             3,952
+  DSQL DPU                 390.0   month to date    2,496.7   cap 50,000
+  log volume                 9.1 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "ab6e66e0",
+  "date": "2026-09-23T15:35:43+00:00",
+  "commit": "f7e0ed8",
+  "rate": 1.0,
+  "duration": 1560,
+  "seed": 2876139232,
+  "projected": {
+    "orders": 1560,
+    "lambda_invocations": 7332.0,
+    "sqs_requests": 3952.0000000000005,
+    "dsql_dpu": 390.0,
+    "log_mb": 9.14004
+  },
+  "sent": 1560,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 1559,
+    "lambda_throttled": 1
+  },
+  "elapsed_seconds": 1559.5,
+  "achieved_rate": 1.0,
+  "checkout_latency_ms": {
+    "p50": 376.9,
+    "p95": 480.6,
+    "p99": 603.0
+  }
+}
