@@ -25,6 +25,10 @@ class Store(Protocol):
 
     def load(self, investigation_id: str) -> InvestigationState | None: ...
 
+    def save_report(
+        self, investigation_id: str, report: str, postmortem: str
+    ) -> None: ...
+
 
 class MemoryStore:
     """For tests and dry runs. Keeps JSON, not objects, so a test that
@@ -41,6 +45,10 @@ class MemoryStore:
     def load(self, investigation_id: str) -> InvestigationState | None:
         raw = self.items.get(investigation_id)
         return InvestigationState.from_dict(json.loads(raw)) if raw else None
+
+    def save_report(self, investigation_id: str, report: str, postmortem: str) -> None:
+        self.items[f"{investigation_id}/report"] = report
+        self.items[f"{investigation_id}/postmortem"] = postmortem
 
 
 class DynamoStore:
@@ -72,3 +80,15 @@ class DynamoStore:
         if not item:
             return None
         return InvestigationState.from_dict(json.loads(item["state"]["S"]))
+
+    def save_report(self, investigation_id: str, report: str, postmortem: str) -> None:
+        """A second item beside the checkpoint, for the dashboard (M8)."""
+        self.ddb.put_item(
+            TableName=self.table,
+            Item={
+                "investigation_id": {"S": investigation_id},
+                "item": {"S": "report"},
+                "report": {"S": report},
+                "postmortem": {"S": postmortem},
+            },
+        )

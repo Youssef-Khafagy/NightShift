@@ -1,0 +1,23 @@
+{
+  "investigation_id": "6ee6c5aa5f70",
+  "root_cause_component": "cart",
+  "fault_category": "bad_deploy",
+  "confidence": 95,
+  "summary": "The `nightshift-cart-errors` alarm fired immediately after deploying version 16 of the `cart` Lambda, indicating a transient issue. The rollback to version 15 resolved the problem, confirming the fault was due to the new deploy. No logs or traces were found, but the error metric and deployment timeline strongly support this conclusion.",
+  "evidence": [
+    1,
+    5,
+    6
+  ],
+  "proposed_actions": [
+    "Investigate commit `f7e0ed8` for changes in version 16 of the `cart` service.",
+    "Add error logging or X-Ray tracing to future deploys for better observability.",
+    "Test version 16 in isolation to reproduce and fix the issue."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "query_logs",
+    "5": "get_function_config",
+    "6": "get_metrics"
+  }
+}
