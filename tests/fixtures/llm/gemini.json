@@ -1,0 +1,41 @@
+{
+  "model": "gemini-3.5-flash-lite",
+  "reply": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "name": "get_alarm",
+                "args": {
+                  "name": "nightshift-orders-errors"
+                },
+                "id": "call_56413"
+              },
+              "thoughtSignature": "El4KXAFpFH0TPIeSJgoDuYIBi8IlU2emsjRJkJGkEyx0E8Atzyu4D4Kq94IQt2pgkamrBgSN21cdWekycwhBJMTLpEnwwe7eRjjC+S7K5q+YxB6Oqpk3gDD+ugHyJjf5"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0,
+        "finishMessage": "Model generated function call(s)."
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 83,
+      "candidatesTokenCount": 21,
+      "totalTokenCount": 104,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 83
+        }
+      ],
+      "serviceTier": "standard"
+    },
+    "modelVersion": "gemini-3.5-flash-lite",
+    "responseId": "yxS0arbzAoKRjrEPz7T18AU"
+  }
+}
