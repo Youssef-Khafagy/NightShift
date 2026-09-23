@@ -67,6 +67,16 @@ def alarms_to_wait_for(scenario: Scenario) -> set[str]:
     return {f"{PROJECT}-{name}" for name in scenario.expected_alarms}
 
 
+def dead_loads(exit_codes: list[int | None]) -> list[int]:
+    """Indexes of load generators that have already exited.
+
+    Every load runs longer than the phase that checks it, so an exit here,
+    even a clean one, means traffic stopped and the run would measure an
+    idle system.
+    """
+    return [i for i, code in enumerate(exit_codes) if code is not None]
+
+
 def firing(states: dict[str, str]) -> set[str]:
     return {name for name, state in states.items() if state == "ALARM"}
 
@@ -127,21 +137,24 @@ def plan_clean() -> bool:
 
 
 def start_load(rate: float, seconds: int, out: Path) -> subprocess.Popen:
-    return subprocess.Popen(
-        [
-            PYTHON,
-            str(REPO_ROOT / "scripts" / "load.py"),
-            "--rate",
-            str(rate),
-            "--duration",
-            str(seconds),
-            "--run",
-            "--out",
-            str(out),
-        ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT,
-    )
+    # Output goes to a log beside the result, not to /dev/null: a load that
+    # refuses to start must leave its reason somewhere.
+    with out.with_suffix(".log").open("w") as log:
+        return subprocess.Popen(
+            [
+                PYTHON,
+                str(REPO_ROOT / "scripts" / "load.py"),
+                "--rate",
+                str(rate),
+                "--duration",
+                str(seconds),
+                "--run",
+                "--out",
+                str(out),
+            ],
+            stdout=log,
+            stderr=subprocess.STDOUT,
+        )
 
 
 def smoke_test() -> bool:
@@ -183,6 +196,11 @@ def git_sha() -> str:
 
 def preflight(scenario: Scenario, c: Clients) -> list[str]:
     problems = []
+    if not os.environ.get("DSQL_ENDPOINT"):
+        problems.append(
+            "DSQL_ENDPOINT is not set; load.py needs it. "
+            "export DSQL_ENDPOINT=$(terraform -chdir=terraform output -raw dsql_endpoint)"
+        )
     if not consumer_on(c.lam):
         problems.append("the queue consumer is off; enable it through Terraform first")
     if not plan_clean():
@@ -269,6 +287,13 @@ def run(scenario: Scenario, *, dry_run: bool) -> int:
             start_load(scenario.load_rate, base_seconds, run_dir / "load-base.json")
         )
         time.sleep(scenario.warm_up_seconds)
+        dead = dead_loads([p.poll() for p in loads])
+        if dead:
+            print(
+                "WARM-UP TRAFFIC STOPPED before injection; nothing was injected. "
+                f"See {run_dir / 'load-base.log'}"
+            )
+            return 2
 
     for step in scenario.setup:
         run_step(step, injector, loads, run_dir, "setup")
@@ -307,8 +332,9 @@ def run(scenario: Scenario, *, dry_run: bool) -> int:
 
     health: dict[str, bool] = {}
     if not dry_run:
-        for p in loads:
-            p.wait()
+        load_codes = [p.wait() for p in loads]
+        result["load_exit_codes"] = load_codes
+        health["load_ran"] = all(code == 0 for code in load_codes)
         if "alarms_ok" in scenario.health_check:
             deadline = time.time() + HEALTH_WAIT
             while firing(alarm_states(c.cw)) and time.time() < deadline:
