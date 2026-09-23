@@ -1,9 +1,9 @@
 """cart-service: the shopping cart, stored in DynamoDB.
 
 A cart is one document, read and written whole by its key, which is what
-DynamoDB is cheapest and simplest at. It also gives the chaos framework a
-store whose failure modes look nothing like a SQL database's: throttling
-rather than lock contention, and a missing table rather than a failing query.
+DynamoDB is cheapest and simplest at. Its failure modes look nothing like a
+SQL database's: throttling rather than lock contention, and a missing table
+rather than a failing query.
 
 Routes, over a function URL with AWS_IAM auth:
 

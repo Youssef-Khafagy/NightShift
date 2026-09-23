@@ -7,9 +7,9 @@ errors, and a caller that has to decide what to do about it.
 
 Its behaviour comes from configuration rather than from anything in the code,
 so changing how it behaves is an ordinary config change to a deployed
-function. That is deliberate. A fault that can only be triggered by a special
-flag in application code is not a rehearsal of anything, because production
-has no such flag.
+function. That is deliberate: a real third-party API gets slow or flaky
+without anyone changing our code, and a special switch in application code
+would behave nothing like that.
 
 Defaults are a fast, reliable provider: about 40 to 60 ms and no errors.
 """

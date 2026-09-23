@@ -24,3 +24,8 @@ aws-lambda-powertools==3.35.0
 # because an unpinned test double that changes behaviour breaks CI for
 # reasons that have nothing to do with the change under review.
 moto[sqs]==5.2.3
+
+# The chaos scenario schema (and, from M5, the agent's report) is validated with
+# Pydantic; scenario files are YAML. Local tooling only, never in the layer.
+pydantic==2.13.5
+pyyaml==6.0.3
