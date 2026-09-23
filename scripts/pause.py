@@ -9,7 +9,7 @@ polls the queue around the clock while enabled. So pausing is:
 1. Make sure that trigger is disabled. It is changed only through Terraform
    (`queue_consumer_enabled`), so state never drifts; if it is on, this shows
    the plan and asks for the word `pause` before applying.
-2. Check that nothing else can run by itself: no EventBridge rules or
+2. Check that nothing else can run by itself: no enabled EventBridge rules or
    schedules, no provisioned concurrency.
 3. Check the last 10 minutes of real usage: Lambda invocations and SQS empty
    receives. With the trigger off and no traffic, both should be zero.
@@ -44,7 +44,7 @@ def idle_problems(checks: dict) -> list[str]:
     ):
         problems.append(f"queue trigger is {', '.join(checks['consumer_states'])}")
     if checks["eventbridge_rules"]:
-        problems.append(f"{checks['eventbridge_rules']} EventBridge rule(s) exist")
+        problems.append(f"{checks['eventbridge_rules']} enabled EventBridge rule(s)")
     if checks["schedules"]:
         problems.append(
             f"{checks['schedules']} EventBridge Scheduler schedule(s) exist"
@@ -111,8 +111,12 @@ def main() -> None:
     cw = boto3.client("cloudwatch", region_name=REGION)
     checks = {
         "consumer_states": consumer_states(lam),
-        "eventbridge_rules": len(
-            boto3.client("events", region_name=REGION).list_rules()["Rules"]
+        # A disabled rule starts nothing: the alarm-to-agent rule exists
+        # permanently and is only enabled for a run.
+        "eventbridge_rules": sum(
+            1
+            for rule in boto3.client("events", region_name=REGION).list_rules()["Rules"]
+            if rule.get("State") == "ENABLED"
         ),
         "schedules": len(
             boto3.client("scheduler", region_name=REGION).list_schedules()["Schedules"]
@@ -135,7 +139,7 @@ def main() -> None:
     }
 
     print(f"queue trigger:            {', '.join(checks['consumer_states'])}")
-    print(f"EventBridge rules:        {checks['eventbridge_rules']}")
+    print(f"enabled EventBridge rules: {checks['eventbridge_rules']}")
     print(f"Scheduler schedules:      {checks['schedules']}")
     print(f"provisioned concurrency:  {sum(checks['provisioned'].values())}")
     print(f"invocations, last 10 min: {checks['invocations']:.0f}")
