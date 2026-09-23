@@ -1,0 +1,7 @@
+[
+  {
+    "kind": "message",
+    "queue": "nightshift-placed-orders",
+    "body": "{\"orderId\": \"8c1f2d4e-5a6b-4c7d-9e8f-0a1b2c3d4e5f\"}"
+  }
+]
