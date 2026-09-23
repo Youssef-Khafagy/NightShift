@@ -49,8 +49,8 @@ def order_total(conn: psycopg.Connection, order_id: str) -> int | None:
 
     One statement on an autocommit connection, so the transaction is over
     before this returns. That matters because the caller then invokes the
-    payment provider, which is slow on purpose in one of the chaos scenarios.
-    Holding this read open across that call would bill the payment provider's
+    payment provider, which can be slow. Holding this read open across that
+    call would bill the payment provider's
     latency as DSQL compute time.
     """
     with conn.cursor() as cur:
