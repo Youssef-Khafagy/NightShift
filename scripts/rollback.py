@@ -97,9 +97,11 @@ def rollback(
         actor=actor,
         reason=reason,
     )
-    print(f"rolled back {service}: {current} -> {target}")
+    # flush: the smoke test is a subprocess writing straight to the terminal,
+    # and without this its output overtakes ours when stdout is a pipe (CI).
+    print(f"rolled back {service}: {current} -> {target}", flush=True)
 
-    print("Smoke test:")
+    print("Smoke test:", flush=True)
     if smoke():
         return 0
     print(
