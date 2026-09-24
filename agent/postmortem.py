@@ -75,7 +75,13 @@ def render(state: InvestigationState, report: Report) -> str:
         "## Proposed fix (for a human to decide; the agent changed nothing)",
         "",
     ]
-    lines += [f"- {a}" for a in report.proposed_actions] or ["None proposed."]
+    if report.actions:
+        lines += ["Allowlisted actions, each waiting for owner approval:", ""]
+        lines += [f"- `{a}`" for a in report.actions]
+        lines.append("")
+    lines += [f"- {a}" for a in report.proposed_actions] or (
+        [] if report.actions else ["None proposed."]
+    )
     lines += ["", "## Hypotheses", ""]
     if state.hypotheses:
         lines += [f"- {h['status']}: {h['text']}" for h in state.hypotheses]

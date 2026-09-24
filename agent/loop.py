@@ -63,9 +63,17 @@ FINISH = ToolSpec(
                 "type": "string",
                 "description": "Step numbers you relied on, comma separated, e.g. 2,5,6",
             },
+            "actions": {
+                "type": "string",
+                "description": "Fixes from the allowlist, one per line, each run only if a "
+                "human approves it: 'rollback_alias service=<cart|orders|payments|"
+                "fulfillment>', 'set_operational_flag name=<payments_degraded_mode|"
+                "checkout_rate_limit> value=<v>', 'pause_queue_consumer', "
+                "'resume_queue_consumer', 'redrive_dlq'. Empty if none fits.",
+            },
             "proposed_actions": {
                 "type": "string",
-                "description": "What a human should do, one action per line.",
+                "description": "Anything else a human should do, one per line.",
             },
         },
         "required": [
