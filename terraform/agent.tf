@@ -98,6 +98,11 @@ module "agent" {
   # (agent/config.py) to save its checkpoint before Lambda would kill it.
   timeout = 900
 
+  # 256 MB: the first Lambda investigation peaked at 108 of 128 MB after only
+  # three steps, and a long one holds more state. Worst case 225 GB-s per
+  # investigation, about 7% of the free allowance over a benchmark pass.
+  memory_size = 256
+
   # One investigation at a time: the per-minute token limits are per
   # account, and incident correlation already folds related alarms into one.
   reserved_concurrency = 1

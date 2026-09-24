@@ -1,0 +1,54 @@
+{
+  "run_id": "02-config-regression-20260923T201347Z",
+  "scenario": 2,
+  "slug": "config-regression",
+  "ground_truth": {
+    "component": "cart",
+    "fault_category": "config_regression"
+  },
+  "commit": "51b3252",
+  "started": "2026-09-23T20:13:47+00:00",
+  "injected_at": "2026-09-23T20:16:55+00:00",
+  "agent": {
+    "started": true,
+    "investigation_id": "89a3bd941f23",
+    "grade": {
+      "scenario": 2,
+      "run_id": "02-config-regression-20260923T201347Z",
+      "investigation_id": "89a3bd941f23",
+      "expected_component": "cart",
+      "expected_category": "config_regression",
+      "answered_component": "cart",
+      "answered_category": "bad_deploy",
+      "confidence": 95,
+      "component_correct": true,
+      "category_correct": false,
+      "root_cause_correct": false,
+      "hedged": false,
+      "diagnosis_seconds": 122.0
+    },
+    "tokens": 29429,
+    "calls": 8,
+    "steps": 15,
+    "stop_reason": "finished",
+    "provider": "mistral",
+    "model": "ministral-14b-latest",
+    "summary": "cart / bad_deploy (confidence 95), WRONG"
+  },
+  "alarms_fired": {
+    "nightshift-cart-errors": 108.8
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [],
+  "load_exit_codes": [
+    0
+  ],
+  "recovery_seconds": 9632.4,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-09-23T22:59:32+00:00"
+}
