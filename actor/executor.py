@@ -8,6 +8,7 @@ these resources and nothing else.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from agent.actions import Action, check
@@ -33,7 +34,7 @@ def run(
     """Returns {"before": ..., "after": ...}. Re-checks the action first:
     the Actor trusts nothing that came from the model."""
     check(action)
-    handlers = {
+    handlers: dict[str, Callable[..., dict[str, Any]]] = {
         "rollback_alias": rollback_alias,
         "set_operational_flag": set_flag,
         "pause_queue_consumer": lambda c, a, **k: consumer(c, enabled=False),

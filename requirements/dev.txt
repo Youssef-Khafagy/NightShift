@@ -29,3 +29,7 @@ moto[sqs]==5.2.3
 # Pydantic; scenario files are YAML. Local tooling only, never in the layer.
 pydantic==2.13.5
 pyyaml==6.0.3
+
+# Type checking in CI (settings in mypy.ini). Pinned so a new release's
+# stricter rules fail a PR on purpose, not by surprise.
+mypy==2.3.1
