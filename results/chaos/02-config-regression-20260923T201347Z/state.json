@@ -1,0 +1,15 @@
+[
+  {
+    "kind": "env",
+    "service": "cart",
+    "original_env": {
+      "CART_TABLE_NAME": "nightshift-cart",
+      "POWERTOOLS_SERVICE_NAME": "cart",
+      "POWERTOOLS_LOG_LEVEL": "INFO"
+    },
+    "recorded": true,
+    "previous": "15",
+    "new": "17",
+    "restored": true
+  }
+]

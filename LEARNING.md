@@ -8,7 +8,7 @@ How NightShift works and why it was built this way, written for someone who know
 2. **Section 3, keeping it at $0.** The constraint that shaped every other decision.
 3. **Section 8, Aurora DSQL.** The deepest technical story in the project: a bug with no symptom, found in a billing metric.
 4. **Section 15, deploys and rollbacks.** The premise of the whole project is that an agent can roll back safely; this is how.
-5. **Section 18, mistakes that taught the most.** A one-page index of every wrong turn, which is where interview questions usually go.
+5. **Section 19, mistakes that taught the most.** A one-page index of every wrong turn, which is where interview questions usually go.
 
 Then read the rest in order when you have time. Section 2 is the AWS vocabulary the rest assumes.
 
@@ -694,7 +694,76 @@ All five recovered with every health check passing. The poison message is slow b
 
 ---
 
-## 18. Mistakes that taught the most
+## 18. The agent: an on-call engineer in a while loop
+
+**What it is.** A Python program that gets paged when an alarm fires, investigates with ten read-only tools, and ends with a structured answer: which component broke, which kind of fault it was (from a fixed list), how confident it is, which steps are the evidence, and what a human should do. It changes nothing. In AWS it runs as the `nightshift-agent` Lambda, started by an EventBridge rule; on the laptop it runs as `python -m agent.investigate`. Both run the same code.
+
+**Why it exists.** It is what the benchmark measures. Everything before it (the store, the telemetry, the chaos framework) exists so this can be scored.
+
+**What would break without each part.** Without the hard limits, a confused model loops until the free quota is gone. Without checkpoints, a Lambda timeout throws the investigation away. Without the Investigator role, a prompt injected into a log line could reach a write API. Without the report validation, "no fault, component orders" goes into the results as an answer.
+
+### No framework: a while loop of about 65 lines
+
+Each turn: rebuild the conversation from the saved state, send it with the tool definitions, run the tool calls the model asks for (at most three), save a checkpoint. Stop when the model calls `finish_investigation` or a limit is hit: 15 steps, 40,000 tokens, 840 seconds. A stop on a limit is an answer too: `insufficient_evidence`, with the reason.
+
+The conversation is never stored. It is rebuilt every turn from the journal of steps, which is what makes a crash cheap: load the checkpoint, rebuild, carry on. A Mistral investigation killed with `SIGKILL` after two steps resumed from DynamoDB at step three with nothing repeated.
+
+### The limit that shapes everything is per request
+
+Groq's free tier allows 8,000 tokens a minute. That is also the largest single request that can ever be sent, however long you wait. So the agent keeps only the three most recent tool results in full and a one-line summary of older ones, estimates the size before sending, and drops full results until it fits. The ten tool definitions alone cost 900 to 1,300 tokens per call, measured.
+
+### Three providers, one interface, no SDKs
+
+Groq and Mistral speak the OpenAI format; Gemini has its own. One set of dataclasses, three small translations, standard-library HTTPS. A 429 waits for `retry-after`, but never past the wall clock. Mistral's free tier turned out to be limited per model: its flagship models answer with a limit of zero requests a minute, and `ministral-14b` is the one that works, measured from its own response headers because its published limits are only in a console.
+
+### Two roles, so the model's reach is small
+
+The tools run as the **Investigator role**: reads on this project's resources, explicit denies on IAM, role chaining, the Terraform state, every write, invoking functions, and receiving queue messages, plus a permissions boundary so even an admin policy attached by mistake grants only reads. It was checked with the IAM policy simulator before it existed, 29 cases, and every tool was then called live through it.
+
+The Lambda's own role holds what the tools must never have: the API keys (SSM SecureString, written by a script, never in Terraform state) and the checkpoint writes. It assumes the Investigator role for the tools, exactly as the laptop does.
+
+Tool output reaches the model as JSON under an `untrusted_data` key, so a log line saying "ignore your instructions" arrives as an escaped string, not as part of the prompt.
+
+### One investigation per incident
+
+A bad deploy can fire three alarms in a minute. The first alarm takes a lock with a conditional DynamoDB write; alarms in the next ten minutes join it instead of starting their own. The investigation ID comes from the EventBridge event ID, so a redelivered event or a Lambda retry finds its own lock and resumes its own investigation.
+
+### The answer is validated where it is made
+
+Pydantic checks the shape; the rules check the meaning: `no_fault` means component `none`, a fault needs evidence, evidence must be real tool steps that returned something. The same check runs when the model calls `finish_investigation`, so a bad answer goes back to the model instead of into the results. A deterministic grader compares the answer to the scenario's ground truth, two words against two words. The agent may not import it.
+
+### The first live check (2026-09-23, Mistral ministral-14b, one run per scenario)
+
+| Scenario | Answer | Truth | Result | Tokens |
+|---|---|---|---|---|
+| 1 bad deploy | orders / bad_deploy, 90 | orders / bad_deploy | correct, 110 s after injection | 27,906 |
+| 2 config regression | cart / bad_deploy, 95 | cart / config_regression | right component, wrong category | 29,429 |
+| 4 slow dependency | placed-orders / retry_storm, 90 | payments / slow_dependency | wrong: symptom taken for cause | 32,729 |
+| 5 poison message | payments / bad_deploy, 95 | placed-orders / poison_message | wrong: read the previous run's cleanup | 18,513 |
+| 11 legit spike | payments / throttling, 95 | no fault | wrong: read the previous run's throttles | 29,828 |
+
+One right out of five, every answer at 90 or 95 confidence, no run above 33K tokens. One run per scenario is not an accuracy figure; it is a list of what to fix before measuring one.
+
+### What we got wrong
+
+- **The answer key was in the deployments table.** Chaos recovery wrote "recovery after scenario run 02-config-regression-..." as the rollback reason, in the table the agent reads. Found while building the tools; now a neutral constant held to the banned-words test, and the four old rows were rewritten.
+- **Back-to-back scenarios contaminate each other.** Scenario 5's answer was built on a CloudTrail event from scenario 4's cleanup; scenario 11's on scenario 4's throttles. The runs were minutes apart and the tools look back an hour or more. The benchmark needs a gap longer than the longest lookback, or tools scoped to the incident.
+- **Groq validates tool arguments itself** and answered HTTP 400 to `limit: 100`, which the loop first treated as fatal. It now goes back to the model like any bad call.
+- **Times were in the laptop's zone.** boto3 returns local datetimes; logs and deployments are UTC. Tools now always say UTC.
+- **An answer cited steps the loop had skipped.** Evidence now has to be a step that returned data.
+- **The laptop slept mid-run** for two and a half hours. Nothing broke, because recovery had already happened, but a batch needs the machine awake.
+
+**Questions about the agent**
+
+- *Why no agent framework?* The `run` method is about 65 lines, and `agent/loop.py` about 280 with the control tools and limits. I can explain every one: rebuild the conversation, call the model, run tools, checkpoint, check limits. A framework would hide exactly the parts the project is about: limits, checkpoints, and what the model is allowed to reach.
+- *How do you stop a prompt injection from doing damage?* The model can only call read-only tools, and those run as a role that is denied every write, with a boundary on top. Tool output is labelled as untrusted data. The worst an injection can do today is make the answer wrong, which the benchmark measures.
+- *What happens if the Lambda times out mid-investigation?* The state is checkpointed after every step, Lambda retries the event, and the retry resumes from the checkpoint. I tested it by killing the process with SIGKILL and resuming from the table.
+- *Why did your agent get four out of five wrong?* One small model, one run each. Two answers came from the previous scenario's leftovers, which is a flaw in how I ran the batch, not only in the model. The others show the model taking a symptom or a recent deploy for the cause, at 90 to 95 confidence every time. That is what M7 exists to measure, against baselines and bigger models.
+- *How do you keep it free?* Every limit is a config value: 40K tokens, 15 steps, 840 seconds, a 20 MB log scan budget. The trigger is off except during runs, one investigation runs at a time, and the most any run has used is 33K tokens.
+
+---
+
+## 19. Mistakes that taught the most
 
 | Mistake | How it was found | What changed |
 |---|---|---|
@@ -711,6 +780,8 @@ All five recovered with every health check passing. The poison message is slow b
 | Reserved concurrency 2 throttled at 1 req/s | Per-minute CloudWatch metrics | orders and cart at 5; queue trigger capped (7, 10) |
 | A dry run that wrote | Reading its own code | Only `--apply` writes (8) |
 | Recovery left the bad version newest | The plan-clean health check | Recovery deletes the version it published (17) |
+| The answer key sat in a table the agent reads | Building the tool that reads it | Neutral rollback reason, held to the banned-words test (17, 18) |
+| Back-to-back scenarios fed each other evidence | Reading the postmortems of wrong answers | A gap between incidents longer than any tool's lookback (M7) (18) |
 | A chaos run with no traffic read as a missed detection | Per-minute invocations: zero for orders | The runner logs load output, refuses without `DSQL_ENDPOINT`, and aborts before injecting if a load has died (17) |
 
 ---

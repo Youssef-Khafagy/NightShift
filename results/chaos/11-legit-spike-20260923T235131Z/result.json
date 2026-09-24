@@ -1,0 +1,59 @@
+{
+  "run_id": "11-legit-spike-20260923T235131Z",
+  "scenario": 11,
+  "slug": "legit-spike",
+  "ground_truth": {
+    "component": "none",
+    "fault_category": "no_fault"
+  },
+  "commit": "51b3252",
+  "started": "2026-09-23T23:51:31+00:00",
+  "injected_at": "2026-09-23T23:54:41+00:00",
+  "agent": {
+    "started": true,
+    "investigation_id": "de41a95950fc",
+    "grade": {
+      "scenario": 11,
+      "run_id": "11-legit-spike-20260923T235131Z",
+      "investigation_id": "de41a95950fc",
+      "expected_component": "none",
+      "expected_category": "no_fault",
+      "answered_component": "payments",
+      "answered_category": "throttling",
+      "confidence": 95,
+      "component_correct": false,
+      "category_correct": false,
+      "root_cause_correct": false,
+      "hedged": false,
+      "diagnosis_seconds": 96.0
+    },
+    "tokens": 29828,
+    "calls": 7,
+    "steps": 13,
+    "stop_reason": "finished",
+    "provider": "mistral",
+    "model": "ministral-14b-latest",
+    "summary": "payments / throttling (confidence 95), WRONG"
+  },
+  "alarms_fired": {
+    "nightshift-serialization-retries": 183.2,
+    "nightshift-throttles": 76.6
+  },
+  "expected_alarms_fired": false,
+  "unexpected_alarms": [
+    "nightshift-serialization-retries",
+    "nightshift-throttles"
+  ],
+  "load_exit_codes": [
+    0,
+    0
+  ],
+  "recovery_seconds": 789.3,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-09-24T00:13:56+00:00"
+}

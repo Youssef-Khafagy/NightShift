@@ -33,3 +33,15 @@ def test_a_clean_early_exit_is_still_dead():
 
 def test_no_loads_is_not_an_error():
     assert dead_loads([]) == []
+
+
+def test_a_run_with_the_agent_plans_with_the_trigger_enabled():
+    """On 2026-09-23 the first agent run refused to start: the plan check
+    knew the consumer was on for the run but not the trigger."""
+    from chaos.run import run_vars
+
+    assert run_vars(False) == ["-var=queue_consumer_enabled=true"]
+    assert run_vars(True) == [
+        "-var=queue_consumer_enabled=true",
+        "-var=agent_trigger_enabled=true",
+    ]

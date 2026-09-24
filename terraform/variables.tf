@@ -103,7 +103,10 @@ variable "agent_trigger_enabled" {
 variable "agent_provider" {
   description = "LLM provider the investigator Lambda uses: groq, gemini or mistral. The model defaults per provider (agent/config.py); set agent_model to override."
   type        = string
-  default     = "groq"
+  # Mistral ministral-14b (owner's choice for the M5 live check, 2026-09-23):
+  # 25 to 40 s per investigation and no daily cap seen, where Groq's 200K
+  # tokens a day holds about four investigations.
+  default = "mistral"
   validation {
     condition     = contains(["groq", "gemini", "mistral"], var.agent_provider)
     error_message = "agent_provider must be groq, gemini or mistral."

@@ -1,0 +1,22 @@
+{
+  "investigation_id": "de41a95950fc",
+  "root_cause_component": "payments",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The nightshift-payments Lambda function was throttled due to insufficient reserved concurrency (set to 2). A traffic spike (164 invocations in one minute) exceeded this limit, causing throttling events. No errors or misconfigurations were found in logs or deployments.",
+  "evidence": [
+    1,
+    4,
+    7
+  ],
+  "proposed_actions": [
+    "Increase the reserved concurrency for the nightshift-payments Lambda function to handle expected traffic loads.",
+    "Investigate the cause of the traffic spike to prevent future throttling."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "4": "get_metrics",
+    "7": "get_metrics"
+  }
+}

@@ -1,0 +1,37 @@
+Run f218d18d: 3.0/s for 300s, seed 4061712781
+  orders                     900
+  Lambda invocations       4,230   month to date     50,936   cap 500,000
+  SQS requests             2,080
+  DSQL DPU                 225.0   month to date    4,431.5   cap 50,000
+  log volume                 5.3 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "f218d18d",
+  "date": "2026-09-23T23:59:46+00:00",
+  "commit": "51b3252",
+  "rate": 3.0,
+  "duration": 300,
+  "seed": 4061712781,
+  "projected": {
+    "orders": 900,
+    "lambda_invocations": 4230.0,
+    "sqs_requests": 2080.0,
+    "dsql_dpu": 225.0,
+    "log_mb": 5.2731
+  },
+  "sent": 900,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 898,
+    "lambda_throttled": 2
+  },
+  "elapsed_seconds": 300.1,
+  "achieved_rate": 2.999,
+  "checkout_latency_ms": {
+    "p50": 351.5,
+    "p95": 424.8,
+    "p99": 580.5
+  }
+}
