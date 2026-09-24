@@ -21,16 +21,14 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from agent.actions import misfit, parse_block, parse_line
 from agent.state import InvestigationState
-from agent.vocabulary import COMPONENTS, FAULT_CATEGORIES
+from agent.vocabulary import Component, FaultCategory
 
-Component = Literal[tuple(COMPONENTS)]  # type: ignore[valid-type]
-FaultCategory = Literal[tuple(FAULT_CATEGORIES)]  # type: ignore[valid-type]
 CONTROL_TOOLS = {"note_hypotheses", "finish_investigation"}
 NO_ANSWER = {"no_fault", "insufficient_evidence"}
 
@@ -148,19 +146,23 @@ def from_answer(state: InvestigationState, answer: dict[str, Any]) -> Report:
     allowed, action_problems = parse_block(str(answer.get("actions", "")))
     problems += action_problems
     try:
-        report = Report(
-            investigation_id=state.investigation_id,
-            root_cause_component=answer.get("root_cause_component"),
-            fault_category=answer.get("fault_category"),
-            confidence=answer.get("confidence"),
-            summary=answer.get("summary", ""),
-            evidence=evidence,
-            actions=[a.line() for a in allowed],
-            proposed_actions=human,
-            stop_reason="finished",
-            evidence_tools={n: tools[n] for n in evidence if n in tools},
-            evidence_dropped=dropped,
-            evidence_empty=empty,
+        # model_validate, not Report(...): the answer is untrusted input
+        # of unknown types, and validating it is the point.
+        report = Report.model_validate(
+            {
+                "investigation_id": state.investigation_id,
+                "root_cause_component": answer.get("root_cause_component"),
+                "fault_category": answer.get("fault_category"),
+                "confidence": answer.get("confidence"),
+                "summary": answer.get("summary", ""),
+                "evidence": evidence,
+                "actions": [a.line() for a in allowed],
+                "proposed_actions": human,
+                "stop_reason": "finished",
+                "evidence_tools": {n: tools[n] for n in evidence if n in tools},
+                "evidence_dropped": dropped,
+                "evidence_empty": empty,
+            }
         )
     except ValidationError as error:
         problems += [e["msg"].removeprefix("Value error, ") for e in error.errors()]

@@ -111,7 +111,7 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 
 ### 7. Infrastructure and CI/CD
 - Terraform for every AWS resource, one module per component. Remote state in S3 with native locking (verify cost).
-- PR checks: ruff, mypy, pytest with moto, terraform fmt and validate, tflint, checkov or trivy, gitleaks.
+- PR checks: ruff, mypy (settings and file list in `mypy.ini`; wired into CI 2026-09-24, before that it was listed here but never ran), pytest with moto, terraform fmt and validate, tflint, checkov or trivy, gitleaks.
 - Main: terraform plan runs automatically on PRs. Apply is a separate `workflow_dispatch` job the owner triggers by hand, which is the approval gate while the repo is private (GitHub Free cannot create environments on private repos). Apply then publishes Lambda versions, shifts aliases, and records the deployment. If the repo goes public, switch the gate to a GitHub environment with required reviewers.
 
 ## Milestones (stop for owner review after each)
@@ -155,7 +155,7 @@ Owner: Youssef, third-year Software Engineering student at McMaster. Portfolio p
 - Lambda logs appear to count against the 5 GB CloudWatch Logs free tier (September 2026 bill, checked 2026-09-22; docs are silent since the May 2025 vended-logs pricing). **Evidence, not settled:** the bill quantities were 0 GB, so rounding could hide a vended logs line, and the Free plan bill may present usage differently after the upgrade. Re-check after the first traffic generator run and on the first Paid-plan bill. EMF metrics are ordinary custom metrics plus log bytes, and are not extracted in the Infrequent Access log class. `aws freetier get-free-tier-usage` is free; the Cost Explorer API is $0.01 per request.
 
 ## Current status (2026-09-23)
-**M0 to M5 complete and approved (M5 approved 2026-09-24). M6 steps 1 to 8 done (2026-09-24); waiting for the owner's M6 review.** Store idle since 02:52 UTC. Pending: the agent Lambda's code update (owner's step 8 notes: step numbers, empty evidence, required hypotheses, prompt) goes out with the next apply. Store idle: consumer and trigger off since 00:15 UTC 2026-09-24; `pause.py` passed at 00:26. Month to date after M5: DSQL 4,890 DPU (4.9%), Lambda 59,692 invocations (6.0%), SQS at most 55,038 (5.5%), Logs 78 MB ingested. The store is idle: consumer off since 16:11:42 UTC, `terraform plan` clean, `pause.py` passed at 16:23:16 UTC. The stock is 5,000 per product, minus what the M4 batch used.
+**M0 to M6 complete and approved (M6 approved 2026-09-24). Next: propose the M7 plan.** Step 8 code applied 2026-09-24 (0/2/0) and deployed (agent 6, actor 4, smoke test passed, plan clean after). The smoke test left one order in the queue while the consumer is off, as usual. mypy wired into CI the same day (PR #62); its type fixes touch cart, hello, agent and actor code with no behaviour change, so the next plan shows those four functions changed and they go out with the next apply. Store idle: consumer and trigger off since 00:15 UTC 2026-09-24; `pause.py` passed at 00:26. Month to date after M5: DSQL 4,890 DPU (4.9%), Lambda 59,692 invocations (6.0%), SQS at most 55,038 (5.5%), Logs 78 MB ingested. The store is idle: consumer off since 16:11:42 UTC, `terraform plan` clean, `pause.py` passed at 16:23:16 UTC. The stock is 5,000 per product, minus what the M4 batch used.
 
 **Step 4 results (batch 14:33 to 15:48 UTC, commit 66184f1, results in `results/chaos/`):**
 
@@ -368,6 +368,8 @@ Reviewed after step 3 (permissions) and at the end. Why M6 exists: the agent's a
 - Approved 2026-09-23: M4 closed and the M5 plan approved.
 - Approved 2026-09-24: M5 closed.
 - 2026-09-24: no check on remaining `aws login` time before a long run; log in immediately before each batch instead. Reason: the session refreshes for at most 12 hours (AWS CLI docs) and its end is not recorded in the local cache, so a threshold check would be guessing, while a fresh login covers a 75 minute batch many times over.
+- Approved 2026-09-24: M6 closed.
+- 2026-09-24: mypy wired into CI rather than removed from the documented checks. Reason: owner rule that a documented check which never runs is worse than none; enabling it cost 14 small fixes and found one real crash path.
 - Approved 2026-09-24: M6 plan. Decision A: the queue consumer's on/off state moves from Terraform to scripts (`ignore_changes` on the mapping's `enabled`), like the aliases, so an Actor pause is not reverted by the next apply. Decision B: approvals by `scripts/approve.py` with the owner's IAM login until M8's dashboard; never by email link or GET.
 - Approved 2026-09-23: the agent Lambda runs at 256 MB with Mistral `ministral-14b` by default. Reason: 108 of 128 MB used after three steps; Mistral answers in under a minute where Groq's daily tokens hold about four investigations.
 - Approved 2026-09-23: Mistral stays as the third provider, on `ministral-14b-latest`. Reason: tool calling works on the free tier and it is a third model family; the unknown monthly cap is watched through the per-call rate-limit headers.

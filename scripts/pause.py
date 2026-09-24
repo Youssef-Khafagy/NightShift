@@ -24,6 +24,7 @@ from __future__ import annotations
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import boto3
 
@@ -106,7 +107,7 @@ def main() -> None:
         disable_consumer()
 
     cw = boto3.client("cloudwatch", region_name=REGION)
-    checks = {
+    checks: dict[str, Any] = {
         "consumer_states": consumer_states(lam),
         # A disabled rule starts nothing: the alarm-to-agent rule exists
         # permanently and is only enabled for a run.

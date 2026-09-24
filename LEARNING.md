@@ -230,7 +230,9 @@ CI runs `terraform plan -out=tfplan` and then `terraform apply tfplan`. A bare `
 
 ### Hooks locally, the same checks in CI
 
-`.pre-commit-config.yaml` runs formatting and whitespace fixes, YAML/JSON checks, private key detection, gitleaks, the account ID block, ruff, and `terraform fmt`. CI runs the same config with `--all-files`, plus the unit tests on Python 3.12 and 3.14, `terraform validate`, `tflint`, a `trivy` security scan, and a plan. The hook is fast feedback; CI is enforcement.
+`.pre-commit-config.yaml` runs formatting and whitespace fixes, YAML/JSON checks, private key detection, gitleaks, the account ID block, ruff, and `terraform fmt`. CI runs the same config with `--all-files`, plus the unit tests on Python 3.12 and 3.14, `mypy`, `terraform validate`, `tflint`, a `trivy` security scan, and a plan. The hook is fast feedback; CI is enforcement.
+
+mypy was listed as a PR check from the start but nothing ran it until the end of M6, which is worse than not having it: a reader trusts the list. Turning it on found 14 errors in 71 files. Most were annotations, but one was real: `approve.py list` would crash if an approval record disappeared between the scan and the read. Another was a pattern no checker can follow: the report's enum types were built at runtime from lists (`Literal[tuple(COMPONENTS)]`), silenced with `type: ignore`. They are now written out as `Literal` types, and the lists are derived from them. Settings and the file list live in `mypy.ini`, so `mypy` locally and in CI is the same check, and a planted error was shown to fail it.
 
 ### The approval gate on a private repo
 
