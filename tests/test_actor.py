@@ -312,6 +312,18 @@ def test_an_approved_flag_change_runs_once_and_is_audited(ddb, monkeypatch):
 
     c = C()
     c.ddb, c.ssm, c.cw = ddb, ssm, None
+    # The report the approval came from: the rate limit fits an orders fault.
+    ddb.put_item(
+        TableName=approvals.TABLE,
+        Item={
+            **approvals.key("inv1", "report"),
+            "report": {
+                "S": json.dumps(
+                    {"root_cause_component": "orders", "fault_category": "throttling"}
+                )
+            },
+        },
+    )
     shown = pending(ddb)
     event = {
         "investigation_id": "inv1",
@@ -348,3 +360,41 @@ def test_an_approved_flag_change_runs_once_and_is_audited(ddb, monkeypatch):
     assert outcomes == ["done", "refused"]
     # The lock was released both times.
     guard.acquire(ddb, "next", NOW + 20)
+
+
+def test_the_actor_refuses_an_action_that_does_not_fit_the_saved_report(
+    ddb, monkeypatch
+):
+    """An injected "roll back cart" riding on an orders finding."""
+    from actor import handler as h
+
+    monkeypatch.setattr(h.time, "time", lambda: NOW + 10)
+    ddb.put_item(
+        TableName=approvals.TABLE,
+        Item={
+            **approvals.key("inv1", "report"),
+            "report": {
+                "S": json.dumps(
+                    {"root_cause_component": "orders", "fault_category": "bad_deploy"}
+                )
+            },
+        },
+    )
+
+    class C:
+        pass
+
+    c = C()
+    c.ddb = ddb
+    shown = pending(ddb, action="rollback_alias service=cart")
+    out = h.handler(
+        {
+            "investigation_id": "inv1",
+            "item": "approval#1",
+            "action_hash": shown,
+            "approver": "owner",
+        },
+        None,
+        clients=c,
+    )
+    assert out["outcome"] == "refused" and "root cause is orders" in out["reason"]

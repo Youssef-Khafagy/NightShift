@@ -82,6 +82,16 @@ def render(state: InvestigationState, report: Report) -> str:
     lines += [f"- {a}" for a in report.proposed_actions] or (
         [] if report.actions else ["None proposed."]
     )
+    flagged = [st.number for st in state.steps if '"warning":' in st.result]
+    if flagged:
+        lines += [
+            "",
+            "## Possible prompt injection",
+            "",
+            "Tool output at step(s) "
+            + ", ".join(str(n) for n in flagged)
+            + " contained text that reads like instructions to the agent.",
+        ]
     lines += ["", "## Hypotheses", ""]
     if state.hypotheses:
         lines += [f"- {h['status']}: {h['text']}" for h in state.hypotheses]
