@@ -1,0 +1,34 @@
+{
+  "investigation_id": "a31cb7a513c4",
+  "root_cause_component": "orders",
+  "fault_category": "bad_deploy",
+  "confidence": 95,
+  "summary": "The `nightshift-orders` Lambda function (version 25) was deployed at 02:33:24, coinciding with a spike in errors (35) and invocations (60/min). Despite no logged errors/warnings, X-Ray traces show 117 errors out of 284 requests in the last 5 minutes, with p99 duration at 2.94s. This strongly indicates a regression in version 25, likely due to unhandled exceptions or dependency failures (e.g., `cart` or `dsql` timeouts). The reserved concurrency (5) is insufficient for the sudden load, exacerbating the issue.",
+  "evidence": [
+    1,
+    3,
+    4,
+    7,
+    8
+  ],
+  "actions": [
+    "rollback_alias service=orders"
+  ],
+  "proposed_actions": [
+    "1. Check `cart` and `dsql` logs for timeouts or throttling during the same window.",
+    "2. Review version 25\u2019s changes for new dependencies or logic that could cause silent failures.",
+    "3. Temporarily increase `orders` reserved concurrency to 20 to mitigate throttling if rolled back."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "3": "get_metrics",
+    "4": "get_metrics",
+    "7": "query_logs",
+    "8": "get_topology"
+  },
+  "evidence_dropped": [
+    5,
+    6
+  ]
+}

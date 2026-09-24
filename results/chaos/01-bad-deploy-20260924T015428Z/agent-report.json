@@ -1,0 +1,12 @@
+{
+  "investigation_id": "7e612998abea",
+  "root_cause_component": "none",
+  "fault_category": "insufficient_evidence",
+  "confidence": 0,
+  "summary": "The investigation stopped before reaching a conclusion (max_steps).",
+  "evidence": [],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "max_steps",
+  "evidence_tools": {}
+}

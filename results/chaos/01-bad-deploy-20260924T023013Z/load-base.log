@@ -1,0 +1,37 @@
+Run ac053be8: 1.0/s for 1260s, seed 2886024168
+  orders                   1,260
+  Lambda invocations       5,922   month to date     64,997   cap 500,000
+  SQS requests             3,192
+  DSQL DPU                 315.0   month to date    5,161.9   cap 50,000
+  log volume                 7.4 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "ac053be8",
+  "date": "2026-09-24T02:51:22+00:00",
+  "commit": "eb8f5df",
+  "rate": 1.0,
+  "duration": 1260,
+  "seed": 2886024168,
+  "projected": {
+    "orders": 1260,
+    "lambda_invocations": 5922.0,
+    "sqs_requests": 3192.0,
+    "dsql_dpu": 315.0,
+    "log_mb": 7.38234
+  },
+  "sent": 1260,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 614,
+    "500": 646
+  },
+  "elapsed_seconds": 1259.4,
+  "achieved_rate": 1.0,
+  "checkout_latency_ms": {
+    "p50": 327.7,
+    "p95": 388.7,
+    "p99": 2883.0
+  }
+}
