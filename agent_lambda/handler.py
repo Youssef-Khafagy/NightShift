@@ -19,7 +19,7 @@ import time
 
 import boto3
 
-from agent import incident, postmortem, report
+from agent import approvals, incident, postmortem, report
 from agent.aws import assume_investigator
 from agent.config import for_provider
 from agent.llm import make_provider
@@ -83,6 +83,10 @@ def handler(event: dict, context: object) -> dict:
     store.save_report(
         investigation_id, postmortem.report_json(final), postmortem.render(state, final)
     )
+    # Pending approvals authorise nothing; only the owner can make one run.
+    pending = approvals.create_pending(
+        DDB, investigation_id, final.actions, int(time.time())
+    )
 
     summary = {
         "investigation_id": investigation_id,
@@ -94,6 +98,7 @@ def handler(event: dict, context: object) -> dict:
         "tokens": state.tokens_used,
         "log_bytes_scanned": state.log_bytes_scanned,
         "wall_seconds": round(state.wall_seconds_used),
+        "approvals_pending": [p["item"] for p in pending],
         "provider": CONFIG.provider,
         "model": CONFIG.model,
     }

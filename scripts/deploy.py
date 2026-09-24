@@ -32,9 +32,10 @@ from typing import Any
 import boto3
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-import deployments
+from ops import deployments
 
 REGION = os.environ.get("AWS_REGION", "ca-central-1")
 
