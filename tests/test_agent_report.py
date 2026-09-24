@@ -69,8 +69,8 @@ def test_a_good_answer_becomes_a_report():
         ({"fault_category": "no_fault"}, "root_cause_component must be none"),
         ({"root_cause_component": "none"}, "use no_fault or insufficient_evidence"),
         ({"evidence_steps": ""}, "at least one evidence step"),
-        ({"evidence_steps": "9"}, "step 9 does not exist"),
-        ({"evidence_steps": "3"}, "note, not evidence"),
+        ({"evidence_steps": "9"}, "at least one evidence step that returned data"),
+        ({"evidence_steps": "3"}, "at least one evidence step that returned data"),
         ({"confidence": 150}, "less than or equal to 100"),
         ({"fault_category": "gremlins"}, "Input should be"),
     ],
@@ -177,13 +177,16 @@ def test_no_fault_is_graded_on_the_category():
     assert not grade(spike, answered("orders", "throttling")).root_cause_correct
 
 
-def test_a_skipped_or_failed_step_is_not_evidence():
+def test_a_skipped_or_failed_step_is_dropped_from_the_evidence():
     s = state("get_alarm", "get_topology", "get_metrics")
     s.steps[1].result = '{"error": "skipped: at most 3 calls per reply"}'
-    s.steps[
-        2
-    ].result = '{"tool": "get_metrics", "truncated": false, "untrusted_data": {"error": "AWS AccessDenied: no"}}'
-    for step in ("2", "3"):
-        with pytest.raises(ValueError, match="returned an error or was skipped"):
-            report.from_answer(s, {**ANSWER, "evidence_steps": f"1,{step}"})
-    assert report.from_answer(s, {**ANSWER, "evidence_steps": "1"}).evidence == [1]
+    s.steps[2].result = (
+        '{"tool": "get_metrics", "truncated": false, '
+        '"untrusted_data": {"error": "AWS AccessDenied: no"}}'
+    )
+    # The M6 live check: a correct answer citing real and skipped steps.
+    r = report.from_answer(s, {**ANSWER, "evidence_steps": "1,2,3"})
+    assert r.evidence == [1] and r.evidence_dropped == [2, 3]
+    # Nothing real left: refused.
+    with pytest.raises(ValueError, match="returned data"):
+        report.from_answer(s, {**ANSWER, "evidence_steps": "2,3"})

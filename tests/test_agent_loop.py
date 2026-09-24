@@ -332,3 +332,29 @@ def test_no_fault_with_a_component_is_sent_back():
     state = inv.run(inv.start(TRIGGER))
     assert "root_cause_component must be none" in state.steps[1].result
     assert state.final == right
+
+
+def test_skipped_calls_and_answer_attempts_do_not_spend_the_step_budget():
+    """The M6 live check hit max_steps with a correct answer in hand: four
+    skipped calls and two refused answers had counted as steps."""
+    script = Script(
+        reply(*[("get_topology", {})] * 6),  # 3 run, 3 skipped
+        reply(
+            ("finish_investigation", dict(FINISH_ARGS, evidence_steps="4"))
+        ),  # refused
+        reply(("finish_investigation", FINISH_ARGS)),
+    )
+    inv, _ = investigator(script, AgentConfig(max_steps=4))
+    state = inv.run(inv.start(TRIGGER))
+    assert state.stop_reason == "finished" and state.final == FINISH_ARGS
+
+
+def test_answer_attempts_are_capped():
+    bad = dict(FINISH_ARGS, evidence_steps="")
+    script = Script(
+        reply(("get_topology", {})),
+        *[reply(("finish_investigation", bad)) for _ in range(5)],
+    )
+    inv, _ = investigator(script)
+    state = inv.run(inv.start(TRIGGER))
+    assert state.stop_reason == "answer_rejected" and len(state.steps) == 4

@@ -148,12 +148,15 @@ def test_deploy_patch_ships_the_change_and_restores_terraforms_zip(
     lam = FakeLambda()
     inj = injector(lam, tmp_path=tmp_path)
 
-    inj.deploy_patch(
-        "orders",
-        "app.py",
-        'unit="Count", value=1)\n        logger.info(\n            "checkout complete"',
-        'unit="Counts", value=1)\n        logger.info(\n            "checkout complete"',
+    # Scenario 1's own patch, so this breaks exactly when the scenario would.
+    from chaos.schema import load_scenario
+
+    patch = (
+        load_scenario(REPO_ROOT / "chaos" / "scenarios" / "01-bad-deploy.yaml")
+        .inject[0]
+        .args
     )
+    inj.deploy_patch("orders", patch["file"], patch["find"], patch["with"])
     shipped = zipfile.ZipFile(io.BytesIO(lam.code))
     assert 'unit="Counts"' in shipped.read("app.py").decode()
     assert lam.alias["orders"] == "21"
@@ -229,3 +232,22 @@ def test_restore_deletes_the_injected_version_after_moving_off_it(tmp_path):
     assert writes.index("delete") > max(
         i for i, w in enumerate(lam.writes) if w[0] == "alias"
     )
+
+
+def test_recovery_does_not_roll_back_what_the_actor_already_rolled_back(
+    tmp_path, monkeypatch
+):
+    """M6: the owner approves the agent's rollback before the runner
+    recovers. A second rollback would record a move that never happened."""
+    monkeypatch.setattr(actions, "BUILD", tmp_path)
+    (tmp_path / "nightshift-orders.zip").write_bytes(b"terraform's own zip")
+    lam, table = FakeLambda(), FakeTable()
+    inj = injector(lam, table=table, tmp_path=tmp_path)
+    inj.deploy_patch("orders", "app.py", "import json\n", "import json  # changed\n")
+    lam.alias["orders"] = "17"  # the Actor moved it back
+    rows_before = len(table.rows)
+
+    inj.restore("recovery")
+    assert lam.alias["orders"] == "17"
+    assert len(table.rows) == rows_before  # no second rollback recorded
+    assert lam.code == b"terraform's own zip"  # $LATEST still restored

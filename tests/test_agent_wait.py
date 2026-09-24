@@ -84,3 +84,69 @@ def test_a_report_that_never_comes_times_out():
     found = wait(table, clock, since=1_000)
     assert found == {"started": True, "investigation_id": "inv2", "timed_out": True}
     assert clock.now >= 1_000 + agent_wait.REPORT_WAIT
+
+
+class DecisionTable(Table):
+    def query(
+        self,
+        TableName,
+        KeyConditionExpression,
+        ExpressionAttributeNames,
+        ExpressionAttributeValues,
+    ):
+        prefix = ExpressionAttributeValues[":a"]["S"]
+        inv = ExpressionAttributeValues[":i"]["S"]
+        return {
+            "Items": [
+                item
+                for (i, name), (at, item) in self.items.items()
+                if i == inv and name.startswith(prefix) and self.clock.now >= at
+            ]
+        }
+
+
+def approval(status: str, expires_at: int) -> dict:
+    return {"status": {"S": status}, "expires_at": {"N": str(expires_at)}}
+
+
+def test_the_hold_ends_when_the_actor_has_finished():
+    clock = Clock()
+    table = DecisionTable(
+        clock,
+        {
+            ("inv", "approval#1"): (0, approval("pending", 1_900)),
+            ("inv", "audit#approval#1#1200#ab"): (
+                1_400,
+                {
+                    "record": {
+                        "S": json.dumps({"outcome": "done", "finished_at": 1_400})
+                    }
+                },
+            ),
+        },
+    )
+    # The owner approves at 1,200: status flips, then the audit lands at 1,400.
+    table.items[("inv", "approval#1")] = (0, approval("pending", 1_900))
+
+    def approve_later(seconds):
+        clock.sleep(seconds)
+        if clock.now >= 1_200:
+            table.items[("inv", "approval#1")] = (0, approval("used", 1_900))
+
+    out = agent_wait.wait_for_decisions(
+        table, "inv", 1, poll=15, clock=clock, sleep=approve_later
+    )
+    assert out[0]["status"] == "used" and out[0]["audit"][0]["outcome"] == "done"
+    assert clock.now >= 1_400
+
+
+def test_an_unanswered_approval_ends_the_hold_when_it_expires():
+    clock = Clock()
+    table = DecisionTable(
+        clock, {("inv", "approval#1"): (0, approval("pending", 1_300))}
+    )
+    out = agent_wait.wait_for_decisions(
+        table, "inv", 1, poll=15, clock=clock, sleep=clock.sleep
+    )
+    assert out == [{"item": "approval#1", "status": "expired", "audit": []}]
+    assert 1_300 <= clock.now < 1_400
