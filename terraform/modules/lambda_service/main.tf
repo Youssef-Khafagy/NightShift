@@ -43,6 +43,21 @@ data "archive_file" "this" {
       filename = "${var.shared_package}/${source.value}"
     }
   }
+
+  # Further packages, for a function that needs more than one (the Actor
+  # zips both agent/ and ops/). Keyed by the package name inside the zip.
+  dynamic "source" {
+    for_each = merge([
+      for package, dir in var.extra_packages : {
+        for f in fileset(dir, "**/*.py") : "${package}/${f}" => "${dir}/${f}"
+      }
+    ]...)
+
+    content {
+      content  = file(source.value)
+      filename = source.key
+    }
+  }
 }
 
 data "aws_iam_policy_document" "assume_role" {
@@ -58,9 +73,10 @@ data "aws_iam_policy_document" "assume_role" {
 }
 
 resource "aws_iam_role" "this" {
-  name               = "${var.name}-exec"
-  description        = "Execution role for ${var.name}."
-  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+  name                 = "${var.name}-exec"
+  description          = "Execution role for ${var.name}."
+  assume_role_policy   = data.aws_iam_policy_document.assume_role.json
+  permissions_boundary = var.permissions_boundary
 }
 
 # Scoped by hand instead of attaching AWSLambdaBasicExecutionRole, which

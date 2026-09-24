@@ -18,7 +18,7 @@ from moto import mock_aws
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-import deployments
+from ops import deployments
 
 
 @pytest.fixture(scope="module")
@@ -77,6 +77,7 @@ CURRENT = {
     "fulfillment": "5",
     "hello": "9",
     "agent": "1",
+    "actor": "1",
 }
 
 

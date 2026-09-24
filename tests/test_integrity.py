@@ -11,9 +11,11 @@ Two rules, enforced here the way the metric and alarm budgets are:
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))  # standalone: test_chaos_* import chaos
 BANNED = re.compile(r"\b(chaos|inject(ed|ion|s)?|faults?|scenarios?)\b", re.IGNORECASE)
 
 
@@ -48,9 +50,11 @@ def test_the_word_check_can_fail():
 def test_the_agent_never_imports_the_chaos_package():
     """The agent reads the store the way an on-call engineer would. Importing
     chaos would put scenario files and ground truth one attribute away."""
-    files = sorted((REPO_ROOT / "agent").rglob("*.py")) + sorted(
-        (REPO_ROOT / "agent_lambda").rglob("*.py")
-    )
+    files = [
+        f
+        for d in ("agent", "agent_lambda", "actor", "actor_lambda")
+        for f in sorted((REPO_ROOT / d).rglob("*.py"))
+    ]
     assert files, "found no agent source files"
     for path in files:
         text = path.read_text()
@@ -76,8 +80,11 @@ def test_chaos_rollback_reasons_do_not_give_the_game_away():
 
 def test_the_agent_never_imports_the_grader():
     """evaluation/ reads ground truth; the agent must not be able to."""
-    agent_files = sorted((REPO_ROOT / "agent").rglob("*.py"))
-    agent_files += sorted((REPO_ROOT / "agent_lambda").rglob("*.py"))
+    agent_files = [
+        f
+        for d in ("agent", "agent_lambda", "actor", "actor_lambda")
+        for f in sorted((REPO_ROOT / d).rglob("*.py"))
+    ]
     for path in agent_files:
         assert not re.search(
             r"^\s*(from|import)\s+evaluation\b", path.read_text(), re.MULTILINE
