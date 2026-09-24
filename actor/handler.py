@@ -12,7 +12,8 @@ is re-parsed and re-checked against the allowlist, and the approval must
 still be pending, unexpired and exactly what the owner saw. The order:
 
     lock (one at a time) -> hourly budget -> consume the approval (single
-    use) -> record before -> act -> watch the alarms -> audit -> unlock
+    use) -> check the action fits the saved report -> record before -> act
+    -> watch the alarms -> audit -> unlock
 
 Every outcome, including a refusal, is written to the audit log.
 """
@@ -29,7 +30,7 @@ import boto3
 
 from actor import executor, guard, verify
 from agent import approvals
-from agent.actions import parse_line
+from agent.actions import misfit, parse_line
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -60,6 +61,19 @@ def triggering_alarms(ddb: Any, investigation_id: str) -> list[str]:
         return []
     name = json.loads(item["state"]["S"]).get("trigger", {}).get("name")
     return [name] if name else []
+
+
+def saved_finding(ddb: Any, investigation_id: str) -> dict[str, Any]:
+    """The report the approval came from. Without one there is nothing to
+    check the action against, so the Actor refuses."""
+    item = ddb.get_item(
+        TableName=TABLE,
+        Key=approvals.key(investigation_id, "report"),
+        ConsistentRead=True,
+    ).get("Item")
+    if not item:
+        raise approvals.ApprovalRefused("no saved report to check the action against")
+    return json.loads(item["report"]["S"])
 
 
 def audit(ddb: Any, investigation_id: str, item: str, record: dict[str, Any]) -> None:
@@ -107,6 +121,14 @@ def handler(
         )
         action = parse_line(line)
         record["action"] = action.line()
+        finding = saved_finding(c.ddb, investigation_id)
+        reason = misfit(
+            action, finding["root_cause_component"], finding["fault_category"]
+        )
+        if reason:
+            raise approvals.ApprovalRefused(
+                f"the action does not fit the report: {reason}"
+            )
         record.update(executor.run(c, action, approver=approver, approval=approval_ref))
         record["acted_at"] = int(time.time())
         record["verification"] = verify.watch(

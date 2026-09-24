@@ -148,12 +148,15 @@ def test_deploy_patch_ships_the_change_and_restores_terraforms_zip(
     lam = FakeLambda()
     inj = injector(lam, tmp_path=tmp_path)
 
-    inj.deploy_patch(
-        "orders",
-        "app.py",
-        'unit="Count", value=1)\n        logger.info(\n            "checkout complete"',
-        'unit="Counts", value=1)\n        logger.info(\n            "checkout complete"',
+    # Scenario 1's own patch, so this breaks exactly when the scenario would.
+    from chaos.schema import load_scenario
+
+    patch = (
+        load_scenario(REPO_ROOT / "chaos" / "scenarios" / "01-bad-deploy.yaml")
+        .inject[0]
+        .args
     )
+    inj.deploy_patch("orders", patch["file"], patch["find"], patch["with"])
     shipped = zipfile.ZipFile(io.BytesIO(lam.code))
     assert 'unit="Counts"' in shipped.read("app.py").decode()
     assert lam.alias["orders"] == "21"

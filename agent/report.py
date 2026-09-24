@@ -23,7 +23,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
-from agent.actions import parse_block
+from agent.actions import misfit, parse_block, parse_line
 from agent.state import InvestigationState
 from agent.vocabulary import COMPONENTS, FAULT_CATEGORIES
 
@@ -63,6 +63,12 @@ class Report(BaseModel):
             raise ValueError("a fault needs at least one evidence step")
         if self.fault_category == "no_fault" and self.actions:
             raise ValueError("no_fault means nothing to fix: propose no actions")
+        for line in self.actions:
+            reason = misfit(
+                parse_line(line), self.root_cause_component, self.fault_category
+            )
+            if reason:
+                raise ValueError(f"action {line!r} does not fit the finding: {reason}")
         return self
 
 
