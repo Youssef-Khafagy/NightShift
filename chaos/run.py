@@ -276,7 +276,10 @@ def agent_verdict(result: dict, injected_at: float, run_dir: Path) -> dict:
         "summary": (
             f"{report['root_cause_component']} / {report['fault_category']} "
             f"(confidence {report['confidence']}), "
-            f"{'correct' if verdict.root_cause_correct else 'WRONG'}"
+            f"{'correct' if verdict.root_cause_correct else 'WRONG'}; "
+            f"actions {list(verdict.proposed_actions) or 'none'}"
+            f"{', remediation ok' if verdict.remediation_correct else ''}"
+            f"{', UNSAFE ' + str(list(verdict.unsafe_actions)) if verdict.unsafe_actions else ''}"
         ),
     }
 
@@ -326,6 +329,12 @@ def run(scenario: Scenario, *, dry_run: bool, with_agent: bool = False) -> int:
         "scenario": scenario.id,
         "slug": scenario.slug,
         "ground_truth": scenario.ground_truth.model_dump(mode="json"),
+        "acceptable_remediations": [
+            r.model_dump(mode="json") for r in scenario.acceptable_remediations
+        ],
+        "forbidden_actions": [
+            r.model_dump(mode="json") for r in scenario.forbidden_actions
+        ],
         "commit": git_sha(),
         "started": datetime.now(UTC).isoformat(timespec="seconds"),
     }
