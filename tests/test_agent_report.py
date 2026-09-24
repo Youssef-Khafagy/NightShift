@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -69,8 +70,8 @@ def test_a_good_answer_becomes_a_report():
         ({"fault_category": "no_fault"}, "root_cause_component must be none"),
         ({"root_cause_component": "none"}, "use no_fault or insufficient_evidence"),
         ({"evidence_steps": ""}, "at least one evidence step"),
-        ({"evidence_steps": "9"}, "at least one evidence step that returned data"),
-        ({"evidence_steps": "3"}, "at least one evidence step that returned data"),
+        ({"evidence_steps": "9"}, "at least one evidence step that found something"),
+        ({"evidence_steps": "3"}, "at least one evidence step that found something"),
         ({"confidence": 150}, "less than or equal to 100"),
         ({"fault_category": "gremlins"}, "Input should be"),
     ],
@@ -188,5 +189,54 @@ def test_a_skipped_or_failed_step_is_dropped_from_the_evidence():
     r = report.from_answer(s, {**ANSWER, "evidence_steps": "1,2,3"})
     assert r.evidence == [1] and r.evidence_dropped == [2, 3]
     # Nothing real left: refused.
-    with pytest.raises(ValueError, match="returned data"):
+    with pytest.raises(ValueError, match="found something"):
         report.from_answer(s, {**ANSWER, "evidence_steps": "2,3"})
+
+
+def envelope(tool: str, data: dict) -> str:
+    return json.dumps({"tool": tool, "truncated": False, "untrusted_data": data})
+
+
+@pytest.mark.parametrize(
+    "data, empty",
+    [
+        ({"status": "Complete", "rows": [], "bytes_scanned": 0}, True),
+        ({"status": "Complete", "rows": [{"message": "boom"}]}, False),
+        ({"metric": "Errors", "points": [], "summary": "no data"}, True),
+        ({"metric": "Errors", "points": [["02:33Z", 35.0]]}, False),
+        ({"service": "x", "traces": 0, "with_error": 0}, True),
+        ({"service": "x", "traces": 284, "with_error": 117}, False),
+        ({"window_hours": 2, "moves": []}, True),
+        ({"window_minutes": 60, "changes": []}, True),
+        ({"function": "nightshift-cart", "timeout_seconds": 5}, False),
+        ({"name": "orders-errors", "state": "ALARM"}, False),
+    ],
+)
+def test_found_nothing_knows_each_tools_empty_shape(data, empty):
+    assert report.found_nothing(envelope("t", data)) is empty
+
+
+def test_an_empty_check_is_not_root_cause_evidence():
+    """Postmortem 6ee6c5aa5f70 listed an empty log query and an empty metric
+    as root cause evidence for a bad deploy."""
+    s = state("query_logs", "get_function_config", "get_metrics")
+    s.steps[0].result = envelope("query_logs", {"status": "Complete", "rows": []})
+    s.steps[2].result = envelope("get_metrics", {"metric": "m", "points": []})
+    r = report.from_answer(s, {**ANSWER, "evidence_steps": "1,2,3"})
+    assert r.evidence == [2] and r.evidence_empty == [1, 3]
+    md = postmortem.render(s, r)
+    assert "- Step 1," not in md and "- Step 2," in md
+    assert "Cited but found nothing, so not counted as evidence: step(s) 1, 3." in md
+    assert "step 1: `query_logs` (found nothing)" in md
+    with pytest.raises(ValueError, match="empty results rule things out"):
+        report.from_answer(s, {**ANSWER, "evidence_steps": "1,3"})
+
+
+def test_the_timeline_shows_a_refused_answer_as_refused():
+    s = state("get_metrics", "finish_investigation", "finish_investigation")
+    s.steps[1].result = json.dumps(
+        {"error": "finish_investigation rejected", "problems": ["evidence step 9"]}
+    )
+    s.final = {**ANSWER, "evidence_steps": "1"}
+    md = postmortem.render(s, report.build(s))
+    assert "step 2: `finish_investigation` (refused: evidence step 9)" in md

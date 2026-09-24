@@ -7,7 +7,9 @@ rules that make an answer mean something:
 - component none means no fault was found, so the category must be
   no_fault or insufficient_evidence;
 - a fault must cite at least one journal step as evidence, and every cited
-  step must exist and be a real tool call, not a note to itself.
+  step must exist, be a real tool call, not a note to itself, and have
+  found something. A check that came back empty ruled something out; it
+  is listed apart, never as support for the root cause.
 
 The loop runs the same validation when the model calls finish_investigation,
 so a bad answer goes back to the model to fix instead of into the results.
@@ -50,6 +52,9 @@ class Report(BaseModel):
     evidence_tools: dict[int, str] = Field(default_factory=dict)
     # Cited steps that were skipped, failed, missing or notes, removed.
     evidence_dropped: list[int] = Field(default_factory=list)
+    # Cited steps whose tool found nothing (no log rows, no datapoints),
+    # removed from evidence: an empty result cannot show what went wrong.
+    evidence_empty: list[int] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def consistent(self) -> Report:
@@ -63,7 +68,8 @@ class Report(BaseModel):
             )
         if self.fault_category not in NO_ANSWER and not self.evidence:
             raise ValueError(
-                "a fault needs at least one evidence step that returned data"
+                "a fault needs at least one evidence step that found something; "
+                "empty results rule things out, they are not evidence of a cause"
             )
         if self.fault_category == "no_fault" and self.actions:
             raise ValueError("no_fault means nothing to fix: propose no actions")
@@ -91,6 +97,25 @@ def returned_nothing(result: str) -> bool:
     return "error" in data or (isinstance(inner, dict) and "error" in inner)
 
 
+# The list or count each tool returns its findings in. Empty means the tool
+# ran and found nothing in its window.
+FINDINGS = ("rows", "points", "moves", "changes", "alarms", "traces")
+
+
+def found_nothing(result: str) -> bool:
+    """A tool that ran and found nothing: no log rows, no datapoints, no
+    deploys, no changes, no traces. In the M5 and M6 live checks answers
+    cited empty log queries and empty metrics as root cause evidence."""
+    try:
+        inner = json.loads(result).get("untrusted_data")
+    except (ValueError, AttributeError):
+        return False
+    if not isinstance(inner, dict):
+        return False
+    present = [inner[k] for k in FINDINGS if k in inner]
+    return bool(present) and all(v in ([], 0) for v in present)
+
+
 def parse_steps(text: str) -> list[int]:
     return sorted({int(n) for n in re.findall(r"\d+", text or "")})
 
@@ -112,6 +137,9 @@ def from_answer(state: InvestigationState, answer: dict[str, Any]) -> Report:
         if n not in tools or tools[n] in CONTROL_TOOLS or n in failed
     ]
     evidence = [n for n in evidence if n not in dropped]
+    by_number = {s.number: s for s in state.steps}
+    empty = [n for n in evidence if found_nothing(by_number[n].result)]
+    evidence = [n for n in evidence if n not in empty]
     human = [
         line.strip(" -*\t")
         for line in str(answer.get("proposed_actions", "")).splitlines()
@@ -132,6 +160,7 @@ def from_answer(state: InvestigationState, answer: dict[str, Any]) -> Report:
             stop_reason="finished",
             evidence_tools={n: tools[n] for n in evidence if n in tools},
             evidence_dropped=dropped,
+            evidence_empty=empty,
         )
     except ValidationError as error:
         problems += [e["msg"].removeprefix("Value error, ") for e in error.errors()]
