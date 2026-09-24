@@ -6,21 +6,21 @@ DynamoDB reads, DSQL and SNS all bill per use, and an idle DSQL cluster
 scales to zero. The one exception is the SQS trigger on placed-orders, which
 polls the queue around the clock while enabled. So pausing is:
 
-1. Make sure that trigger is disabled. It is changed only through Terraform
-   (`queue_consumer_enabled`), so state never drifts; if it is on, this shows
-   the plan and asks for the word `pause` before applying.
+1. Make sure that trigger is disabled. From M6 it is switched by
+   scripts/consumer.py, not Terraform (decision A: an Actor pause must not
+   be undone by the next apply); if it is on, this asks for the word `pause`
+   and switches it off, with queue-age's notifications.
 2. Check that nothing else can run by itself: no enabled EventBridge rules or
    schedules, no provisioned concurrency.
 3. Check the last 10 minutes of real usage: Lambda invocations and SQS empty
    receives. With the trigger off and no traffic, both should be zero.
 
-Exits 0 when paused and idle, 1 otherwise. Reads only, except the Terraform
-apply in step 1, which needs the confirmation word.
+Exits 0 when paused and idle, 1 otherwise. Reads only, except the switch in
+step 1, which needs the confirmation word.
 """
 
 from __future__ import annotations
 
-import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -28,7 +28,10 @@ from pathlib import Path
 import boto3
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-TERRAFORM = ["terraform", f"-chdir={REPO_ROOT / 'terraform'}"]
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
+
+import consumer
+
 REGION = "ca-central-1"
 PROJECT = "nightshift"
 FUNCTIONS = ("cart", "orders", "payments", "fulfillment", "hello")
@@ -70,22 +73,16 @@ def consumer_states(lam) -> list[str]:
     return [m["State"] for m in mappings["EventSourceMappings"]]
 
 
-def disable_consumer_through_terraform() -> None:
-    plan = REPO_ROOT / "terraform" / "pause.tfplan"
-    subprocess.run(
-        [
-            *TERRAFORM,
-            "plan",
-            "-input=false",
-            "-var=queue_consumer_enabled=false",
-            f"-out={plan}",
-        ],
-        check=True,
+def disable_consumer() -> None:
+    if input("Type pause to switch the queue trigger off: ").strip() != "pause":
+        sys.exit("Not switched.")
+    consumer.switch(
+        lam_client(), boto3.client("cloudwatch", region_name=REGION), on=False
     )
-    if input("\nType pause to apply this plan: ").strip() != "pause":
-        sys.exit("Not applied.")
-    subprocess.run([*TERRAFORM, "apply", "-input=false", str(plan)], check=True)
-    plan.unlink(missing_ok=True)
+
+
+def lam_client():
+    return boto3.client("lambda", region_name=REGION)
 
 
 def recent_sum(cw, namespace: str, metric: str, dimensions: list[dict]) -> float:
@@ -105,8 +102,8 @@ def recent_sum(cw, namespace: str, metric: str, dimensions: list[dict]) -> float
 def main() -> None:
     lam = boto3.client("lambda", region_name=REGION)
     if any(s != "Disabled" for s in consumer_states(lam)):
-        print("The queue trigger is enabled. Disabling it through Terraform:")
-        disable_consumer_through_terraform()
+        print("The queue trigger is enabled.")
+        disable_consumer()
 
     cw = boto3.client("cloudwatch", region_name=REGION)
     checks = {

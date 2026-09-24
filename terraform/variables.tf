@@ -59,7 +59,7 @@ variable "cart_write_capacity" {
 }
 
 variable "queue_consumer_enabled" {
-  description = "Whether the placed-orders event source mapping polls. Default false: an idle triggered queue spends about two thirds of the free SQS allowance doing nothing. Turn on for a run, off afterwards."
+  description = "The placed-orders event source mapping's state when it is first created. After that, scripts/consumer.py switches it (Terraform ignores changes, M6 decision A). Default false: an idle triggered queue spends about two thirds of the free SQS allowance doing nothing."
   type        = bool
   default     = false
 }

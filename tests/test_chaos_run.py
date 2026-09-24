@@ -40,8 +40,5 @@ def test_a_run_with_the_agent_plans_with_the_trigger_enabled():
     knew the consumer was on for the run but not the trigger."""
     from chaos.run import run_vars
 
-    assert run_vars(False) == ["-var=queue_consumer_enabled=true"]
-    assert run_vars(True) == [
-        "-var=queue_consumer_enabled=true",
-        "-var=agent_trigger_enabled=true",
-    ]
+    assert run_vars(False) == []
+    assert run_vars(True) == ["-var=agent_trigger_enabled=true"]

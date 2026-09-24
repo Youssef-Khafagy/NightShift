@@ -49,6 +49,7 @@ output "function_versions" {
     fulfillment = module.fulfillment.published_version
     hello       = module.hello.published_version
     agent       = module.agent.published_version
+    actor       = module.actor.published_version
   }
 }
 

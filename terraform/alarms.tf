@@ -121,4 +121,11 @@ resource "aws_cloudwatch_metric_alarm" "this" {
   actions_enabled = lookup(each.value, "actions_enabled", true)
   alarm_actions   = [aws_sns_topic.alerts.arn]
   ok_actions      = [aws_sns_topic.alerts.arn]
+
+  # queue-age's notifications follow the queue consumer, and from M6 the
+  # consumer is switched by scripts (scripts/consumer.py switches both), so
+  # Terraform only sets this at creation.
+  lifecycle {
+    ignore_changes = [actions_enabled]
+  }
 }

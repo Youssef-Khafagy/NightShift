@@ -102,3 +102,15 @@ variable "create_function_url" {
   type        = bool
   default     = false
 }
+
+variable "extra_packages" {
+  description = "More shared packages to zip, as {package name inside the zip = source directory}. Every .py file under each directory is included."
+  type        = map(string)
+  default     = {}
+}
+
+variable "permissions_boundary" {
+  description = "Optional managed policy ARN capping what the execution role can ever do, whatever is attached to it later."
+  type        = string
+  default     = null
+}

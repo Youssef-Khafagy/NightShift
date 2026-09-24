@@ -33,9 +33,10 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-import deployments
+from ops import deployments
 
 BUILD = REPO_ROOT / "terraform" / ".build"
 

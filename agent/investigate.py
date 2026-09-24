@@ -15,9 +15,10 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 
-from agent import postmortem, report
+from agent import approvals, postmortem, report
 from agent.aws import investigator_session
 from agent.config import PROVIDER_DEFAULTS, for_provider
 from agent.env import load_dotenv
@@ -90,6 +91,14 @@ def main() -> None:
     report_text = postmortem.report_json(final)
     markdown = postmortem.render(state, final)
     store.save_report(state.investigation_id, report_text, markdown)
+    if final.actions and args.store == "dynamo":
+        # Waiting for the owner: scripts/approve.py list.
+        approvals.create_pending(
+            session.client("dynamodb"),
+            state.investigation_id,
+            final.actions,
+            int(time.time()),
+        )
 
     RESULTS.mkdir(parents=True, exist_ok=True)
     out = RESULTS / f"{state.investigation_id}.json"
@@ -117,6 +126,8 @@ def main() -> None:
         print(
             f"WARNING: {state.tokens_used} tokens is above the {TOKEN_WARNING:,} the owner asked to hear about"
         )
+    for action in final.actions:
+        print(f"awaiting approval: {action}  (scripts/approve.py list)")
     print(f"saved {out.relative_to(REPO_ROOT)}")
 
 
