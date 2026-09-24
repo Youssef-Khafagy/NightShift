@@ -75,7 +75,12 @@ def _render(state: InvestigationState, keep_full: int, notice: str) -> list[Mess
             )
         )
         for s in steps:
-            content = s.result if s.number > full_from else s.summary
+            # The step number leads every result so the model can cite it.
+            # Without it the model counted for itself and got it wrong: an
+            # M5 answer cited steps 8 and 9 of 6, and the M6 live check cited
+            # 1 to 8 for a diagnosis resting on steps 9 and 14.
+            body = s.result if s.number > full_from else s.summary
+            content = f"Step {s.number}. {body}"
             messages.append(
                 Message("tool", content, tool_call_id=s.call_id, name=s.tool)
             )

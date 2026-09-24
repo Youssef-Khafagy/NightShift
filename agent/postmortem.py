@@ -11,13 +11,27 @@ from __future__ import annotations
 
 import json
 
-from agent.report import Report
+from agent.report import Report, found_nothing, returned_nothing
 from agent.state import InvestigationState
 
 
 def _args(args: dict) -> str:
     text = ", ".join(f"{k}={v}" for k, v in args.items())
     return text if len(text) <= 90 else text[:90] + "..."
+
+
+def _outcome(result: str) -> str:
+    """How a step ended, when it did not simply return data. A refused
+    answer used to look identical to the accepted one in the timeline."""
+    if "finish_investigation rejected" in result:
+        return " (refused: " + "; ".join(json.loads(result)["problems"])[:200] + ")"
+    if result.startswith('{"error": "skipped'):
+        return " (skipped)"
+    if returned_nothing(result):
+        return " (failed)"
+    if found_nothing(result):
+        return " (found nothing)"
+    return ""
 
 
 def render(state: InvestigationState, report: Report) -> str:
@@ -62,7 +76,8 @@ def render(state: InvestigationState, report: Report) -> str:
         "",
     ]
     for s in state.steps:
-        lines.append(f"- {s.at} step {s.number}: `{s.tool}` {_args(s.args)}")
+        args = f" {_args(s.args)}" if s.args else ""
+        lines.append(f"- {s.at} step {s.number}: `{s.tool}`{args}{_outcome(s.result)}")
     lines += ["", "## Root cause evidence", ""]
     if report.evidence:
         for n in report.evidence:
@@ -70,6 +85,20 @@ def render(state: InvestigationState, report: Report) -> str:
             lines.append(f"- Step {n}, `{s.tool}`: {s.summary}")
     else:
         lines.append("No evidence steps were cited.")
+    if report.evidence_empty:
+        lines += [
+            "",
+            "Cited but found nothing, so not counted as evidence: step(s) "
+            + ", ".join(str(n) for n in report.evidence_empty)
+            + ".",
+        ]
+    if report.evidence_dropped:
+        lines += [
+            "",
+            "Cited but unusable (skipped, failed, missing or a note): step(s) "
+            + ", ".join(str(n) for n in report.evidence_dropped)
+            + ".",
+        ]
     lines += [
         "",
         "## Proposed fix (for a human to decide; the agent changed nothing)",

@@ -62,7 +62,13 @@ FINISH = ToolSpec(
             },
             "evidence_steps": {
                 "type": "string",
-                "description": "Step numbers you relied on, comma separated, e.g. 2,5,6",
+                "description": "Step numbers whose results support your conclusion, "
+                "comma separated, e.g. 2,5,6. Not checks that found nothing.",
+            },
+            "hypotheses": {
+                "type": "string",
+                "description": "Every hypothesis you considered, one per line, as "
+                "'status: hypothesis' with status likely, possible or ruled_out.",
             },
             "actions": {
                 "type": "string",
@@ -83,6 +89,7 @@ FINISH = ToolSpec(
             "confidence",
             "summary",
             "evidence_steps",
+            "hypotheses",
         ],
     },
 )
@@ -287,10 +294,23 @@ class Investigator:
                 report.from_answer(state, args)
             except ValueError as error:
                 found = str(error).split("; ")
+        # The final list of hypotheses is part of the answer. note_hypotheses
+        # stays for keeping it up to date along the way, but in the M5 and M6
+        # live checks five of seven runs never called it, so postmortems said
+        # "None recorded" and nobody could see what had been ruled out.
+        hypotheses, _ = parse_hypotheses(str(args.get("hypotheses", "")))
+        if not found and not hypotheses:
+            found = [
+                (
+                    "hypotheses: give at least one line as 'status: hypothesis', "
+                    "status likely, possible or ruled_out"
+                )
+            ]
         if found:
             return json.dumps(
                 {"error": "finish_investigation rejected", "problems": found}
             )
+        self._record_hypotheses(state, hypotheses)
         state.final = args
         state.finished = True
         state.stop_reason = "finished"
@@ -301,15 +321,20 @@ class Investigator:
         if found:
             return json.dumps({"error": "invalid arguments", "problems": found})
         new, bad = parse_hypotheses(args["hypotheses"])
-        if new:
-            state.hypothesis_changes.append(
-                {"step": len(state.steps) + 1, "before": state.hypotheses, "after": new}
-            )
-            state.hypotheses = new
+        self._record_hypotheses(state, new)
         reply: dict[str, Any] = {"ok": f"{len(new)} hypotheses recorded"}
         if bad:
             reply["ignored_lines"] = bad
         return json.dumps(reply)
+
+    def _record_hypotheses(
+        self, state: InvestigationState, new: list[dict[str, str]]
+    ) -> None:
+        if new and new != state.hypotheses:
+            state.hypothesis_changes.append(
+                {"step": len(state.steps) + 1, "before": state.hypotheses, "after": new}
+            )
+            state.hypotheses = new
 
     # -- limits ----------------------------------------------------------------
 
