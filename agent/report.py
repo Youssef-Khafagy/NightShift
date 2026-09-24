@@ -48,6 +48,8 @@ class Report(BaseModel):
     stop_reason: str
     # Filled in from the state, not by the model.
     evidence_tools: dict[int, str] = Field(default_factory=dict)
+    # Cited steps that were skipped, failed, missing or notes, removed.
+    evidence_dropped: list[int] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def consistent(self) -> Report:
@@ -60,7 +62,9 @@ class Report(BaseModel):
                 "root_cause_component none means no fault found: use no_fault or insufficient_evidence"
             )
         if self.fault_category not in NO_ANSWER and not self.evidence:
-            raise ValueError("a fault needs at least one evidence step")
+            raise ValueError(
+                "a fault needs at least one evidence step that returned data"
+            )
         if self.fault_category == "no_fault" and self.actions:
             raise ValueError("no_fault means nothing to fix: propose no actions")
         for line in self.actions:
@@ -98,17 +102,16 @@ def from_answer(state: InvestigationState, answer: dict[str, Any]) -> Report:
     tools = {s.number: s.tool for s in state.steps}
     failed = {s.number for s in state.steps if returned_nothing(s.result)}
     problems = []
-    for n in evidence:
-        if n not in tools:
-            problems.append(
-                f"evidence step {n} does not exist (steps 1 to {len(tools)})"
-            )
-        elif tools[n] in CONTROL_TOOLS:
-            problems.append(f"evidence step {n} is a {tools[n]} note, not evidence")
-        elif n in failed:
-            problems.append(
-                f"evidence step {n} returned an error or was skipped, so it shows nothing"
-            )
+    # Steps that cannot be evidence are dropped, not fatal: the M6 live check
+    # lost a correct diagnosis because it cited two skipped calls beside real
+    # ones, and the answer was refused until the step budget ran out. What
+    # remains must still be real evidence (a fault needs at least one).
+    dropped = [
+        n
+        for n in evidence
+        if n not in tools or tools[n] in CONTROL_TOOLS or n in failed
+    ]
+    evidence = [n for n in evidence if n not in dropped]
     human = [
         line.strip(" -*\t")
         for line in str(answer.get("proposed_actions", "")).splitlines()
@@ -128,6 +131,7 @@ def from_answer(state: InvestigationState, answer: dict[str, Any]) -> Report:
             proposed_actions=human,
             stop_reason="finished",
             evidence_tools={n: tools[n] for n in evidence if n in tools},
+            evidence_dropped=dropped,
         )
     except ValidationError as error:
         problems += [e["msg"].removeprefix("Value error, ") for e in error.errors()]
