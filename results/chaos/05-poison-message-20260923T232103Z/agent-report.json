@@ -1,0 +1,28 @@
+{
+  "investigation_id": "156c94e06d0b",
+  "root_cause_component": "payments",
+  "fault_category": "bad_deploy",
+  "confidence": 95,
+  "summary": "The alarm was triggered due to a temporary disruption in the `payments` service caused by the deletion and recreation of its Lambda function at 23:04 UTC. This halted message processing from the `placed-orders` queue, leading to message aging and the alarm.",
+  "evidence": [
+    1,
+    4,
+    6,
+    7,
+    8
+  ],
+  "proposed_actions": [
+    "1. Avoid unnecessary Lambda function deletions during critical periods.",
+    "2. Implement blue-green deployments for critical Lambda functions.",
+    "3. Monitor queue age and Lambda health during deployments or changes.",
+    "4. Review CloudTrail logs for similar events to proactively address disruptions."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "4": "get_topology",
+    "6": "get_metrics",
+    "7": "list_recent_deployments",
+    "8": "get_traces"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "investigation_id": "e16af51abccb",
+  "root_cause_component": "placed-orders",
+  "fault_category": "retry_storm",
+  "confidence": 90,
+  "summary": "The `nightshift-throttles` alarm is caused by a retry storm in the `placed-orders` queue. The `fulfillment` service is repeatedly failing to process messages, leading to a high number of messages in flight (52) and repeated errors. This suggests a poison message or a downstream issue causing timeouts or failures.",
+  "evidence": [
+    1,
+    5,
+    6,
+    7
+  ],
+  "proposed_actions": [
+    "Investigate the poison message in the `placed-orders` queue and remove or fix it.",
+    "Review downstream dependencies (e.g., DynamoDB, Aurora) for throttling or timeouts.",
+    "Adjust retry logic or visibility timeout in the queue if needed.",
+    "Monitor the queue and logs for further failures."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "5": "get_metrics",
+    "6": "get_metrics",
+    "7": "get_metrics"
+  }
+}
