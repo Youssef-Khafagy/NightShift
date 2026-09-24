@@ -341,7 +341,10 @@ def get_queue_stats(ctx: ToolContext) -> dict:
                 "visibility_timeout_seconds": int(attrs["VisibilityTimeout"]),
             }
         entry["max_receive_count"] = info["max_receive_count"]
-        consumer = ctx.service(info["consumer"])["function"]
+        consumer_info = ctx.service(info["consumer"])
+        # The trigger is attached to the alias. Listing by the bare function
+        # name returns nothing, which is what this tool reported until M6.
+        consumer = f"{consumer_info['function']}:{consumer_info['alias']}"
         mappings = lam.list_event_source_mappings(FunctionName=consumer)[
             "EventSourceMappings"
         ]

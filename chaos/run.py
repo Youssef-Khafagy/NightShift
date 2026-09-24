@@ -44,12 +44,11 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-import deployments
-
 from chaos import agent_wait
 from chaos.actions import BUILD, ROLLBACK_REASON, Injector, code_sha256
 from chaos.schema import Scenario, load_all
 from evaluation.grade import grade
+from ops import deployments
 
 REGION = os.environ.get("AWS_REGION", "ca-central-1")
 PROJECT = "nightshift"
@@ -130,10 +129,8 @@ def consumer_on(lam) -> bool:
 def run_vars(with_agent: bool) -> list[str]:
     """The Terraform variables a run sets, so "plan clean" means "nothing
     but what this run turned on differs"."""
-    variables = ["-var=queue_consumer_enabled=true"]
-    if with_agent:
-        variables.append("-var=agent_trigger_enabled=true")
-    return variables
+    # The consumer is not among them: from M6 Terraform ignores its state.
+    return ["-var=agent_trigger_enabled=true"] if with_agent else []
 
 
 def plan_clean(with_agent: bool = False) -> bool:

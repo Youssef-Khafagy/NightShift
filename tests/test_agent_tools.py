@@ -477,7 +477,7 @@ def test_queue_stats_cover_the_queue_its_dlq_and_consumer():
     q = out["queues"]["nightshift-placed-orders"]
     assert q["dead_letter_queue"]["waiting"] == 1
     assert q["consumer"][0]["state"] == "Enabled"
-    assert lam.calls[0][1] == {"FunctionName": "nightshift-fulfillment"}
+    assert lam.calls[0][1] == {"FunctionName": "nightshift-fulfillment:live"}
 
 
 def test_the_topology_is_read_once():

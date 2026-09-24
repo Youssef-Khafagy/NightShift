@@ -35,38 +35,12 @@ from typing import Any
 import boto3
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
+sys.path.insert(0, str(REPO_ROOT))
 
-import deployments
+from ops import deployments
+from ops.deployments import Refused, choose_target
 
 REGION = os.environ.get("AWS_REGION", "ca-central-1")
-
-
-class Refused(Exception):
-    """A rollback that would have to guess."""
-
-
-def choose_target(current: str, rows: list[dict[str, Any]], to: str | None) -> str:
-    """The version to roll back to. Pure, so every refusal is tested."""
-    if to is not None:
-        if to == current:
-            raise Refused(f"the alias is already on version {to}")
-        return to
-    if not rows:
-        raise Refused("no recorded moves for this service; pass --to VERSION")
-    last = rows[0]
-    if last["new"] != current:
-        raise Refused(
-            f"the alias is on {current} but the last recorded move went to "
-            f"{last['new']}; it was moved outside the recorded path. Pass --to."
-        )
-    if last["kind"] in ("rollback", "auto-rollback"):
-        raise Refused(
-            f"the last move was already a {last['kind']} ({last['previous']} -> "
-            f"{last['new']}); undoing it would re-deploy {last['previous']}. "
-            "Pass --to if that is really intended."
-        )
-    return last["previous"]
 
 
 def rollback(

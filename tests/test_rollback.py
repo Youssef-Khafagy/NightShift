@@ -16,7 +16,7 @@ from test_deploy import CURRENT, FakeLambda, rows, table  # noqa: F401
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-import deployments
+from ops import deployments
 
 
 @pytest.fixture(scope="module")

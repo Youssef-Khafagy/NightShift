@@ -282,4 +282,13 @@ resource "aws_lambda_event_source_mapping" "placed_orders" {
   scaling_config {
     maximum_concurrency = local.fulfillment_concurrency
   }
+
+  # Whether it polls belongs to scripts from M6 on (scripts/consumer.py,
+  # pause.py, the chaos runner, the Actor's pause and resume), just as alias
+  # moves belong to deploy.py and rollback.py. If Terraform owned it, an
+  # Actor pause during an incident would be silently undone by the next
+  # routine apply. queue_consumer_enabled only sets the state at creation.
+  lifecycle {
+    ignore_changes = [enabled]
+  }
 }
