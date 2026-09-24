@@ -308,7 +308,9 @@ def run_step(step, injector: Injector, loads: list, run_dir: Path, reason: str) 
         injector.drain_dlq_message(f"{PROJECT}-placed-orders-dlq")
 
 
-def run(scenario: Scenario, *, dry_run: bool, with_agent: bool = False) -> int:
+def run(
+    scenario: Scenario, *, dry_run: bool, with_agent: bool = False, hold: bool = False
+) -> int:
     run_id = f"{scenario.id:02d}-{scenario.slug}-{datetime.now(UTC):%Y%m%dT%H%M%SZ}"
     run_dir = RESULTS / run_id
     c = Clients()
@@ -399,6 +401,24 @@ def run(scenario: Scenario, *, dry_run: bool, with_agent: bool = False) -> int:
         print("Waiting for the agent's report:", flush=True)
         result["agent"] = agent_verdict(result, injected_at, run_dir)
         print(f"  agent: {result['agent'].get('summary', result['agent'])}", flush=True)
+        proposed = result["agent"].get("grade", {}).get("proposed_actions", [])
+        if hold and proposed:
+            investigation = result["agent"]["investigation_id"]
+            print(
+                "HOLDING for your decision. In another terminal:\n"
+                "  .venv/bin/python scripts/approve.py list\n"
+                f"  .venv/bin/python scripts/approve.py show {investigation} 1\n"
+                f"  .venv/bin/python scripts/approve.py approve {investigation} 1",
+                flush=True,
+            )
+            result["decisions"] = agent_wait.wait_for_decisions(
+                boto3.client("dynamodb", region_name=REGION),
+                investigation,
+                len(proposed),
+            )
+            for d in result["decisions"]:
+                outcome = [a.get("outcome") for a in d["audit"]]
+                print(f"  {d['item']}: {d['status']} {outcome}", flush=True)
     result["alarms_fired"] = detection(first_alarm, injected_at)
     result["expected_alarms_fired"] = bool(expected) and expected <= set(first_alarm)
     result["unexpected_alarms"] = sorted(set(first_alarm) - expected)
@@ -452,6 +472,12 @@ def main() -> None:
         help="wait for the agent's report (trigger rule enabled) and grade it",
     )
     parser.add_argument(
+        "--hold-for-approval",
+        action="store_true",
+        help="with --agent: before recovering, wait for the owner to approve or "
+        "reject each proposed action and for the Actor to finish",
+    )
+    parser.add_argument(
         "--restore", type=Path, help="state.json from an interrupted run"
     )
     args = parser.parse_args()
@@ -475,7 +501,14 @@ def main() -> None:
     by_id = {s.id: s for s in load_all(SCENARIOS)}
     if args.scenario not in by_id:
         sys.exit(f"no scenario {args.scenario}; have {sorted(by_id)}")
-    sys.exit(run(by_id[args.scenario], dry_run=not args.run, with_agent=args.agent))
+    sys.exit(
+        run(
+            by_id[args.scenario],
+            dry_run=not args.run,
+            with_agent=args.agent,
+            hold=args.hold_for_approval,
+        )
+    )
 
 
 if __name__ == "__main__":

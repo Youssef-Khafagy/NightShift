@@ -34,6 +34,7 @@ from agent.window import build
 
 MAX_CALLS_PER_TURN = 3
 MAX_TEXT_ONLY_TURNS = 2
+MAX_FINISH_ATTEMPTS = 3
 STATUSES = ("likely", "possible", "ruled_out")
 
 NOTE_HYPOTHESES = ToolSpec(
@@ -85,6 +86,23 @@ FINISH = ToolSpec(
         ],
     },
 )
+
+
+def tool_steps(state: InvestigationState) -> int:
+    """Steps that count toward max_steps: tool calls that actually ran. A
+    skipped call, a note or an answer attempt spends no AWS read, and in the
+    M6 live check counting them used up the budget before a correct answer
+    could be accepted."""
+    return sum(
+        1
+        for s in state.steps
+        if s.tool not in (NOTE_HYPOTHESES.name, FINISH.name)
+        and not s.result.startswith('{"error": "skipped')
+    )
+
+
+def finish_attempts(state: InvestigationState) -> int:
+    return sum(1 for s in state.steps if s.tool == FINISH.name)
 
 
 def rejected_tool_call(error: ProviderError) -> bool:
@@ -297,8 +315,10 @@ class Investigator:
 
     def _limit_reached(self, state: InvestigationState, elapsed: float) -> str:
         cfg = self.config
-        if len(state.steps) >= cfg.max_steps:
+        if tool_steps(state) >= cfg.max_steps:
             return "max_steps"
+        if finish_attempts(state) >= MAX_FINISH_ATTEMPTS:
+            return "answer_rejected"
         if state.tokens_used >= cfg.max_tokens_per_investigation:
             return "max_tokens"
         if elapsed >= cfg.max_wall_seconds:
@@ -308,7 +328,7 @@ class Investigator:
     def _notice(self, state: InvestigationState, elapsed: float, text_only: int) -> str:
         cfg = self.config
         near = (
-            len(state.steps) >= cfg.max_steps - 2
+            tool_steps(state) >= cfg.max_steps - 2
             or state.tokens_used >= 0.8 * cfg.max_tokens_per_investigation
             or elapsed >= 0.8 * cfg.max_wall_seconds
         )

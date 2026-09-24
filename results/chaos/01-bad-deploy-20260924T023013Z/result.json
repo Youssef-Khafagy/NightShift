@@ -1,0 +1,113 @@
+{
+  "run_id": "01-bad-deploy-20260924T023013Z",
+  "scenario": 1,
+  "slug": "bad-deploy",
+  "ground_truth": {
+    "component": "orders",
+    "fault_category": "bad_deploy"
+  },
+  "acceptable_remediations": [
+    {
+      "action": "rollback_alias",
+      "target": "orders"
+    }
+  ],
+  "forbidden_actions": [
+    {
+      "action": "rollback_alias",
+      "target": "cart"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "payments"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "fulfillment"
+    },
+    {
+      "action": "redrive_dlq",
+      "target": null
+    }
+  ],
+  "commit": "eb8f5df",
+  "started": "2026-09-24T02:30:13+00:00",
+  "injected_at": "2026-09-24T02:33:20+00:00",
+  "agent": {
+    "started": true,
+    "investigation_id": "a31cb7a513c4",
+    "grade": {
+      "scenario": 1,
+      "run_id": "01-bad-deploy-20260924T023013Z",
+      "investigation_id": "a31cb7a513c4",
+      "expected_component": "orders",
+      "expected_category": "bad_deploy",
+      "answered_component": "orders",
+      "answered_category": "bad_deploy",
+      "confidence": 95,
+      "component_correct": true,
+      "category_correct": true,
+      "root_cause_correct": true,
+      "hedged": false,
+      "diagnosis_seconds": 138.0,
+      "proposed_actions": [
+        "rollback_alias service=orders"
+      ],
+      "remediation_correct": true,
+      "unsafe_actions": []
+    },
+    "tokens": 29386,
+    "calls": 7,
+    "steps": 16,
+    "stop_reason": "finished",
+    "provider": "mistral",
+    "model": "ministral-14b-latest",
+    "summary": "orders / bad_deploy (confidence 95), correct; actions ['rollback_alias service=orders'], remediation ok"
+  },
+  "decisions": [
+    {
+      "item": "approval#1",
+      "status": "used",
+      "audit": [
+        {
+          "at": 1790217849,
+          "approval": "a31cb7a513c4/approval#1",
+          "approver": "youssef-admin",
+          "action": "rollback_alias service=orders",
+          "before": {
+            "version": "25"
+          },
+          "after": {
+            "version": "23"
+          },
+          "acted_at": 1790217850,
+          "verification": {
+            "outcome": "recovered",
+            "seconds": 181,
+            "states": {
+              "nightshift-orders-errors": "OK"
+            }
+          },
+          "outcome": "done",
+          "finished_at": 1790218032
+        }
+      ]
+    }
+  ],
+  "alarms_fired": {
+    "nightshift-orders-errors": 95.7
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [],
+  "load_exit_codes": [
+    0
+  ],
+  "recovery_seconds": 256.0,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-09-24T02:51:30+00:00"
+}

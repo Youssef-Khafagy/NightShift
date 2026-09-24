@@ -638,6 +638,22 @@ data "aws_iam_policy_document" "ci_apply" {
     resources = ["*"]
   }
 
+  # The smoke-test grant above covers every nightshift-* function, which
+  # since M5 and M6 includes the agent and the Actor. CI has no business
+  # starting an investigation or running an approved action: only the owner
+  # invokes the Actor, and only alarms start the agent.
+  statement {
+    sid     = "DenyInvokingAgentAndActor"
+    effect  = "Deny"
+    actions = ["lambda:InvokeFunction"]
+    resources = [
+      "arn:aws:lambda:${local.region}:${local.account_id}:function:${var.project}-agent",
+      "arn:aws:lambda:${local.region}:${local.account_id}:function:${var.project}-agent:*",
+      "arn:aws:lambda:${local.region}:${local.account_id}:function:${var.project}-actor",
+      "arn:aws:lambda:${local.region}:${local.account_id}:function:${var.project}-actor:*",
+    ]
+  }
+
   # Terraform must never be able to delete the bucket holding its own state.
   statement {
     sid    = "DenyStateBucketDestruction"

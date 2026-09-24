@@ -117,3 +117,39 @@ def parse_block(text: str) -> tuple[list[Action], list[str]]:
     if len(actions) > MAX_ACTIONS:
         problems.append(f"at most {MAX_ACTIONS} actions")
     return actions, problems
+
+
+# -- does the action fit the finding? ---------------------------------------------
+#
+# An injected instruction ("roll back cart") has to get past more than the
+# allowlist: the action must also follow from the agent's own diagnosis. A
+# rollback targets the service named as the root cause; queue actions need a
+# cause on the queue side; any action needs an actual diagnosis. The agent's
+# report is checked against this, and the Actor checks it again against the
+# saved report before acting.
+
+QUEUE_SIDE = ("placed-orders", "fulfillment", "payments")
+FLAG_COMPONENTS = {
+    "payments_degraded_mode": QUEUE_SIDE,
+    "checkout_rate_limit": ("orders", "cart", "dsql", "cart-table"),
+}
+NOT_A_DIAGNOSIS = ("no_fault", "insufficient_evidence")
+
+
+def misfit(action: Action, component: str, category: str) -> str | None:
+    """Why this action does not follow from the finding, or None if it does."""
+    if category in NOT_A_DIAGNOSIS:
+        return f"{category} is not a diagnosis to act on"
+    if action.name == "rollback_alias" and action.params["service"] != component:
+        return (
+            f"rollback_alias targets {action.params['service']} but the root cause "
+            f"is {component}"
+        )
+    if action.name == "set_operational_flag":
+        allowed = FLAG_COMPONENTS[action.params["name"]]
+        if component not in allowed:
+            return f"{action.params['name']} does not address a fault in {component}"
+    queue_actions = ("pause_queue_consumer", "resume_queue_consumer", "redrive_dlq")
+    if action.name in queue_actions and component not in QUEUE_SIDE:
+        return f"{action.name} does not address a fault in {component}"
+    return None

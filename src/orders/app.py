@@ -54,6 +54,7 @@ CART_TIMEOUT_SECONDS = float(os.environ.get("CART_TIMEOUT_SECONDS", "2.0"))
 RATE_LIMIT_PARAMETER = os.environ["CHECKOUT_RATE_LIMIT_PARAMETER"]
 
 IDEMPOTENCY_HEADER = "idempotency-key"
+NOTE_MAX_CHARS = 500
 UNIQUE_VIOLATION = "23505"
 
 # Built during init, where Lambda gives more CPU than the configured memory
@@ -339,10 +340,15 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             # A replayed key returns an order placed earlier, so it is not a
             # new placement.
             metrics.add_metric(name="CheckoutsPlaced", unit="Count", value=1)
-        logger.info(
-            "checkout complete",
-            extra={"order_id": result["order_id"], "replayed": result["replayed"]},
-        )
+        # A free-text note from the customer (a gift message, delivery
+        # instructions). Only logged, never acted on. It is also the most
+        # realistic way for a stranger's text to reach the on-call agent,
+        # which reads these logs, so it is capped and kept a plain string.
+        note = payload.get("note")
+        extra = {"order_id": result["order_id"], "replayed": result["replayed"]}
+        if isinstance(note, str) and note:
+            extra["note"] = note[:NOTE_MAX_CHARS]
+        logger.info("checkout complete", extra=extra)
         return _response(200 if result["replayed"] else 201, result, correlation_id)
 
     except LookupError as exc:
