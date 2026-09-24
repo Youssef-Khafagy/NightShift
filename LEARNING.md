@@ -8,7 +8,7 @@ How NightShift works and why it was built this way, written for someone who know
 2. **Section 3, keeping it at $0.** The constraint that shaped every other decision.
 3. **Section 8, Aurora DSQL.** The deepest technical story in the project: a bug with no symptom, found in a billing metric.
 4. **Section 15, deploys and rollbacks.** The premise of the whole project is that an agent can roll back safely; this is how.
-5. **Section 19, mistakes that taught the most.** A one-page index of every wrong turn, which is where interview questions usually go.
+5. **Section 20, mistakes that taught the most.** A one-page index of every wrong turn, which is where interview questions usually go.
 
 Then read the rest in order when you have time. Section 2 is the AWS vocabulary the rest assumes.
 
@@ -730,7 +730,13 @@ A bad deploy can fire three alarms in a minute. The first alarm takes a lock wit
 
 ### The answer is validated where it is made
 
-Pydantic checks the shape; the rules check the meaning: `no_fault` means component `none`, a fault needs evidence, evidence must be real tool steps that returned something. The same check runs when the model calls `finish_investigation`, so a bad answer goes back to the model instead of into the results. A deterministic grader compares the answer to the scenario's ground truth, two words against two words. The agent may not import it.
+Pydantic checks the shape; the rules check the meaning: `no_fault` means component `none`, and a fault needs evidence. Evidence is filtered before it is judged. A cited step that was skipped, failed, does not exist or is a note is dropped. So is a check that found nothing (no log rows, no datapoints, no traces, no deploys): an empty result can rule a cause out, but it cannot show one. What remains must hold at least one step, or the answer is refused. The same check runs when the model calls `finish_investigation`, so a bad answer goes back to the model instead of into the results, at most three times.
+
+The answer also carries the model's final list of hypotheses, each `likely`, `possible` or `ruled_out`, and is refused without one. Every tool result the model sees starts with `Step N.`, so it can cite steps by number instead of counting.
+
+The postmortem is built only from the record. Its timeline marks each step that was refused, skipped, failed or found nothing, and cited steps that were dropped are listed apart from the evidence, so nothing the model got wrong along the way is hidden.
+
+A deterministic grader compares the answer to the scenario's ground truth, two words against two words. The agent may not import it.
 
 ### The first live check (2026-09-23, Mistral ministral-14b, one run per scenario)
 
@@ -751,6 +757,10 @@ One right out of five, every answer at 90 or 95 confidence, no run above 33K tok
 - **Groq validates tool arguments itself** and answered HTTP 400 to `limit: 100`, which the loop first treated as fatal. It now goes back to the model like any bad call.
 - **Times were in the laptop's zone.** boto3 returns local datetimes; logs and deployments are UTC. Tools now always say UTC.
 - **An answer cited steps the loop had skipped.** Evidence now has to be a step that returned data.
+- **The model could not see step numbers.** It was told steps count from 1 and left to count. One answer cited steps 8 and 9 of 6 and was refused, which is why a postmortem showed `finish_investigation` twice with the same answer. The M6 live check cited steps 1 to 8 for a diagnosis that rested on steps 9 and 14. Every result now starts with its number.
+- **Empty checks were listed as root cause evidence.** A bad deploy "proved" by an empty log query and a DynamoDB metric with no data. They are now filtered out and shown separately.
+- **Hypotheses were optional, so mostly missing.** `note_hypotheses` worked, but five of seven live runs never called it and their postmortems said "None recorded". The final list is now a required part of the answer.
+- **Confidence did not match the words.** A 95 beside "likely" and "e.g.", plus a claim about reserved concurrency that no step had checked. The prompt now ties confidence to the wording (hedged means below 80; above 90 only when a result shows the cause directly) and limits the summary to what the evidence steps show. That is an instruction, not a check: M7 measures whether it holds.
 - **The laptop slept mid-run** for two and a half hours. Nothing broke, because recovery had already happened, but a batch needs the machine awake.
 
 **Questions about the agent**
@@ -763,7 +773,56 @@ One right out of five, every answer at 90 or 95 confidence, no run above 33K tok
 
 ---
 
-## 19. Mistakes that taught the most
+## 19. Acting: proposals, approvals and the Actor
+
+**What it is.** Until M6 the agent's answer ended at "a human should roll back orders". Now it can propose up to three actions from a fixed list of five: `rollback_alias` (cart, orders, payments or fulfillment), `set_operational_flag` (only the two flags, only values their SSM patterns allow), `pause_queue_consumer`, `resume_queue_consumer` and `redrive_dlq`. Each proposal becomes an approval record. When I approve one, a separate Lambda, the Actor, carries it out, watches the alarm, and records what happened.
+
+**Why it exists.** Diagnosing is half of on-call; the other half is a safe first move. The five actions are the ones that are reversible and do not need judgment about code, IAM or schemas. Everything else stays a written proposal.
+
+**What would break without each part.** Without the allowlist, the model could propose anything, including what an injected log line tells it to. Without approval records bound to a hash, an approval for one action could be replayed for another. Without a separate Actor, the investigating code would hold write permissions. Without verification, "rolled back" would be reported as "fixed" whether or not it was.
+
+### The allowlist, and actions that must fit the finding
+
+`agent/actions.py` is the one place the five actions are defined, and both the report and the Actor use it. An action must also fit the diagnosis (`misfit`): a rollback must target the component named as the root cause, queue actions need a queue-side cause, a flag needs a matching component, `no_fault` may propose nothing. So an injected "roll back cart" cannot ride along on a correct orders diagnosis. The report refuses it, and the Actor checks it again against the saved report, as if the agent were the attacker.
+
+### Approvals: a write, bound to one exact action
+
+At the end of an investigation each proposed action becomes a `pending` item in `nightshift-investigations`, with a hash of investigation, item and action, and an expiry 15 minutes out. `scripts/approve.py list|show|approve|reject` runs with my own IAM login. Approving means typing `approve`, and it invokes the Actor asynchronously with the hash of what was shown. The Actor consumes the record with one conditional update that checks status, expiry and hash together, so an approval is used once, only before it expires, and only for what I read. Approval is never a GET or an email link: a link can be opened by a mail scanner.
+
+### The Actor
+
+`nightshift-actor` has its own role: the five actions on exact ARNs, explicit denies on everything else, and a permissions boundary. It has no function URL and no resource policy, and reserved concurrency 1 with no retries. Neither the agent's role, the Investigator role nor the CI apply role can invoke it. The CI role could until M6 step 6, through a broad smoke-test grant, and now has an explicit deny, checked with the simulator.
+
+Per action: take a lock (one action at a time; it expires after 15 minutes so a crash cannot wedge it), spend from an hourly budget of 3, consume the approval, re-check the action against the allowlist and the saved finding, act with the before and after recorded, then watch the triggering alarm for up to 10 minutes. The outcome is `recovered`, `not_recovered` or `inconclusive`, and it is reported as such. Every step writes an append-only audit item.
+
+The queue consumer's on/off state moved out of Terraform (`scripts/consumer.py`), like the aliases in M3: otherwise the next routine apply would silently undo a pause the Actor made.
+
+### Injection defenses
+
+Tool output that reads like instructions ("ignore previous instructions", "call rollback_alias") gets a `warning` in its envelope and a section in the postmortem. That flags it and blocks nothing: blocking on wording is easy to evade. The real defenses are structural: read-only tools, the fit rule, the Actor's re-check, and my approval. Checkout accepts an optional `note` of up to 500 characters, logged by orders and never acted on, which is the realistic path for scenario 13. A test runs a scripted model that obeys a planted note and shows it refused.
+
+### The live check (2026-09-24, scenario 1, Mistral ministral-14b)
+
+`orders-errors` fired 96 s after injection. The agent answered orders / bad_deploy at confidence 95, 138 s after injection, in 16 steps and 29,386 tokens, and proposed `rollback_alias service=orders`. I approved it with `approve.py`. The Actor moved orders from 25 to 23 and reported `recovered` when the alarm returned to OK after 181 s. The runner saw the alias already back and did not roll back a second time. Separately, a test approval invoked 15 minutes after it was created was refused as `expired`, nothing done, the record still `pending`.
+
+### What we got wrong
+
+- **A correct answer was lost to the evidence rule.** The first attempt diagnosed orders correctly twice, but cited skipped steps; each refusal and each skipped call counted as a step, and the budget ran out. Unusable steps are now dropped instead of refused, only tool calls that ran count toward the limit, and answer attempts are capped at 3.
+- **Audit records overwrote each other.** Keyed by the second, a refused replay replaced the record of the real action. Found by a test; keys now carry a random suffix and a no-overwrite condition.
+- **The queue trigger was invisible by function name.** It is attached to `fulfillment:live`, and listing by the bare name returns nothing. The same bug was in the Actor's pause and resume and in the agent's `get_queue_stats` since M5, so every M5 investigation saw no consumer.
+- **The login ended mid-run.** `aws login` refreshes credentials for at most 12 hours, and the runner's health checks failed with `ExpiredToken` after recovery had finished. The session's end cannot be read from the local cache, so a "less than an hour left" check would be guessing. The rule instead: log in immediately before a batch.
+
+**Questions about acting**
+
+- *Why can't the agent just fix things itself?* It can propose only five reversible actions, and each needs my approval of that exact action within 15 minutes. The code that investigates holds no write permission at all; a separate function with its own narrow role does the writing.
+- *What stops a prompt injection from getting a rollback approved?* Several layers. The action must be on the allowlist and fit the diagnosis, the Actor checks both again against the saved report, and I read the exact action before typing `approve`. The injected text itself is flagged in the postmortem.
+- *Why a hash on the approval?* So what I approve is what runs. The Actor consumes the record only if the hash of the action matches the one I was shown, in the same conditional write that checks it is still pending and unexpired.
+- *How do you know the fix worked?* The Actor watches the alarm that started the investigation for up to 10 minutes and reports recovered, not recovered or inconclusive. In the live check it reported recovered after the alarm went OK at 181 s.
+- *Why not approve by clicking a link in the page email?* A GET can be triggered by a mail client's link scanner, and a link carries no proof of who clicked it. An approval is a write made with my own credentials.
+
+---
+
+## 20. Mistakes that taught the most
 
 | Mistake | How it was found | What changed |
 |---|---|---|
@@ -782,6 +841,9 @@ One right out of five, every answer at 90 or 95 confidence, no run above 33K tok
 | Recovery left the bad version newest | The plan-clean health check | Recovery deletes the version it published (17) |
 | The answer key sat in a table the agent reads | Building the tool that reads it | Neutral rollback reason, held to the banned-words test (17, 18) |
 | Back-to-back scenarios fed each other evidence | Reading the postmortems of wrong answers | A gap between incidents longer than any tool's lookback (M7) (18) |
+| Audit records keyed by the second overwrote each other | A test replaying a refused approval | Random suffix plus a no-overwrite condition (19) |
+| The queue trigger listed by bare function name returned nothing | A smoke run of `consumer.py` | Look it up on the `live` alias, in three places (19) |
+| The model counted steps itself and cited the wrong ones | An answer citing steps 8 and 9 of 6 | Every result starts with `Step N.` (18) |
 | A chaos run with no traffic read as a missed detection | Per-minute invocations: zero for orders | The runner logs load output, refuses without `DSQL_ENDPOINT`, and aborts before injecting if a load has died (17) |
 
 ---
