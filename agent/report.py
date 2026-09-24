@@ -23,6 +23,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
+from agent.actions import parse_block
 from agent.state import InvestigationState
 from agent.vocabulary import COMPONENTS, FAULT_CATEGORIES
 
@@ -39,6 +40,10 @@ class Report(BaseModel):
     confidence: int = Field(ge=0, le=100)
     summary: str = Field(min_length=1, max_length=2000)
     evidence: list[int]
+    # Allowlisted actions, as canonical lines ("rollback_alias service=orders"),
+    # each a candidate for owner approval. Everything else a fix needs is text
+    # for a human in proposed_actions.
+    actions: list[str] = Field(default_factory=list)
     proposed_actions: list[str]
     stop_reason: str
     # Filled in from the state, not by the model.
@@ -56,6 +61,8 @@ class Report(BaseModel):
             )
         if self.fault_category not in NO_ANSWER and not self.evidence:
             raise ValueError("a fault needs at least one evidence step")
+        if self.fault_category == "no_fault" and self.actions:
+            raise ValueError("no_fault means nothing to fix: propose no actions")
         return self
 
 
@@ -96,11 +103,13 @@ def from_answer(state: InvestigationState, answer: dict[str, Any]) -> Report:
             problems.append(
                 f"evidence step {n} returned an error or was skipped, so it shows nothing"
             )
-    actions = [
+    human = [
         line.strip(" -*\t")
         for line in str(answer.get("proposed_actions", "")).splitlines()
         if line.strip(" -*\t")
     ]
+    allowed, action_problems = parse_block(str(answer.get("actions", "")))
+    problems += action_problems
     try:
         report = Report(
             investigation_id=state.investigation_id,
@@ -109,7 +118,8 @@ def from_answer(state: InvestigationState, answer: dict[str, Any]) -> Report:
             confidence=answer.get("confidence"),
             summary=answer.get("summary", ""),
             evidence=evidence,
-            proposed_actions=actions,
+            actions=[a.line() for a in allowed],
+            proposed_actions=human,
             stop_reason="finished",
             evidence_tools={n: tools[n] for n in evidence if n in tools},
         )
