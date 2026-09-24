@@ -42,6 +42,7 @@ FINISH_ARGS = {
     "confidence": 80,
     "summary": "A deploy broke checkout.",
     "evidence_steps": "1",
+    "hypotheses": "likely: bad deploy of orders\nruled_out: cart down",
 }
 
 
@@ -303,11 +304,11 @@ def tool_contents(messages):
 def test_only_the_most_recent_results_are_kept_in_full():
     messages, _ = build(state_with(5, 100), full_results=2, input_token_cap=100_000)
     assert tool_contents(messages) == [
-        "summary 1",
-        "summary 2",
-        "summary 3",
-        "R" * 100,
-        "R" * 100,
+        "Step 1. summary 1",
+        "Step 2. summary 2",
+        "Step 3. summary 3",
+        "Step 4. " + "R" * 100,
+        "Step 5. " + "R" * 100,
     ]
 
 
@@ -315,7 +316,7 @@ def test_the_window_shrinks_to_fit_the_cap():
     state = state_with(6, 4_000)
     messages, estimate = build(state, full_results=3, input_token_cap=4_000)
     assert estimate <= 4_000
-    assert tool_contents(messages).count("R" * 4_000) < 3
+    assert sum("R" * 4_000 in c for c in tool_contents(messages)) < 3
     assert estimate == estimate_tokens(messages)
 
 
@@ -358,3 +359,37 @@ def test_answer_attempts_are_capped():
     inv, _ = investigator(script)
     state = inv.run(inv.start(TRIGGER))
     assert state.stop_reason == "answer_rejected" and len(state.steps) == 4
+
+
+def test_an_answer_without_hypotheses_is_sent_back_and_the_final_list_is_kept():
+    """Five of seven live runs never called note_hypotheses, so their
+    postmortems said "None recorded". The answer now carries the list."""
+    bare = {k: v for k, v in FINISH_ARGS.items() if k != "hypotheses"}
+    junk = dict(FINISH_ARGS, hypotheses="it was probably the deploy")
+    script = Script(
+        reply(("get_topology", {})),
+        reply(("finish_investigation", bare)),
+        reply(("finish_investigation", junk)),
+        reply(("finish_investigation", FINISH_ARGS)),
+    )
+    inv, _ = investigator(script)
+    state = inv.run(inv.start(TRIGGER))
+    assert "hypotheses" in state.steps[1].result
+    assert "at least one line" in state.steps[2].result
+    assert state.final == FINISH_ARGS
+    assert state.hypotheses == [
+        {"status": "likely", "text": "bad deploy of orders"},
+        {"status": "ruled_out", "text": "cart down"},
+    ]
+    assert state.hypothesis_changes[-1]["before"] == []
+
+
+def test_every_result_the_model_sees_carries_its_step_number():
+    script = Script(
+        reply(("get_topology", {}), ("get_topology", {})),
+        reply(("finish_investigation", FINISH_ARGS)),
+    )
+    inv, _ = investigator(script)
+    inv.run(inv.start(TRIGGER))
+    contents = tool_contents(inv.llm.seen[1])
+    assert [c.split(".")[0] for c in contents] == ["Step 1", "Step 2"]
