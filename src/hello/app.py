@@ -37,13 +37,6 @@ logger.setLevel(logging.INFO)
 
 CORRELATION_HEADER = "x-correlation-id"
 
-# Built once at module import, which is deliberate. Lambda runs module-level
-# code during the init phase, and init is given more CPU than the function's
-# configured memory would normally buy. Doing this work here rather than on
-# the first request is the difference between a slow first request and no
-# slow first request.
-_LAYER_REPORT: dict[str, Any] | None = None
-
 
 def _timed(label: str, work: Any, into: dict[str, float]) -> Any:
     """Run work(), record how long it took, and return its result.
@@ -124,7 +117,11 @@ def build_layer_report() -> dict[str, Any]:
     return report
 
 
-# Runs at import, so its cost lands in the init phase where the CPU is.
+# Built once at module import, which is deliberate. Lambda runs module-level
+# code during the init phase, and init is given more CPU than the function's
+# configured memory would normally buy. Doing this work here rather than on
+# the first request is the difference between a slow first request and no
+# slow first request.
 _LAYER_REPORT = build_layer_report()
 
 

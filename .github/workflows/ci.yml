@@ -85,6 +85,11 @@ jobs:
       - name: Run tests
         run: pytest tests/ -q
 
+      # Files and settings come from mypy.ini, so this is the same check as
+      # running `mypy` locally.
+      - name: Type check
+        run: mypy
+
   terraform:
     name: Terraform plan
     runs-on: ubuntu-latest

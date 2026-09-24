@@ -6,7 +6,11 @@ must never import chaos (tests/test_integrity.py). So the lists live here
 too, and tests/test_agent_loop.py fails if the two ever differ.
 """
 
-FAULT_CATEGORIES = [
+from typing import Literal, get_args
+
+# Written out as Literal types so a type checker can follow them; the lists
+# below are derived from them, so there is still one source.
+FaultCategory = Literal[
     "bad_deploy",
     "config_regression",
     "timeout_regression",
@@ -20,8 +24,7 @@ FAULT_CATEGORIES = [
     "no_fault",
     "insufficient_evidence",
 ]
-
-COMPONENTS = [
+Component = Literal[
     "orders",
     "cart",
     "payments",
@@ -31,3 +34,6 @@ COMPONENTS = [
     "cart-table",
     "none",
 ]
+
+FAULT_CATEGORIES: list[str] = list(get_args(FaultCategory))
+COMPONENTS: list[str] = list(get_args(Component))

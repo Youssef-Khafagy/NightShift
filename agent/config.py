@@ -5,6 +5,7 @@ with and a change is a config change."""
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TypedDict
 
 
 @dataclass(frozen=True)
@@ -38,7 +39,12 @@ class AgentConfig:
 # Default model and per-request input cap for each provider, from the limits
 # measured in COST.md. The cap is what matters on the free tiers: a request
 # bigger than the per-minute token limit can never be sent.
-PROVIDER_DEFAULTS = {
+class ProviderDefaults(TypedDict):
+    model: str
+    input_token_cap: int
+
+
+PROVIDER_DEFAULTS: dict[str, ProviderDefaults] = {
     "groq": {"model": "openai/gpt-oss-120b", "input_token_cap": 6_000},  # 8K TPM
     "gemini": {"model": "gemini-3.5-flash-lite", "input_token_cap": 24_000},  # 250K TPM
     "mistral": {"model": "ministral-14b-latest", "input_token_cap": 24_000},  # 937K TPM
@@ -48,10 +54,12 @@ GEMMA_INPUT_TOKEN_CAP = 14_000  # Gemma 4 on the Gemini API: 16K TPM
 
 def for_provider(provider: str, model: str | None = None, **overrides) -> AgentConfig:
     defaults = PROVIDER_DEFAULTS[provider]
-    model = model or defaults["model"]
+    chosen = model or defaults["model"]
     cap = (
         GEMMA_INPUT_TOKEN_CAP
-        if model.startswith("gemma")
+        if chosen.startswith("gemma")
         else defaults["input_token_cap"]
     )
-    return AgentConfig(provider=provider, model=model, input_token_cap=cap, **overrides)
+    return AgentConfig(
+        provider=provider, model=chosen, input_token_cap=cap, **overrides
+    )

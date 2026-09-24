@@ -116,12 +116,12 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             return _response(200, {"cart": record}, correlation_id)
 
         if method == "GET":
-            record = get_cart(cart_id)
-            if record is None:
+            found = get_cart(cart_id)
+            if found is None:
                 logger.info("cart not found", extra={"cart_id": cart_id})
                 return _response(404, {"error": "cart not found"}, correlation_id)
             logger.info("cart read", extra={"cart_id": cart_id})
-            return _response(200, {"cart": record}, correlation_id)
+            return _response(200, {"cart": found}, correlation_id)
 
         return _response(405, {"error": f"method {method} not allowed"}, correlation_id)
 
