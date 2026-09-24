@@ -231,7 +231,17 @@ class Injector:
                 continue
             service = record["service"]
             function = deployments.function_name(service)
-            if "new" in record:
+            already_back = (
+                "new" in record
+                and not self.dry_run
+                and deployments.current_version(self.lam, service) == record["previous"]
+            )
+            if already_back:
+                # Someone else already rolled it back: the Actor, after the
+                # owner approved the agent's proposal (M6). Moving it again
+                # would record a second rollback that never happened.
+                print(f"  {function}:live is already back on {record['previous']}")
+            elif "new" in record:
                 self._write(
                     f"roll {function}:live back {record['new']} -> {record['previous']}",
                     deployments.move_alias,
