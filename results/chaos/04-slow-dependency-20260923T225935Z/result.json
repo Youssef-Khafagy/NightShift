@@ -1,0 +1,58 @@
+{
+  "run_id": "04-slow-dependency-20260923T225935Z",
+  "scenario": 4,
+  "slug": "slow-dependency",
+  "ground_truth": {
+    "component": "payments",
+    "fault_category": "slow_dependency"
+  },
+  "commit": "51b3252",
+  "started": "2026-09-23T22:59:35+00:00",
+  "injected_at": "2026-09-23T23:02:45+00:00",
+  "agent": {
+    "started": true,
+    "investigation_id": "e16af51abccb",
+    "grade": {
+      "scenario": 4,
+      "run_id": "04-slow-dependency-20260923T225935Z",
+      "investigation_id": "e16af51abccb",
+      "expected_component": "payments",
+      "expected_category": "slow_dependency",
+      "answered_component": "placed-orders",
+      "answered_category": "retry_storm",
+      "confidence": 90,
+      "component_correct": false,
+      "category_correct": false,
+      "root_cause_correct": false,
+      "hedged": false,
+      "diagnosis_seconds": 82.0
+    },
+    "tokens": 32729,
+    "calls": 8,
+    "steps": 14,
+    "stop_reason": "finished",
+    "provider": "mistral",
+    "model": "ministral-14b-latest",
+    "summary": "placed-orders / retry_storm (confidence 90), WRONG"
+  },
+  "alarms_fired": {
+    "nightshift-payment-failures": 63.7,
+    "nightshift-throttles": 33.3
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [
+    "nightshift-throttles"
+  ],
+  "load_exit_codes": [
+    0
+  ],
+  "recovery_seconds": 1001.4,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "dlq_empty": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-09-23T23:21:00+00:00"
+}

@@ -175,3 +175,15 @@ def test_no_fault_is_graded_on_the_category():
     }
     assert grade(spike, answered("none", "no_fault")).root_cause_correct
     assert not grade(spike, answered("orders", "throttling")).root_cause_correct
+
+
+def test_a_skipped_or_failed_step_is_not_evidence():
+    s = state("get_alarm", "get_topology", "get_metrics")
+    s.steps[1].result = '{"error": "skipped: at most 3 calls per reply"}'
+    s.steps[
+        2
+    ].result = '{"tool": "get_metrics", "truncated": false, "untrusted_data": {"error": "AWS AccessDenied: no"}}'
+    for step in ("2", "3"):
+        with pytest.raises(ValueError, match="returned an error or was skipped"):
+            report.from_answer(s, {**ANSWER, "evidence_steps": f"1,{step}"})
+    assert report.from_answer(s, {**ANSWER, "evidence_steps": "1"}).evidence == [1]

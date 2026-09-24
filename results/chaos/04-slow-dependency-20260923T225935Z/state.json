@@ -1,0 +1,17 @@
+[
+  {
+    "kind": "env",
+    "service": "payments",
+    "original_env": {
+      "POWERTOOLS_SERVICE_NAME": "payments",
+      "POWERTOOLS_LOG_LEVEL": "INFO",
+      "PAYMENT_LATENCY_JITTER_MS": "20",
+      "PAYMENT_ERROR_RATE": "0",
+      "PAYMENT_LATENCY_MS": "40"
+    },
+    "recorded": false,
+    "previous": "7",
+    "new": "9",
+    "restored": true
+  }
+]

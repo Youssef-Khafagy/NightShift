@@ -1,0 +1,58 @@
+{
+  "run_id": "05-poison-message-20260923T232103Z",
+  "scenario": 5,
+  "slug": "poison-message",
+  "ground_truth": {
+    "component": "placed-orders",
+    "fault_category": "poison_message"
+  },
+  "commit": "51b3252",
+  "started": "2026-09-23T23:21:03+00:00",
+  "injected_at": "2026-09-23T23:24:12+00:00",
+  "agent": {
+    "started": true,
+    "investigation_id": "156c94e06d0b",
+    "grade": {
+      "scenario": 5,
+      "run_id": "05-poison-message-20260923T232103Z",
+      "investigation_id": "156c94e06d0b",
+      "expected_component": "placed-orders",
+      "expected_category": "poison_message",
+      "answered_component": "payments",
+      "answered_category": "bad_deploy",
+      "confidence": 95,
+      "component_correct": false,
+      "category_correct": false,
+      "root_cause_correct": false,
+      "hedged": false,
+      "diagnosis_seconds": 463.0
+    },
+    "tokens": 18513,
+    "calls": 5,
+    "steps": 11,
+    "stop_reason": "finished",
+    "provider": "mistral",
+    "model": "ministral-14b-latest",
+    "summary": "payments / bad_deploy (confidence 95), WRONG"
+  },
+  "alarms_fired": {
+    "nightshift-dlq-depth": 702.6,
+    "nightshift-queue-age": 443.4
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [
+    "nightshift-queue-age"
+  ],
+  "load_exit_codes": [
+    0
+  ],
+  "recovery_seconds": 932.3,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "dlq_empty": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-09-23T23:51:27+00:00"
+}

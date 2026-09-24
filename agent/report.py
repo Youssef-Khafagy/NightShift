@@ -17,6 +17,7 @@ failure) gets insufficient_evidence with confidence 0, and says why.
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Any, Literal
 
@@ -58,6 +59,21 @@ class Report(BaseModel):
         return self
 
 
+def returned_nothing(result: str) -> bool:
+    """A step that was skipped, rejected or failed. The loop records those as
+    {"error": ...}, and a tool that failed returns {"error": ...} under
+    untrusted_data; a successful result never has an "error" key. The M5
+    live check found answers citing calls the loop had skipped."""
+    try:
+        data = json.loads(result)
+    except ValueError:
+        return False
+    if not isinstance(data, dict):
+        return False
+    inner = data.get("untrusted_data")
+    return "error" in data or (isinstance(inner, dict) and "error" in inner)
+
+
 def parse_steps(text: str) -> list[int]:
     return sorted({int(n) for n in re.findall(r"\d+", text or "")})
 
@@ -67,6 +83,7 @@ def from_answer(state: InvestigationState, answer: dict[str, Any]) -> Report:
     with every problem, readable by the model."""
     evidence = parse_steps(str(answer.get("evidence_steps", "")))
     tools = {s.number: s.tool for s in state.steps}
+    failed = {s.number for s in state.steps if returned_nothing(s.result)}
     problems = []
     for n in evidence:
         if n not in tools:
@@ -75,6 +92,10 @@ def from_answer(state: InvestigationState, answer: dict[str, Any]) -> Report:
             )
         elif tools[n] in CONTROL_TOOLS:
             problems.append(f"evidence step {n} is a {tools[n]} note, not evidence")
+        elif n in failed:
+            problems.append(
+                f"evidence step {n} returned an error or was skipped, so it shows nothing"
+            )
     actions = [
         line.strip(" -*\t")
         for line in str(answer.get("proposed_actions", "")).splitlines()

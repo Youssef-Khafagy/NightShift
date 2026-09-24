@@ -1,0 +1,25 @@
+{
+  "investigation_id": "988b50b75ca5",
+  "root_cause_component": "orders",
+  "fault_category": "bad_deploy",
+  "confidence": 90,
+  "summary": "The orders service experienced a spike in errors immediately after a deployment at 19:51:36, coinciding with the alarm trigger at 19:51:00. The error logs did not return results, but the timing of the deployment and the error spike strongly suggest a bad deploy as the root cause. The p99 duration also increased significantly during this period, supporting the hypothesis of a regression introduced by the deployment.",
+  "evidence": [
+    1,
+    5,
+    6,
+    7,
+    8
+  ],
+  "proposed_actions": [
+    "Roll back the orders service to version 18 immediately and investigate the changes introduced in version 22."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "5": "get_metrics",
+    "6": "query_logs",
+    "7": "query_logs",
+    "8": "get_traces"
+  }
+}
