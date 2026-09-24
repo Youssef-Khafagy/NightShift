@@ -22,6 +22,7 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import boto3
 
@@ -58,7 +59,8 @@ def describe(record: dict, now: int) -> str:
 
 
 def cmd_list(ddb, now: int) -> None:
-    found, kwargs = [], {}
+    found: list[dict[str, Any]] = []
+    kwargs: dict[str, Any] = {}
     while True:
         page = ddb.scan(
             TableName=approvals.TABLE,
@@ -79,6 +81,8 @@ def cmd_list(ddb, now: int) -> None:
     for raw in sorted(found, key=lambda i: i["created_at"]["N"]):
         inv, item = raw["investigation_id"]["S"], raw["item"]["S"]
         record = approvals.load(ddb, inv, item)
+        if record is None:  # gone between the scan and the read
+            continue
         print(f"{inv} {item.removeprefix(approvals.PREFIX)}  {describe(record, now)}")
 
 
