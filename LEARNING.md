@@ -858,6 +858,14 @@ A score means nothing on its own. 60% right is good if a shell script gets 20%, 
 
 Two things went wrong building them. A model can name a tool it was not offered, and the loop would have run it, so the alarm-only baseline refuses any call but `finish_investigation` and records the refusal. And the first version replayed the alarm read to the model as a function call it had never made. Mistral accepted that; Gemini answered HTTP 400, because Gemini 3 signs every function call it makes and refuses an unsigned one in the conversation. The alarm is already in the page message, so the step now stays in the journal (where it can be cited as evidence) and is never sent twice.
 
+### One incident, five investigations
+
+`python -m evaluation.bench` runs a pass. The order of the 42 incidents is shuffled once from a recorded seed, so no scenario always follows the same one. For each incident, the chaos runner waits out the quiet gap, warms up and injects. On the first alarm, which is when the real trigger would page, five investigations start at once: the agent on Mistral and on Gemini, alarm-only on both, and the runbook. They all see the same incident at the same moment, which is fairer than giving each its own incident, and it costs a fifth of the traffic.
+
+Each one runs as its own process holding only the Investigator role's temporary credentials. Its environment has no AWS profile, and the AWS config and credential files point at `/dev/null`, so it cannot fall back to my login. Checked live: inside that environment, the caller is the Investigator role and `--profile nightshift-admin` is "not found". The investigation code refuses to start if the credentials it holds are anything other than that role.
+
+Proposals are graded, never approved. The agent runs with `--no-approvals`, the EventBridge trigger must be off (or the Lambda agent would investigate too), and after each incident the Actor's own invocation count must be zero. A batch refuses to start with uncommitted code, because every result is labelled with one commit, or if `cost_check.py` fails. It stops at the first failed incident rather than carrying on over a broken system.
+
 **Cost of the rule.** About 25 minutes of incident plus 75 minutes of quiet: 100 minutes each, about 70 hours per pass, run as overnight batches of six.
 
 **Questions about the benchmark**

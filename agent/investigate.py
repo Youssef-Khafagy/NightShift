@@ -48,7 +48,17 @@ def main() -> None:
     parser.add_argument("--provider", choices=sorted(PROVIDER_DEFAULTS), default="groq")
     parser.add_argument("--model")
     parser.add_argument("--store", choices=["dynamo", "memory"], default="dynamo")
-    parser.add_argument("--profile", default="nightshift-admin")
+    parser.add_argument(
+        "--profile",
+        default="nightshift-admin",
+        help="'ambient' to use the Investigator credentials already in the environment",
+    )
+    parser.add_argument("--investigation-id", help="choose the ID (the benchmark does)")
+    parser.add_argument(
+        "--no-approvals",
+        action="store_true",
+        help="grade proposals only; never create approval records (the benchmark)",
+    )
     args = parser.parse_args()
     if bool(args.alarm) == bool(args.resume):
         parser.error("give exactly one of --alarm or --resume")
@@ -81,7 +91,9 @@ def main() -> None:
             flush=True,
         )
     else:
-        state = investigator.start(get_alarm(tools, args.alarm))
+        state = investigator.start(
+            get_alarm(tools, args.alarm), investigation_id=args.investigation_id
+        )
         print(
             f"investigation {state.investigation_id} ({config.provider} {config.model})",
             flush=True,
@@ -89,7 +101,7 @@ def main() -> None:
 
     state = investigator.run(state)
     final = save(state, config.__dict__, store)
-    if final.actions and args.store == "dynamo":
+    if final.actions and args.store == "dynamo" and not args.no_approvals:
         # Waiting for the owner: scripts/approve.py list.
         approvals.create_pending(
             session.client("dynamodb"),
@@ -97,7 +109,7 @@ def main() -> None:
             final.actions,
             int(time.time()),
         )
-    print_summary(state, final)
+    print_summary(state, final, pending=not args.no_approvals)
 
 
 def save(

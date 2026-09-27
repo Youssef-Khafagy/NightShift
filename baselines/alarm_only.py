@@ -69,9 +69,11 @@ class AlarmOnly(Investigator):
             )
         )
 
-    def start_from_alarm(self, alarm_name: str) -> InvestigationState:
+    def start_from_alarm(
+        self, alarm_name: str, investigation_id: str | None = None
+    ) -> InvestigationState:
         trigger = get_alarm(self.tools, alarm_name)
-        state = self.start(trigger)
+        state = self.start(trigger, investigation_id)
         record(
             state,
             self.tools,
