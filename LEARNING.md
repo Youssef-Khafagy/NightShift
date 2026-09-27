@@ -849,12 +849,22 @@ The queue consumer stays on for the whole pass instead of being switched on for 
 
 Then, instead of assuming the guard works, every run is checked afterwards (`evaluation/contamination.py`): any full timestamp in any tool result at or before the previous incident's last write marks the run as contaminated, and it is re-run rather than graded. The check was proven both ways live: it passed with the store idle, and when pointed at the M6 live check's half hour, it found 32 project writes and 5,431 invocations.
 
+### The baselines
+
+A score means nothing on its own. 60% right is good if a shell script gets 20%, and embarrassing if it gets 70%. So two baselines answer every incident beside the agent, through the same report rules and the same grader (`baselines/`):
+
+- **The scripted runbook** (`baselines/runbook.py`) does what a written on-call runbook would: read the alarm; if the alarmed service was deployed in the last 30 minutes, blame that deploy and roll it back (code changed means bad_deploy, only settings means config_regression); otherwise one rule per alarm (dead-letter queue means poison message, payment failures means a slow provider, throttles means the most throttled function); otherwise insufficient_evidence. No model, the same read-only tools, always confidence 70. I wrote it knowing the scenarios, which makes it a stronger baseline than one written blind: if the agent beats it, the runbook was not a straw man.
+- **Alarm text only** (`baselines/alarm_only.py`) is the agent's own model, shown only the alarm, with `finish_investigation` as its only tool. It measures how much of the agent's score comes from investigating rather than guessing from an alarm's name.
+
+Two things went wrong building them. A model can name a tool it was not offered, and the loop would have run it, so the alarm-only baseline refuses any call but `finish_investigation` and records the refusal. And the first version replayed the alarm read to the model as a function call it had never made. Mistral accepted that; Gemini answered HTTP 400, because Gemini 3 signs every function call it makes and refuses an unsigned one in the conversation. The alarm is already in the page message, so the step now stays in the journal (where it can be cited as evidence) and is never sent twice.
+
 **Cost of the rule.** About 25 minutes of incident plus 75 minutes of quiet: 100 minutes each, about 70 hours per pass, run as overnight batches of six.
 
 **Questions about the benchmark**
 
 - *Why cap the tools instead of just waiting longer?* Because the longest lookback was 7 days, so "longer" meant most of a year. A real on-call engineer looks at the last hour first. Capping the tools to an hour made the gap achievable (75 minutes). The agent loses little: every fault in the fourteen scenarios starts minutes before its alarm, so its evidence is always inside the hour.
 - *How do you know the gap actually held?* Two ways. Before each run, three independent checks must pass: the runner's marker, zero Lambda invocations, and no CloudTrail writes on project resources. After each run, I scan every tool result for a timestamp from before the previous incident ended. Any hit means the run is re-run, not graded.
+- *Why is your runbook baseline so specific? Did you write it to lose?* The opposite. I knew the scenarios when I wrote it, so it has a rule for almost every alarm. It still never looks at the ground truth: it reads the same tools as the agent. It fails where a real runbook fails: "roll back the last deploy" is wrong when the deploy is a red herring, and "serialization retries means contention" is wrong when it's just a busy store.
 - *Isn't hiding old timestamps cheating in the agent's favour?* It hides less than you'd think: the agent still sees that an alarm is OK, or that a flag has a value. What it doesn't get is the exact minute a previous, unrelated incident ended. In a real incident that information exists. Here it would only ever point at my staging, so it's noise the real world wouldn't have.
 
 ---

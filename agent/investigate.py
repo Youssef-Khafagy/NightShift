@@ -17,6 +17,7 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 from agent import approvals, postmortem, report
 from agent.aws import investigator_session
@@ -24,7 +25,8 @@ from agent.config import PROVIDER_DEFAULTS, for_provider
 from agent.env import load_dotenv
 from agent.llm import make_provider
 from agent.loop import Investigator
-from agent.store import DynamoStore, MemoryStore
+from agent.state import InvestigationState
+from agent.store import DynamoStore, MemoryStore, Store
 from agent.tools.aws_read import get_alarm
 from agent.tools.context import ToolContext
 
@@ -86,11 +88,7 @@ def main() -> None:
         )
 
     state = investigator.run(state)
-
-    final = report.build(state)
-    report_text = postmortem.report_json(final)
-    markdown = postmortem.render(state, final)
-    store.save_report(state.investigation_id, report_text, markdown)
+    final = save(state, config.__dict__, store)
     if final.actions and args.store == "dynamo":
         # Waiting for the owner: scripts/approve.py list.
         approvals.create_pending(
@@ -99,15 +97,33 @@ def main() -> None:
             final.actions,
             int(time.time()),
         )
+    print_summary(state, final)
 
-    RESULTS.mkdir(parents=True, exist_ok=True)
-    out = RESULTS / f"{state.investigation_id}.json"
-    out.write_text(
-        json.dumps({"config": config.__dict__, "state": state.to_dict()}, indent=2)
-        + "\n"
+
+def save(
+    state: InvestigationState,
+    config: dict[str, Any],
+    store: Store,
+    results: Path = RESULTS,
+) -> report.Report:
+    """The report and postmortem, to the store and to results/. Shared with
+    the baselines, so all three write the same files."""
+    final = report.build(state)
+    report_text = postmortem.report_json(final)
+    markdown = postmortem.render(state, final)
+    store.save_report(state.investigation_id, report_text, markdown)
+    results.mkdir(parents=True, exist_ok=True)
+    (results / f"{state.investigation_id}.json").write_text(
+        json.dumps({"config": config, "state": state.to_dict()}, indent=2) + "\n"
     )
-    (RESULTS / f"{state.investigation_id}.report.json").write_text(report_text)
-    (RESULTS / f"{state.investigation_id}.md").write_text(markdown)
+    (results / f"{state.investigation_id}.report.json").write_text(report_text)
+    (results / f"{state.investigation_id}.md").write_text(markdown)
+    return final
+
+
+def print_summary(
+    state: InvestigationState, final: report.Report, pending: bool = True
+) -> None:
     for step in state.steps:
         print(f"  {step.number:2}. {step.tool} {json.dumps(step.args)[:100]}")
     print(f"stop: {state.stop_reason}")
@@ -127,8 +143,9 @@ def main() -> None:
             f"WARNING: {state.tokens_used} tokens is above the {TOKEN_WARNING:,} the owner asked to hear about"
         )
     for action in final.actions:
-        print(f"awaiting approval: {action}  (scripts/approve.py list)")
-    print(f"saved {out.relative_to(REPO_ROOT)}")
+        where = "awaiting approval" if pending else "proposed (graded, never approved)"
+        print(f"{where}: {action}")
+    print(f"saved results/investigations/{state.investigation_id}.json")
 
 
 if __name__ == "__main__":
