@@ -46,3 +46,6 @@ node_modules/
 *.swp
 .DS_Store
 Thumbs.db
+
+# The chaos runner's quiet-gap marker: local state, not a result
+results/chaos/last_write.json

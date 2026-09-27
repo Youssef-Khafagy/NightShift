@@ -8,7 +8,7 @@ How NightShift works and why it was built this way, written for someone who know
 2. **Section 3, keeping it at $0.** The constraint that shaped every other decision.
 3. **Section 8, Aurora DSQL.** The deepest technical story in the project: a bug with no symptom, found in a billing metric.
 4. **Section 15, deploys and rollbacks.** The premise of the whole project is that an agent can roll back safely; this is how.
-5. **Section 20, mistakes that taught the most.** A one-page index of every wrong turn, which is where interview questions usually go.
+5. **Section 21, mistakes that taught the most.** A one-page index of every wrong turn, which is where interview questions usually go.
 
 Then read the rest in order when you have time. Section 2 is the AWS vocabulary the rest assumes.
 
@@ -755,7 +755,7 @@ One right out of five, every answer at 90 or 95 confidence, no run above 33K tok
 ### What we got wrong
 
 - **The answer key was in the deployments table.** Chaos recovery wrote "recovery after scenario run 02-config-regression-..." as the rollback reason, in the table the agent reads. Found while building the tools; now a neutral constant held to the banned-words test, and the four old rows were rewritten.
-- **Back-to-back scenarios contaminate each other.** Scenario 5's answer was built on a CloudTrail event from scenario 4's cleanup; scenario 11's on scenario 4's throttles. The runs were minutes apart and the tools look back an hour or more. The benchmark needs a gap longer than the longest lookback, or tools scoped to the incident.
+- **Back-to-back scenarios contaminate each other.** Scenario 5's answer was built on a CloudTrail event from scenario 4's cleanup; scenario 11's on scenario 4's throttles. The runs were minutes apart and the tools look back an hour or more. Fixed in M7 with a lookback cap and a quiet gap (section 20).
 - **Groq validates tool arguments itself** and answered HTTP 400 to `limit: 100`, which the loop first treated as fatal. It now goes back to the model like any bad call.
 - **Times were in the laptop's zone.** boto3 returns local datetimes; logs and deployments are UTC. Tools now always say UTC.
 - **An answer cited steps the loop had skipped.** Evidence now has to be a step that returned data.
@@ -824,7 +824,41 @@ Tool output that reads like instructions ("ignore previous instructions", "call 
 
 ---
 
-## 20. Mistakes that taught the most
+## 20. Measuring it: the benchmark
+
+**What it is.** A pass of 14 scenarios, 3 runs each: 42 staged incidents. At each one, four configurations investigate the same incident at the same time: the full agent on two models from different vendors (Mistral `ministral-14b` and Gemini Flash Lite), a scripted if/else runbook, and a model that sees only the alarm text. A deterministic grader compares each answer with the ground truth.
+
+**Why it exists.** "The agent found the bug once" is a demo. The claim worth making is how often it is right, against what a runbook or a bare model would do, measured the same way every time.
+
+**What would break without it.** Nothing in the store. What breaks is every claim about the agent: without baselines, a score has no meaning, and without separate incidents, a score measures leftovers.
+
+### Keeping incidents apart
+
+In the first live check (section 18), two of five wrong answers were read from the previous scenario's leftovers: a CloudTrail event from its cleanup and throttles from its load. Running scenarios back to back had turned the benchmark into a test of what happened before.
+
+The rule is simple: **the gap between incidents must be longer than the furthest any tool can look back.** It could not be met as the tools stood: the deployments tool reached back 7 days, CloudTrail 12 hours, metrics 3 hours, and an alarm's history had no time limit at all, only "the last ten changes". A 7-day gap between 42 incidents is most of a year. So the fix has two halves.
+
+1. **Cap every tool at 60 minutes** (`LOOKBACK_MINUTES` in `agent/config.py`). Each tool schema's maximum comes from it, and each tool also checks it at runtime, because the scripted baseline calls tools without going through the schema. Alarm history is limited by time as well as count. State that can be days old (when an alarm last changed, when a flag or a function version was last written) is shown exactly only inside the hour; older than that it reads "more than 60 minutes ago", because its exact time points at the previous incident. `tests/test_lookback.py` fails if any time argument is ever widened, renamed to hours, or left uncapped.
+2. **Wait 75 minutes of quiet between incidents** (the hour plus 15 minutes of margin), checked three ways in `chaos/quiet.py`, because each check alone has a hole:
+   - the runner's own marker file, written before traffic starts and when a run ends, even after a crash. It cannot see writes the runner did not make.
+   - zero Lambda invocations account-wide over the 75 minutes. That catches traffic and smoke tests from anywhere, but not configuration changes.
+   - no CloudTrail write events on project resources over the 75 minutes. That catches configuration changes from anywhere, but CloudTrail is about 5 minutes late, which the marker covers.
+
+The queue consumer stays on for the whole pass instead of being switched on for each run, because switching it is itself a write event, which would land in the next investigation's window as a "recent change".
+
+Then, instead of assuming the guard works, every run is checked afterwards (`evaluation/contamination.py`): any full timestamp in any tool result at or before the previous incident's last write marks the run as contaminated, and it is re-run rather than graded. The check was proven both ways live: it passed with the store idle, and when pointed at the M6 live check's half hour, it found 32 project writes and 5,431 invocations.
+
+**Cost of the rule.** About 25 minutes of incident plus 75 minutes of quiet: 100 minutes each, about 70 hours per pass, run as overnight batches of six.
+
+**Questions about the benchmark**
+
+- *Why cap the tools instead of just waiting longer?* Because the longest lookback was 7 days, so "longer" meant most of a year. A real on-call engineer looks at the last hour first. Capping the tools to an hour made the gap achievable (75 minutes). The agent loses little: every fault in the fourteen scenarios starts minutes before its alarm, so its evidence is always inside the hour.
+- *How do you know the gap actually held?* Two ways. Before each run, three independent checks must pass: the runner's marker, zero Lambda invocations, and no CloudTrail writes on project resources. After each run, I scan every tool result for a timestamp from before the previous incident ended. Any hit means the run is re-run, not graded.
+- *Isn't hiding old timestamps cheating in the agent's favour?* It hides less than you'd think: the agent still sees that an alarm is OK, or that a flag has a value. What it doesn't get is the exact minute a previous, unrelated incident ended. In a real incident that information exists. Here it would only ever point at my staging, so it's noise the real world wouldn't have.
+
+---
+
+## 21. Mistakes that taught the most
 
 | Mistake | How it was found | What changed |
 |---|---|---|
@@ -832,7 +866,7 @@ Tool output that reads like instructions ("ignore previous instructions", "call 
 | Imports inside the handler, 11.9 s at 128 MB | A timeout, then timing each import | Imports at module scope: 0.7 s (7) |
 | "128 MB is too small" | A memory sweep | CPU work costs the same GB-seconds at any size (7) |
 | A 403 "fixed" by cached decisions | Results that flipped | Verify with the policy simulator; stop changing things when results alternate (4) |
-| `pipe \| tail` hid a failed scan; a commit over a failing test; `set -e` silently ignored by the tool's shell | Reading the output again; a chain that merged after an expired login | Gating chains run in a child shell, verified with a deliberate `false` (6) |
+| `pipe \| tail` hid a failed scan; a commit over a failing test; `set -e` silently ignored by the tool's shell; `a && b` inside `set -e` carried on past a missing linter | Reading the output again; a chain that merged after an expired login | Gating chains run in a child shell, one command per line, verified with a deliberate `false` (6) |
 | Two points fit a line | A third batch size | Three points minimum for a fit (8) |
 | Artifacts differed between machines | A non-empty plan; a per-file manifest | Allowlisted zips; RECORD pruned (6) |
 | `$0.00` reported, $0.03 real | The console; CloudTrail | Never call the Cost Explorer API; report gross (3) |
@@ -842,7 +876,7 @@ Tool output that reads like instructions ("ignore previous instructions", "call 
 | A dry run that wrote | Reading its own code | Only `--apply` writes (8) |
 | Recovery left the bad version newest | The plan-clean health check | Recovery deletes the version it published (17) |
 | The answer key sat in a table the agent reads | Building the tool that reads it | Neutral rollback reason, held to the banned-words test (17, 18) |
-| Back-to-back scenarios fed each other evidence | Reading the postmortems of wrong answers | A gap between incidents longer than any tool's lookback (M7) (18) |
+| Back-to-back scenarios fed each other evidence | Reading the postmortems of wrong answers | Every tool capped at 60 minutes, a 75-minute quiet gap checked three ways, and a leak check on every run (18, 20) |
 | Audit records keyed by the second overwrote each other | A test replaying a refused approval | Random suffix plus a no-overwrite condition (19) |
 | The queue trigger listed by bare function name returned nothing | A smoke run of `consumer.py` | Look it up on the `live` alias, in three places (19) |
 | The model counted steps itself and cited the wrong ones | An answer citing steps 8 and 9 of 6 | Every result starts with `Step N.` (18) |

@@ -206,7 +206,7 @@ def envelope(tool: str, data: dict) -> str:
         ({"metric": "Errors", "points": [["02:33Z", 35.0]]}, False),
         ({"service": "x", "traces": 0, "with_error": 0}, True),
         ({"service": "x", "traces": 284, "with_error": 117}, False),
-        ({"window_hours": 2, "moves": []}, True),
+        ({"window_minutes": 60, "moves": []}, True),
         ({"window_minutes": 60, "changes": []}, True),
         ({"function": "nightshift-cart", "timeout_seconds": 5}, False),
         ({"name": "orders-errors", "state": "ALARM"}, False),

@@ -465,7 +465,7 @@ Measured basis, from the six agent runs in `results/chaos/` (M5 step 7 and M6 st
 | DSQL | 100,800 orders x 0.25 DPU (load run, 2026-09-22) plus 42 x 0.425 fixed | ~25,200 DPU | 25% |
 | Lambda requests | 100,800 orders x 4.7 | ~474K | 47% |
 | Lambda GB-s (agent) | The benchmark does not invoke the agent Lambda | 0 | 0% |
-| SQS | 100,800 x 2.2, plus 20 empty receives a minute for ~70 hours with the consumer on for whole batches | ~306K | 31% |
+| SQS | 100,800 x 2.2 = ~222K, plus empty receives with the consumer on for the whole pass (about a week), because switching it per run would be a write event in the next investigation's window: ~60K at the measured 6 a minute, ~200K at a conservative 20 | ~420K | 42% |
 | Logs Insights scans | 42 incidents x 3 querying configurations x 20 MB cap | 2.52 GB | Logs total 3.41 GB of 5, unchanged |
 | X-Ray | As projected above | ~65K traces | 65% |
 | CloudTrail `LookupEvents` | Free; throttled at 2 requests per second per account and region, which parallel investigations can hit. The agent sets no retry config, so boto3's default mode retries throttling errors. | | |

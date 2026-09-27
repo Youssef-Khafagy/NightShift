@@ -13,9 +13,10 @@ from __future__ import annotations
 
 import re
 import time
-from datetime import UTC, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from agent.config import LOOKBACK_MINUTES
 from agent.tools.context import ToolContext, ToolError
 
 SERVICES = ["cart", "orders", "payments", "fulfillment", "hello"]
@@ -33,12 +34,33 @@ def hhmm(value: Any) -> str:
 
 
 def stamp(value: Any) -> str:
-    """A full UTC timestamp, for one-off moments (an alarm's last change, a
-    flag's last write) that may be days old. Metric points keep hhmm, since
+    """A full UTC timestamp, for one-off moments (an event, an alarm's last
+    change, a flag's last write). Metric points keep hhmm, since
     they all sit inside one short window and the date would only cost tokens."""
     if not hasattr(value, "astimezone"):
         return str(value)
     return value.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def window_start(ctx: ToolContext, minutes: int) -> datetime:
+    """The start of a tool window, refusing anything wider than the lookback.
+    The schemas cap it too, but code that calls a tool directly (the scripted
+    baseline) does not pass through them."""
+    if minutes > LOOKBACK_MINUTES:
+        raise ToolError(f"minutes must be at most {LOOKBACK_MINUTES}")
+    return ctx.utcnow() - timedelta(minutes=minutes)
+
+
+def recent_stamp(ctx: ToolContext, value: Any) -> str:
+    """A state's last change (an alarm's state, a flag, a function version),
+    shown exactly only inside the lookback. An older one is only "more than
+    an hour ago": its exact time would point at a previous incident."""
+    if isinstance(value, str):
+        # Lambda's LastModified is a string: 2026-09-23T20:13:47.000+0000
+        value = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f%z")
+    if value < ctx.utcnow() - timedelta(minutes=LOOKBACK_MINUTES):
+        return f"more than {LOOKBACK_MINUTES} minutes ago"
+    return stamp(value)
 
 
 def full_alarm_name(name: str) -> str:
@@ -57,7 +79,7 @@ def get_alarm(ctx: ToolContext, name: str | None = None) -> dict:
                 {
                     "name": a["AlarmName"],
                     "state": a["StateValue"],
-                    "since": stamp(a["StateUpdatedTimestamp"]),
+                    "since": recent_stamp(ctx, a["StateUpdatedTimestamp"]),
                 }
                 for a in alarms
             ]
@@ -67,14 +89,20 @@ def get_alarm(ctx: ToolContext, name: str | None = None) -> dict:
     if not found:
         raise ToolError(f"no alarm named {name}")
     a = found[0]
+    # Bounded by time as well as count: unbounded, the last ten changes
+    # reached back through every earlier incident.
     history = cw.describe_alarm_history(
-        AlarmName=name, HistoryItemType="StateUpdate", MaxRecords=10
+        AlarmName=name,
+        HistoryItemType="StateUpdate",
+        StartDate=window_start(ctx, LOOKBACK_MINUTES),
+        EndDate=ctx.utcnow(),
+        MaxRecords=10,
     )["AlarmHistoryItems"]
     return {
         "name": name,
         "state": a["StateValue"],
         "reason": a.get("StateReason", ""),
-        "since": stamp(a["StateUpdatedTimestamp"]),
+        "since": recent_stamp(ctx, a["StateUpdatedTimestamp"]),
         "metric": {
             "namespace": a.get("Namespace"),
             "name": a.get("MetricName"),
@@ -117,12 +145,13 @@ def get_metrics(
     period: int = 60,
 ) -> dict:
     pairs = parse_dimensions(dimensions)
+    start = window_start(ctx, minutes)
     end = ctx.utcnow()
     kwargs: dict[str, Any] = {
         "Namespace": namespace,
         "MetricName": metric,
         "Dimensions": [{"Name": k, "Value": v} for k, v in pairs.items()],
-        "StartTime": end - timedelta(minutes=minutes),
+        "StartTime": start,
         "EndTime": end,
         "Period": period,
     }
@@ -170,11 +199,12 @@ def query_logs(
         )
     if minutes > ctx.config.max_log_query_minutes:
         raise ToolError(f"minutes must be at most {ctx.config.max_log_query_minutes}")
+    start = window_start(ctx, minutes)
     logs = ctx.client("logs")
     end = ctx.utcnow()
     query_id = logs.start_query(
         logGroupName=ctx.service(service)["log_group"],
-        startTime=int((end - timedelta(minutes=minutes)).timestamp()),
+        startTime=int(start.timestamp()),
         endTime=int(end.timestamp()),
         queryString=query,
         limit=limit,
@@ -208,11 +238,12 @@ def query_logs(
 
 def get_traces(ctx: ToolContext, service: str, minutes: int = 15) -> dict:
     function = ctx.service(service)["function"]
+    start = window_start(ctx, minutes)
     end = ctx.utcnow()
     xray = ctx.client("xray")
     summaries: list[dict] = []
     kwargs: dict[str, Any] = {
-        "StartTime": end - timedelta(minutes=minutes),
+        "StartTime": start,
         "EndTime": end,
         "FilterExpression": f'service("{function}")',
     }
@@ -244,10 +275,10 @@ def get_traces(ctx: ToolContext, service: str, minutes: int = 15) -> dict:
 
 
 def list_recent_deployments(
-    ctx: ToolContext, service: str | None = None, hours: int = 24
+    ctx: ToolContext, service: str | None = None, minutes: int = LOOKBACK_MINUTES
 ) -> dict:
     table = "nightshift-deployments"
-    since = (ctx.utcnow() - timedelta(hours=hours)).isoformat(timespec="milliseconds")
+    since = window_start(ctx, minutes).isoformat(timespec="milliseconds")
     ddb = ctx.client("dynamodb")
     rows = []
     for name in [service] if service else sorted(ctx.topology()["services"]):
@@ -261,7 +292,7 @@ def list_recent_deployments(
         rows += [{k: v["S"] for k, v in item.items() if "S" in v} for item in items]
     rows.sort(key=lambda r: r["deployed_at"], reverse=True)
     return {
-        "window_hours": hours,
+        "window_minutes": minutes,
         "moves": [
             {
                 "at": r["deployed_at"],
@@ -280,13 +311,14 @@ def list_recent_deployments(
 # -- lookup_recent_changes -------------------------------------------------------
 
 
-def lookup_recent_changes(ctx: ToolContext, minutes: int = 120) -> dict:
+def lookup_recent_changes(ctx: ToolContext, minutes: int = LOOKBACK_MINUTES) -> dict:
     """Write API calls on this project's resources, from CloudTrail's free
     90-day event history. Events arrive about 5 minutes after the call."""
+    start = window_start(ctx, minutes)
     end = ctx.utcnow()
     kwargs: dict[str, Any] = {
         "LookupAttributes": [{"AttributeKey": "ReadOnly", "AttributeValue": "false"}],
-        "StartTime": end - timedelta(minutes=minutes),
+        "StartTime": start,
         "EndTime": end,
         "MaxResults": 50,
     }
@@ -379,7 +411,7 @@ def get_function_config(ctx: ToolContext, service: str) -> dict:
     return {
         "function": function,
         "live_alias_version": version,
-        "last_modified": c.get("LastModified"),
+        "last_modified": recent_stamp(ctx, c["LastModified"]),
         "runtime": c.get("Runtime"),
         "memory_mb": c.get("MemorySize"),
         "timeout_seconds": c.get("Timeout"),
@@ -415,7 +447,7 @@ def get_flag_values(ctx: ToolContext) -> dict:
         "flags": {
             p["Name"]: {
                 "value": p["Value"],
-                "last_modified": stamp(p["LastModifiedDate"]),
+                "last_modified": recent_stamp(ctx, p["LastModifiedDate"]),
             }
             for p in reply["Parameters"]
         },
