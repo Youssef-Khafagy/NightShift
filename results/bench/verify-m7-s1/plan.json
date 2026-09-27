@@ -1,0 +1,43 @@
+{
+  "seed": 20260927,
+  "scenarios": [
+    3,
+    7,
+    9,
+    12,
+    13
+  ],
+  "runs": 1,
+  "entries": [
+    {
+      "entry": 1,
+      "scenario": 9,
+      "run": 1,
+      "attempt": 1
+    },
+    {
+      "entry": 2,
+      "scenario": 3,
+      "run": 1,
+      "attempt": 1
+    },
+    {
+      "entry": 3,
+      "scenario": 13,
+      "run": 1,
+      "attempt": 1
+    },
+    {
+      "entry": 4,
+      "scenario": 12,
+      "run": 1,
+      "attempt": 1
+    },
+    {
+      "entry": 5,
+      "scenario": 7,
+      "run": 1,
+      "attempt": 1
+    }
+  ]
+}

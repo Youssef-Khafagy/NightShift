@@ -1,0 +1,24 @@
+{
+  "investigation_id": "95b6ba6eb420",
+  "root_cause_component": "fulfillment",
+  "fault_category": "config_regression",
+  "confidence": 95,
+  "summary": "A recent deployment changed settings on the fulfillment service, specifically updating the PAYMENT_TIMEOUT_SECONDS environment variable to 0.05. This extremely low timeout caused payment requests from fulfillment to time out repeatedly, resulting in the payment failures alarm.",
+  "evidence": [
+    3,
+    5
+  ],
+  "actions": [
+    "rollback_alias service=fulfillment"
+  ],
+  "proposed_actions": [
+    "Verify payment error rates after rolling back the fulfillment alias or restoring the previous settings."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "3": "list_recent_deployments",
+    "5": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

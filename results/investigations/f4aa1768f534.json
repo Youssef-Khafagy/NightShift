@@ -1,0 +1,162 @@
+{
+  "config": {
+    "kind": "alarm-only",
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "max_tokens_per_investigation": 40000,
+    "max_steps": 15,
+    "max_wall_seconds": 840,
+    "input_token_cap": 24000,
+    "max_output_tokens": 1500,
+    "full_results_kept": 3,
+    "max_tool_output_chars": 2500,
+    "log_scan_cap_bytes": 20971520,
+    "max_log_query_minutes": 60
+  },
+  "state": {
+    "investigation_id": "f4aa1768f534",
+    "trigger": {
+      "name": "nightshift-payment-failures",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [52.0 (27/09/26 08:13:00)] was greater than or equal to the threshold (3.0).",
+      "since": "2026-09-27T08:14:37Z",
+      "metric": {
+        "namespace": "NightShift",
+        "name": "PaymentFailures",
+        "dimensions": {
+          "service": "fulfillment"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 3.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-09-27T08:14:37Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-09-27T08:14:50+00:00",
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "turn": 2,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-09-27T08:14:50+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "payment-failures"
+        },
+        "call_id": "baseline-c8ad1d5e",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [52.0 (27/09/26 08:13:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-09-27T08:14:37Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"PaymentFailures\",\"dimensions\":{\"service\":\"fulfillment\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 3.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-27T08:14:37Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [52.0 (27/09/26 08:13:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-09-27T08:14:37Z\",\"metric\":{\"namespace\":\"NightShift\",\"...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": true
+      },
+      {
+        "number": 2,
+        "turn": 2,
+        "at": "2026-09-27T08:14:58+00:00",
+        "tool": "finish_investigation",
+        "args": {
+          "hypotheses": "ruled_out: no_fault\npossible: bad_deploy\npossible: slow_dependency\npossible: payments_degraded_mode\npossible: retry_storm",
+          "fault_category": "insufficient_evidence",
+          "summary": "An alarm 'nightshift-payment-failures' fired for the fulfillment service indicating 52 payment failures, significantly exceeding the threshold of 3. However, with only the alarm details and no other investigation tools available, there is insufficient evidence to determine the exact root cause or appropriate fix.",
+          "confidence": 80,
+          "root_cause_component": "payments",
+          "actions": "",
+          "evidence_steps": "1"
+        },
+        "call_id": "call_1047017",
+        "result": "{\"ok\": \"investigation closed\"}",
+        "summary": "\"{\\\"ok\\\": \\\"investigation closed\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TEO6EGqMu/UYPMCW2Dhx17OlJxLO7NFuTwPgs0ZHIt82rWt/FfUR4B9q7fN+WDy4Xec4bWRYZpQENMkhABSPkf3+KO4gQURqRdQy1IPai2QHy4K8mfALEcgk="
+        },
+        "in_trigger": false
+      }
+    ],
+    "calls": [
+      {
+        "turn": 2,
+        "at": "2026-09-27T08:14:58+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 951,
+        "output_tokens": 154,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 1788,
+        "rate_limit_headers": {}
+      }
+    ],
+    "hypotheses": [
+      {
+        "status": "ruled_out",
+        "text": "no_fault"
+      },
+      {
+        "status": "possible",
+        "text": "bad_deploy"
+      },
+      {
+        "status": "possible",
+        "text": "slow_dependency"
+      },
+      {
+        "status": "possible",
+        "text": "payments_degraded_mode"
+      },
+      {
+        "status": "possible",
+        "text": "retry_storm"
+      }
+    ],
+    "hypothesis_changes": [
+      {
+        "step": 2,
+        "before": [],
+        "after": [
+          {
+            "status": "ruled_out",
+            "text": "no_fault"
+          },
+          {
+            "status": "possible",
+            "text": "bad_deploy"
+          },
+          {
+            "status": "possible",
+            "text": "slow_dependency"
+          },
+          {
+            "status": "possible",
+            "text": "payments_degraded_mode"
+          },
+          {
+            "status": "possible",
+            "text": "retry_storm"
+          }
+        ]
+      }
+    ],
+    "log_bytes_scanned": 0,
+    "rejected_calls": 0,
+    "wall_seconds_used": 7.797124269000051,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "hypotheses": "ruled_out: no_fault\npossible: bad_deploy\npossible: slow_dependency\npossible: payments_degraded_mode\npossible: retry_storm",
+      "fault_category": "insufficient_evidence",
+      "summary": "An alarm 'nightshift-payment-failures' fired for the fulfillment service indicating 52 payment failures, significantly exceeding the threshold of 3. However, with only the alarm details and no other investigation tools available, there is insufficient evidence to determine the exact root cause or appropriate fix.",
+      "confidence": 80,
+      "root_cause_component": "payments",
+      "actions": "",
+      "evidence_steps": "1"
+    }
+  }
+}

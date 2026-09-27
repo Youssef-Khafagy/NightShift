@@ -1,0 +1,24 @@
+{
+  "investigation_id": "6466ed988934",
+  "root_cause_component": "orders",
+  "fault_category": "throttling",
+  "confidence": 90,
+  "summary": "The nightshift-orders Lambda function experienced Lambda errors driven by TooManyRequestsException (Rate Exceeded) when calling invoke operations.",
+  "evidence": [
+    5,
+    8,
+    9
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Check downstream service rate limits and reserved concurrency settings for the invoked service."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "5": "get_metrics",
+    "8": "query_logs",
+    "9": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

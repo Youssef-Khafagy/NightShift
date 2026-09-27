@@ -1,0 +1,28 @@
+{
+  "investigation_id": "adc740b2a0cd",
+  "root_cause_component": "orders",
+  "fault_category": "timeout_regression",
+  "confidence": 85,
+  "summary": "The orders service (nightshift-orders) experienced a spike in errors at 03:02 UTC, coinciding with a sharp increase in invocation volume and a significant rise in p99 duration (from ~380ms to ~750ms). No throttles or deployments were detected, and logs could not be retrieved due to query failures, but the evidence strongly suggests a timeout_regression caused by increased latency or a slow dependency.",
+  "evidence": [
+    2,
+    3,
+    8,
+    13
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate external dependencies of the orders service (e.g., dsql, cart, or payments) for latency spikes. Check for recent changes in those services or infrastructure."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_metrics",
+    "3": "get_metrics",
+    "8": "get_metrics",
+    "13": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": [
+    11
+  ]
+}

@@ -1,0 +1,24 @@
+investigation adc740b2a0cd (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+   3. get_metrics {"namespace": "AWS/Lambda", "metric": "Invocations", "statistic": "Sum", "dimensions": "FunctionName
+   4. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=ni
+   5. list_recent_deployments {"service": "orders", "minutes": 60}
+   6. query_logs {"service": "orders", "query": "fields @timestamp, level, message, correlation_id, function_version
+   7. get_queue_stats {}
+   8. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=ni
+   9. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+  10. query_logs {"service": "orders", "query": "fields @timestamp, level, message, correlation_id, function_version
+  11. list_recent_deployments {"service": "orders", "minutes": 60}
+  12. query_logs {"service": "orders", "query": "fields @timestamp, level, message, correlation_id, function_version
+  13. get_function_config {"service": "orders"}
+  14. query_logs {"service": "orders", "query": "fields @timestamp, level, message, correlation_id, function_version
+  15. get_topology {}
+  16. query_logs {"service": "orders", "query": "fields @timestamp, level, message, correlation_id, function_version
+  17. query_logs {"service": "orders", "query": "fields @timestamp, level, message, correlation_id, function_version
+  18. note_hypotheses {"hypotheses": "likely: timeout_regression in orders service due to increased latency or external de
+  19. finish_investigation {"root_cause_component": "orders", "fault_category": "timeout_regression", "confidence": 85, "summar
+stop: finished
+report: orders / timeout_regression, confidence 85
+tokens: 34074 in + 1145 out = 35219 over 8 calls; largest request estimate 4031; log bytes scanned 476,403; wall 29s
+saved results/investigations/adc740b2a0cd.json

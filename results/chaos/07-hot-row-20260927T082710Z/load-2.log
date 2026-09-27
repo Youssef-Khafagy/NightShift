@@ -1,0 +1,36 @@
+Run eece8885: 2.0/s for 600s, seed 4006512773
+  orders                   1,200
+  Lambda invocations       5,640   month to date     97,149   cap 500,000
+  SQS requests             2,840
+  DSQL DPU                 300.0   month to date    6,771.6   cap 50,000
+  log volume                 7.0 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "eece8885",
+  "date": "2026-09-27T10:00:33+00:00",
+  "commit": "8213358",
+  "rate": 2.0,
+  "duration": 600,
+  "seed": 4006512773,
+  "projected": {
+    "orders": 1200,
+    "lambda_invocations": 5640.0,
+    "sqs_requests": 2840.0,
+    "dsql_dpu": 300.0,
+    "log_mb": 7.0308
+  },
+  "sent": 1200,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 1200
+  },
+  "elapsed_seconds": 599.9,
+  "achieved_rate": 2.0,
+  "checkout_latency_ms": {
+    "p50": 352.1,
+    "p95": 425.1,
+    "p99": 529.1
+  }
+}

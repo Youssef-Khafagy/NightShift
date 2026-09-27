@@ -1,0 +1,474 @@
+{
+  "config": {
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "max_tokens_per_investigation": 40000,
+    "max_steps": 15,
+    "max_wall_seconds": 840,
+    "input_token_cap": 24000,
+    "max_output_tokens": 1500,
+    "full_results_kept": 3,
+    "max_tool_output_chars": 2500,
+    "log_scan_cap_bytes": 20971520,
+    "max_log_query_minutes": 60
+  },
+  "state": {
+    "investigation_id": "6466ed988934",
+    "trigger": {
+      "name": "nightshift-orders-errors",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [3.0 (27/09/26 03:02:00)] was greater than or equal to the threshold (1.0).",
+      "since": "2026-09-27T03:03:51Z",
+      "metric": {
+        "namespace": "AWS/Lambda",
+        "name": "Errors",
+        "dimensions": {
+          "FunctionName": "nightshift-orders"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 1.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-09-27T03:03:51Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-09-27T03:04:01+00:00",
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "turn": 11,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-09-27T03:04:02+00:00",
+        "tool": "get_alarm",
+        "args": {},
+        "call_id": "call_95070",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"alarms\":[{\"name\":\"nightshift-cart-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-checkout-latency\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-dlq-depth\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-fulfillment-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"since\":\"2026-09-27T03:03:51Z\"},{\"name\":\"nightshift-payment-failures\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-payments-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-queue-age\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-serialization-retries\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-throttles\",\"state\":\"ALARM\",\"since\":\"2026-09-27T03:03:55Z\"}]}}",
+        "summary": "{\"alarms\":[{\"name\":\"nightshift-cart-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-checkout-latency\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-dlq-depth\",\"state\":\"OK\",\"since\":\"more th...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TBWD6FhFQ1CwRfEWksiOfcz53udJrW6t+8xKZ4gq75EvzdhorzaWdcA45S4IwDvbx0du6YFXyhFcwYBJpRnuR27rf/x9Hh9KPFhLDaC5V+SNsa7VNOtD4CCs="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 2,
+        "at": "2026-09-27T03:04:03+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "likely: orders service has a bad deploy or error regression causing Lambda errors\npossible: throttling alarm is related to the orders errors"
+        },
+        "call_id": "call_1071800",
+        "result": "{\"ok\": \"2 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"2 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TIWrXkZLfnnvcbTKoVgkzZ/in+jGfOdIzxF1h3YQd4nTi0fLArhyOo7xZDoGQ9gDqNcLh3tUzN5GE5ojJR1ErmLFXK33vFPHn922qTPxFNfPvBg/XLivAbV8="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 3,
+        "turn": 3,
+        "at": "2026-09-27T03:04:04+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "service": "orders"
+        },
+        "call_id": "call_219558",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":60,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":60,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TACbWLCUPOzR22wK6TvcuTQ9ImmnLRJrAW7qTUzXbmhnkqCT2FN+DaXnbYdbDkEG6MU0/gxQZIedowk8fx/FOfe9XhXCs/l7gyrC9X7FiG1RXMWQa3IkkruM="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 4,
+        "turn": 4,
+        "at": "2026-09-27T03:04:06+00:00",
+        "tool": "query_logs",
+        "args": {
+          "service": "orders",
+          "minutes": 15,
+          "query": "fields @timestamp, level, message, error | filter level = \"ERROR\" | sort @timestamp desc"
+        },
+        "call_id": "call_1102779",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":64106,\"scan_budget_left_bytes\":20907414}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":64106,\"scan_budget_left_bytes\":20907414}",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TzuG9wg0EUir6Dh5WFSR10/gTx+Q93r89jwoYypmCOgz9TdH1aO2cQYcKKK1vxhrA26IWCCp3ZNVs5xeUJCAiK0NIdmUFdSYbH1RWlvCgFkyZcoNrYLwj90w="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 5,
+        "turn": 5,
+        "at": "2026-09-27T03:04:07+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "metric": "Errors",
+          "minutes": 15,
+          "namespace": "AWS/Lambda",
+          "statistic": "Sum"
+        },
+        "call_id": "call_886006",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Errors {} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"02:59:00Z\",0.0],[\"03:00:00Z\",0.0],[\"03:01:00Z\",0.0],[\"03:02:00Z\",3.0],[\"03:03:00Z\",5.0]],\"summary\":{\"min\":0.0,\"max\":5.0,\"count\":5}}}",
+        "summary": "{\"metric\":\"AWS/Lambda Errors {} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"02:59:00Z\",0.0],[\"03:00:00Z\",0.0],[\"03:01:00Z\",0.0],[\"03:02:00Z\",3.0],[\"03:03:00Z\",5.0]],\"summary\":{\"min\":0.0,\"max\":5.0,\"count\":5}}",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TLOH33j3CGQnFnbNNkaNCvetI8DKjr/sW9vkm9i21P/8GR49oOHd1itd+MpfD237ulaVW9s7vsrZEKrWWwaM6WrwtM2iPbDAXoVeQTNgxp7RnJ75OqUJIOBg="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 6,
+        "turn": 6,
+        "at": "2026-09-27T03:04:09+00:00",
+        "tool": "get_traces",
+        "args": {
+          "minutes": 15,
+          "service": "orders"
+        },
+        "call_id": "call_657755",
+        "result": "{\"tool\":\"get_traces\",\"truncated\":false,\"untrusted_data\":{\"service\":\"nightshift-orders\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":395,\"with_error\":13,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.323,\"p99\":2.612,\"max\":3.889},\"slowest\":[{\"id\":\"1-6ab88695-7d023450099b6bad777526c5\",\"seconds\":3.889},{\"id\":\"1-6ab88695-6add96ac7d30b465704f783b\",\"seconds\":3.582},{\"id\":\"1-6ab88695-39c747ce1772934f3290cc95\",\"seconds\":3.379},{\"id\":\"1-6ab88697-732c103731df7e221a7d5103\",\"seconds\":2.935},{\"id\":\"1-6ab88697-4255c82b5e17eddb0fdd9d0d\",\"seconds\":2.612}]}}",
+        "summary": "{\"service\":\"nightshift-orders\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":395,\"with_error\":13,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.323,\"p99\":2.612,\"max\":3.889},\"slowest\"...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0Trgf0J8Aqq3D5x+GACDlVn3fIB8vgsf2ORZWh0BLJJWULJqbHitaY2VWEkicoD6Jpx5Z+Ke8rTgZtiRu22EbzFJJnePQH/ZKzbexwWrIxliih7y7AJSNjn7I="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 7,
+        "turn": 7,
+        "at": "2026-09-27T03:04:11+00:00",
+        "tool": "query_logs",
+        "args": {
+          "minutes": 15,
+          "query": "fields @timestamp, @message | sort @timestamp desc",
+          "service": "orders"
+        },
+        "call_id": "call_728177",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-27 03:04:07.839\",\"@message\":\"{\\\"time\\\":\\\"2026-09-27T03:04:07.839Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"ff977c25-668f-47e9-bd00-bfa06b42de5d\\\",\\\"functionArn\\\":\\\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-orders:live\\\",\\\"version\\\":\\\"23\\\",\\\"tracing\\\":{\\\"spanId\\\":\\\"9ea76bee0abe4b46\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Roo...[96 chars cut]\"},{\"@timestamp\":\"2026-09-27 03:04:07.743\",\"@message\":\"{\\\"time\\\":\\\"2026-09-27T03:04:07.743Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"cfe3d67f-643a-4866-bd6b-6cc0528c4895\\\",\\\"metrics\\\":{\\\"durationMs\\\":339.285,\\\"billedDurationMs\\\":340,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":111},\\\"tracing\\\":{\\\"spanId\\\":\\\"a028802b738d878c\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6a...[109 chars cut]\"},{\"@timestamp\":\"2026-09-27 03:04:07.722\",\"@message\":\"{\\\"_aws\\\":{\\\"Timestamp\\\":1790478247722,\\\"CloudWatchMetrics\\\":[{\\\"Namespace\\\":\\\"NightShift\\\",\\\"Dimensions\\\":[[\\\"service\\\"]],\\\"Metrics\\\":[{\\\"Name\\\":\\\"CheckoutsPlaced\\\",\\\"Unit\\\":\\\"Count\\\"}]}]},\\\"service\\\":\\\"orders\\\",\\\"CheckoutsPlaced\\\":[1.0]}\\n\"},{\"@timestamp\":\"2026-09-27 03:04:07.722\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"handler:351\\\",\\\"message\\\":\\\"checkout complete\\\",\\\"timestamp\\\":\\\"2026-09-27 03:04:07,722+0000\\\",\\\"service\\\":\\\"orders\\\",\\\"correlation_id\\\":\\\"load-861d5776-189\\\",\\\"order_id\\\":\\\"df5f87e5-d94e-4c0a-b44d-614ec338ecd1\\\",\\\"replayed\\\":false,\\\"xray_trace_id\\\":\\\"1-6ab887a7-49b97476236493e66bef18eb\\\"}\\n\"},{\"@timestamp\":\"2026-09-27 03:04:07.403\",\"@message\":\"{\\\"time\\\":\\\"2026-09-27T03:04:07.403Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"cfe3d67f-643a-4866-bd6b-6cc0528c4895\\\",\\\"functionArn\\\":\\\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-orders:live\\\",\\\"version\\\":\\\"23\\\",\\\"tracing\\\":{\\\"spanId\\\":\\\"a028802b738d878c\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Roo...[96 chars cut]\"},\"...[15 more items cut]\"],\"bytes_scanned\":624941,\"scan_budget_left_bytes\":20282473}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-27 03:04:07.839\",\"@message\":\"{\\\"time\\\":\\\"2026-09-27T03:04:07.839Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"ff977c25-668f-47e9-bd00-bfa06b42de5d\\\",\\\"functionArn\\\":\\\"arn:aws...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TjETq2TEam1YrQ+EMWY9+sGqYN+S/KgRfgM/R7rMBuZaF4dBkB7/TJnxarsH9k5dy4QF4YMdVZHoMs7KYDUHbleGbw5e/beKWytceWd2FnPrCdTqMvjkTIHg="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 8,
+        "turn": 8,
+        "at": "2026-09-27T03:04:13+00:00",
+        "tool": "query_logs",
+        "args": {
+          "service": "orders",
+          "minutes": 15,
+          "query": "fields @timestamp, level, message, @message | filter @message like /(?i)error|exception|fail/ | sort @timestamp desc"
+        },
+        "call_id": "call_823148",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-27 03:04:04.196\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-27T03:04:04Z\\\", \\\"log_level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (TooManyRequestsException) when calling the Invoke operation (reached max retries: 0): Rate Exceeded.\\\", \\\"errorType\\\": \\\"TooManyRequestsException\\\", \\\"requestId\\\": \\\"8c1c217f-a3e6-415d-bfc9-2b6fa94e900d\\\", \\\"stackT...[1048 chars cut]\"},{\"@timestamp\":\"2026-09-27 03:04:03.096\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-27T03:04:03Z\\\", \\\"log_level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (TooManyRequestsException) when calling the Invoke operation (reached max retries: 0): Rate Exceeded.\\\", \\\"errorType\\\": \\\"TooManyRequestsException\\\", \\\"requestId\\\": \\\"c475b8b1-44c3-4d23-b267-49571de7f171\\\", \\\"stackT...[1048 chars cut]\"},{\"@timestamp\":\"2026-09-27 03:03:45.076\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-27T03:03:45Z\\\", \\\"log_level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (TooManyRequestsException) when calling the Invoke operation (reached max retries: 0): Rate Exceeded.\\\", \\\"errorType\\\": \\\"TooManyRequestsException\\\", \\\"requestId\\\": \\\"e41a4d5e-cb30-4dc8-aa70-085838b4488a\\\", \\\"stackT...[1048 chars cut]\"},\"...[12 more items cut]\"],\"bytes_scanned\":398807,\"scan_budget_left_bytes\":19883666}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-27 03:04:04.196\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-27T03:04:04Z\\\", \\\"log_level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (TooManyRequestsException) when calling the Invoke op...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TZmFvWDyC7EWVERDRSCNa/Z+GocgEO1g/WcXlF/If3Y2CjyIsDLoHS4PURosc4idawAdC8RTd4sQkMZtvGHj9rNlfZOCqTDzFg/YEKaCXBOJ3Qw21w6I2bA0="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 9,
+        "turn": 9,
+        "at": "2026-09-27T03:04:14+00:00",
+        "tool": "get_function_config",
+        "args": {
+          "service": "orders"
+        },
+        "call_id": "call_697958",
+        "result": "{\"tool\":\"get_function_config\",\"truncated\":false,\"untrusted_data\":{\"function\":\"nightshift-orders\",\"live_alias_version\":\"23\",\"last_modified\":\"more than 60 minutes ago\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":15,\"reserved_concurrency\":5,\"state\":\"Active\",\"code_sha256\":\"J7v0fbzDE0O+O4LNDU8uPNnctaNRh1JRjtkB+B89yXk=\",\"environment\":{\"CART_FUNCTION_NAME\":\"nightshift-cart\",\"CART_TIMEOUT_SECONDS\":\"2.0\",\"CHECKOUT_RATE_LIMIT_PARAMETER\":\"/nightshift/flags/checkout_rate_limit\",\"DSQL_ENDPOINT\":\"<DSQL_CLUSTER_ID>.dsql.ca-central-1.on.aws\",\"DSQL_ROLE\":\"orders_service\",\"PLACED_ORDERS_QUEUE_URL\":\"https://sqs.ca-central-1.amazonaws.com/<ACCOUNT_ID>/nightshift-placed-orders\",\"POWERTOOLS_LOG_LEVEL\":\"INFO\",\"POWERTOOLS_SERVICE_NAME\":\"orders\"}}}",
+        "summary": "{\"function\":\"nightshift-orders\",\"live_alias_version\":\"23\",\"last_modified\":\"more than 60 minutes ago\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":15,\"reserved_concurrency\":5,\"state\":\"Active\",\"code_sha256\":\"J7v0fbzDE0O+O4LNDU8uPN...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TxCQkJje+6IFvOuWvam3Lq5Ea3G7rIq/EDmRXF0urUaaJL5LHL7pmKucM/B7RgZXB+dX4lpOcYJyrEY8eO3DngYS3NrP0MGiYRDAMqGyKKMgfmRFk5PG7v+I="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 10,
+        "turn": 10,
+        "at": "2026-09-27T03:04:15+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "ruled_out: orders service has a bad deploy or error regression causing Lambda errors\nlikely: orders service encounters TooManyRequestsException / throttling when calling another service or resource due to reserved concurrency or rate limits\npossible: throttling alarm is related to the orders errors"
+        },
+        "call_id": "call_1025822",
+        "result": "{\"ok\": \"3 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"3 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TNnH1YvGd34mSNdLivHsFjBoafTAtn9O26Uze2kUVDgkQM+X+BuyAssFjOWKcXP+yBtzwKoKy1g2aPpmOSzzIOzEaZSyP/vxEsAumHn4O7ehlvLfdZdo4XQs="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 11,
+        "turn": 11,
+        "at": "2026-09-27T03:04:16+00:00",
+        "tool": "finish_investigation",
+        "args": {
+          "summary": "The nightshift-orders Lambda function experienced Lambda errors driven by TooManyRequestsException (Rate Exceeded) when calling invoke operations.",
+          "hypotheses": "ruled_out: orders service has a bad deploy or error regression causing Lambda errors\nlikely: orders service encounters TooManyRequestsException / throttling when calling another service or resource due to reserved concurrency or rate limits\nlikely: throttling alarm is related to the orders errors",
+          "confidence": 90,
+          "proposed_actions": "Check downstream service rate limits and reserved concurrency settings for the invoked service.",
+          "actions": "",
+          "evidence_steps": "5,8,9",
+          "root_cause_component": "orders",
+          "fault_category": "throttling"
+        },
+        "call_id": "call_941302",
+        "result": "{\"ok\": \"investigation closed\"}",
+        "summary": "\"{\\\"ok\\\": \\\"investigation closed\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TOxs2qttgvODOz6FJkVQonyg8EXl4srITyUTnH/CpK8lof5JkaeupdyVO9hHrSyJdH1OB8ynpB5xF0qDnqju3b1nOgltSQcbp+H/QRoSJw7mdwgjUqGpfGFM="
+        },
+        "in_trigger": false
+      }
+    ],
+    "calls": [
+      {
+        "turn": 1,
+        "at": "2026-09-27T03:04:02+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2434,
+        "output_tokens": 10,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2167,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 2,
+        "at": "2026-09-27T03:04:03+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2742,
+        "output_tokens": 44,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2434,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 3,
+        "at": "2026-09-27T03:04:04+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2845,
+        "output_tokens": 19,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2543,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 4,
+        "at": "2026-09-27T03:04:05+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2914,
+        "output_tokens": 47,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2587,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 5,
+        "at": "2026-09-27T03:04:07+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2822,
+        "output_tokens": 35,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2488,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 6,
+        "at": "2026-09-27T03:04:08+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3009,
+        "output_tokens": 21,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2595,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 7,
+        "at": "2026-09-27T03:04:09+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3346,
+        "output_tokens": 37,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2763,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 8,
+        "at": "2026-09-27T03:04:12+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4302,
+        "output_tokens": 56,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3372,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 9,
+        "at": "2026-09-27T03:04:14+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4890,
+        "output_tokens": 18,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3794,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 10,
+        "at": "2026-09-27T03:04:15+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4978,
+        "output_tokens": 71,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3927,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 11,
+        "at": "2026-09-27T03:04:16+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4338,
+        "output_tokens": 164,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3609,
+        "rate_limit_headers": {}
+      }
+    ],
+    "hypotheses": [
+      {
+        "status": "ruled_out",
+        "text": "orders service has a bad deploy or error regression causing Lambda errors"
+      },
+      {
+        "status": "likely",
+        "text": "orders service encounters TooManyRequestsException / throttling when calling another service or resource due to reserved concurrency or rate limits"
+      },
+      {
+        "status": "likely",
+        "text": "throttling alarm is related to the orders errors"
+      }
+    ],
+    "hypothesis_changes": [
+      {
+        "step": 2,
+        "before": [],
+        "after": [
+          {
+            "status": "likely",
+            "text": "orders service has a bad deploy or error regression causing Lambda errors"
+          },
+          {
+            "status": "possible",
+            "text": "throttling alarm is related to the orders errors"
+          }
+        ]
+      },
+      {
+        "step": 10,
+        "before": [
+          {
+            "status": "likely",
+            "text": "orders service has a bad deploy or error regression causing Lambda errors"
+          },
+          {
+            "status": "possible",
+            "text": "throttling alarm is related to the orders errors"
+          }
+        ],
+        "after": [
+          {
+            "status": "ruled_out",
+            "text": "orders service has a bad deploy or error regression causing Lambda errors"
+          },
+          {
+            "status": "likely",
+            "text": "orders service encounters TooManyRequestsException / throttling when calling another service or resource due to reserved concurrency or rate limits"
+          },
+          {
+            "status": "possible",
+            "text": "throttling alarm is related to the orders errors"
+          }
+        ]
+      },
+      {
+        "step": 11,
+        "before": [
+          {
+            "status": "ruled_out",
+            "text": "orders service has a bad deploy or error regression causing Lambda errors"
+          },
+          {
+            "status": "likely",
+            "text": "orders service encounters TooManyRequestsException / throttling when calling another service or resource due to reserved concurrency or rate limits"
+          },
+          {
+            "status": "possible",
+            "text": "throttling alarm is related to the orders errors"
+          }
+        ],
+        "after": [
+          {
+            "status": "ruled_out",
+            "text": "orders service has a bad deploy or error regression causing Lambda errors"
+          },
+          {
+            "status": "likely",
+            "text": "orders service encounters TooManyRequestsException / throttling when calling another service or resource due to reserved concurrency or rate limits"
+          },
+          {
+            "status": "likely",
+            "text": "throttling alarm is related to the orders errors"
+          }
+        ]
+      }
+    ],
+    "log_bytes_scanned": 1087854,
+    "rejected_calls": 0,
+    "wall_seconds_used": 14.65440105199923,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "summary": "The nightshift-orders Lambda function experienced Lambda errors driven by TooManyRequestsException (Rate Exceeded) when calling invoke operations.",
+      "hypotheses": "ruled_out: orders service has a bad deploy or error regression causing Lambda errors\nlikely: orders service encounters TooManyRequestsException / throttling when calling another service or resource due to reserved concurrency or rate limits\nlikely: throttling alarm is related to the orders errors",
+      "confidence": 90,
+      "proposed_actions": "Check downstream service rate limits and reserved concurrency settings for the invoked service.",
+      "actions": "",
+      "evidence_steps": "5,8,9",
+      "root_cause_component": "orders",
+      "fault_category": "throttling"
+    }
+  }
+}

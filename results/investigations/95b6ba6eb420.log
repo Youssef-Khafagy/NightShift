@@ -1,0 +1,14 @@
+investigation 95b6ba6eb420 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. note_hypotheses {"hypotheses": "possible: payment failures in fulfillment service are caused by a bad deploy\npossib
+   3. list_recent_deployments {"service": "fulfillment"}
+   4. query_logs {"service": "fulfillment", "query": "fields @timestamp, message, level | sort @timestamp desc", "min
+   5. get_function_config {"service": "fulfillment"}
+   6. note_hypotheses {"hypotheses": "ruled_out: payment failures in fulfillment service are caused by a bad deploy\nlikel
+   7. finish_investigation {"confidence": 95, "actions": ["rollback_alias service=fulfillment"], "fault_category": "config_regr
+   8. finish_investigation {"confidence": 95, "evidence_steps": "3,5", "actions": "rollback_alias service=fulfillment", "fault_
+stop: finished
+report: fulfillment / config_regression, confidence 95
+tokens: 25786 in + 524 out = 26310 over 8 calls; largest request estimate 3198; log bytes scanned 2,128,779; wall 9s
+proposed (graded, never approved): rollback_alias service=fulfillment
+saved results/investigations/95b6ba6eb420.json

@@ -1,0 +1,18 @@
+{
+  "investigation_id": "2e9a34875b2c",
+  "root_cause_component": "orders",
+  "fault_category": "insufficient_evidence",
+  "confidence": 50,
+  "summary": "An alarm fired for the Lambda function 'nightshift-orders' showing 3 errors. There is insufficient evidence to determine the exact root cause or fault category from the alarm details alone.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

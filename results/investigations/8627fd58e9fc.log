@@ -1,0 +1,25 @@
+investigation 8627fd58e9fc (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   4. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   5. lookup_recent_changes {"minutes": 60}
+   6. get_queue_stats {}
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message | filter level = \"ERROR\" an
+   8. get_function_config {"service": "fulfillment"}
+   9. note_hypotheses {"hypotheses": "likely: fulfillment service is failing to process payments due to a transient issue
+  10. get_traces {"service": "fulfillment", "minutes": 10}
+  11. get_traces {"service": "payments", "minutes": 10}
+  12. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+  13. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=ni
+  14. query_logs {"service": "payments", "query": "fields @timestamp, level, message | filter level = \"ERROR\" and @
+  15. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=ni
+  16. get_traces {"service": "fulfillment", "minutes": 5}
+  17. get_metrics {"namespace": "AWS/DynamoDB", "metric": "ThrottledRequests", "statistic": "Sum", "dimensions": "Tabl
+  18. query_logs {"service": "fulfillment", "query": "fields @timestamp, message, duration, error | filter message li
+  19. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "timeout_regression", "confidence": 90, "s
+stop: finished
+report: fulfillment / timeout_regression, confidence 90
+tokens: 32658 in + 1638 out = 34296 over 8 calls; largest request estimate 4574; log bytes scanned 435,961; wall 60s
+proposed (graded, never approved): rollback_alias service=fulfillment
+saved results/investigations/8627fd58e9fc.json

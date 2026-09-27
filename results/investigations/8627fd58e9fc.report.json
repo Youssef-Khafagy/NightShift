@@ -1,0 +1,24 @@
+{
+  "investigation_id": "8627fd58e9fc",
+  "root_cause_component": "fulfillment",
+  "fault_category": "timeout_regression",
+  "confidence": 90,
+  "summary": "The fulfillment service experienced a spike in Lambda duration (p99 ~11-12s), causing timeouts and payment failures. No errors or throttles were found in logs or traces, indicating a slow dependency or unoptimized operation.",
+  "evidence": [
+    2,
+    15,
+    16
+  ],
+  "actions": [
+    "rollback_alias service=fulfillment"
+  ],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_metrics",
+    "15": "get_metrics",
+    "16": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

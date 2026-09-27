@@ -1,0 +1,7 @@
+alarm-only f4aa1768f534
+   1. get_alarm {"name": "payment-failures"}
+   2. finish_investigation {"hypotheses": "ruled_out: no_fault\npossible: bad_deploy\npossible: slow_dependency\npossible: paym
+stop: finished
+report: payments / insufficient_evidence, confidence 80
+tokens: 951 in + 154 out = 1105 over 1 calls; largest request estimate 1788; log bytes scanned 0; wall 8s
+saved results/investigations/f4aa1768f534.json

@@ -1,0 +1,16 @@
+investigation 0cd5ad5cfa80 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. note_hypotheses {"hypotheses": "possible: payments service is failing payments causing PaymentFailures metric in ful
+   3. get_traces {"service": "payments", "minutes": 15}
+   4. get_traces {"service": "fulfillment", "minutes": 15}
+   5. query_logs {"minutes": 15, "query": "fields @timestamp, message, level | filter level = \"ERROR\" or level = \"
+   6. query_logs {"query": "fields @timestamp, message, level | sort @timestamp desc", "service": "payments", "minute
+   7. query_logs {"query": "fields @timestamp, message, level | filter level = \"ERROR\" or level = \"WARN\" or messa
+   8. query_logs {"service": "fulfillment", "minutes": 5, "query": "fields @timestamp, message, level, error | filter
+   9. query_logs {"minutes": 5, "service": "fulfillment", "query": "fields @timestamp, message, error | filter messag
+  10. note_hypotheses {"hypotheses": "likely: poison message in queue causing repeated failures in fulfillment\nruled_out:
+  11. finish_investigation {"proposed_actions": "Investigate the specific message contents in the placed-orders queue causing f
+stop: max_tokens
+report: none / insufficient_evidence, confidence 0
+tokens: 43330 in + 639 out = 43969 over 11 calls; largest request estimate 4526; log bytes scanned 2,528,102; wall 18s
+saved results/investigations/0cd5ad5cfa80.json

@@ -1,0 +1,12 @@
+{
+  "entry": 1,
+  "scenario": 9,
+  "run": 1,
+  "attempt": 1,
+  "status": "done",
+  "started": "2026-09-27T01:39:12.027697+00:00",
+  "run_dir": "results/chaos/09-throttling-20260927T013912Z",
+  "exit_code": 0,
+  "actor_invocations": 0,
+  "finished": "2026-09-27T03:20:41.175636+00:00"
+}

@@ -1,0 +1,36 @@
+Run c4c85d95: 0.2/s for 1200s, seed 3301465493
+  orders                     240
+  Lambda invocations       1,128   month to date     85,223   cap 500,000
+  SQS requests               928
+  DSQL DPU                  60.0   month to date    6,197.9   cap 50,000
+  log volume                 1.4 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "c4c85d95",
+  "date": "2026-09-27T06:45:28+00:00",
+  "commit": "8213358",
+  "rate": 0.2,
+  "duration": 1200,
+  "seed": 3301465493,
+  "projected": {
+    "orders": 240,
+    "lambda_invocations": 1128.0,
+    "sqs_requests": 928.0,
+    "dsql_dpu": 60.0,
+    "log_mb": 1.40616
+  },
+  "sent": 240,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 240
+  },
+  "elapsed_seconds": 1195.5,
+  "achieved_rate": 0.201,
+  "checkout_latency_ms": {
+    "p50": 374.4,
+    "p95": 452.9,
+    "p99": 542.5
+  }
+}

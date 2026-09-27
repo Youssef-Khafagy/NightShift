@@ -1,0 +1,7 @@
+runbook c77583a23836
+   1. get_alarm {"name": "orders-errors"}
+   2. list_recent_deployments {"minutes": 30, "service": "orders"}
+stop: finished
+report: none / insufficient_evidence, confidence 0
+tokens: 0 in + 0 out = 0 over 0 calls; largest request estimate 0; log bytes scanned 0; wall 0s
+saved results/investigations/c77583a23836.json

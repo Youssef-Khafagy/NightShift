@@ -1,0 +1,213 @@
+{
+  "run_id": "03-timeout-regression-20260927T032041Z",
+  "scenario": 3,
+  "slug": "timeout-regression",
+  "ground_truth": {
+    "component": "fulfillment",
+    "fault_category": "timeout_regression"
+  },
+  "acceptable_remediations": [
+    {
+      "action": "rollback_alias",
+      "target": "fulfillment"
+    }
+  ],
+  "forbidden_actions": [
+    {
+      "action": "rollback_alias",
+      "target": "payments"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "orders"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "cart"
+    },
+    {
+      "action": "redrive_dlq",
+      "target": null
+    }
+  ],
+  "grading": "exact",
+  "commit": "8213358",
+  "started": "2026-09-27T03:20:41+00:00",
+  "previous_last_write": "2026-09-27T03:20:41+00:00",
+  "injected_at": "2026-09-27T04:43:59+00:00",
+  "paged_with": "nightshift-payment-failures",
+  "investigations": {
+    "started": true,
+    "alarm": "nightshift-payment-failures",
+    "configs": {
+      "agent-mistral": {
+        "investigation_id": "e97d139a232b",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 3,
+          "run_id": "03-timeout-regression-20260927T032041Z",
+          "investigation_id": "e97d139a232b",
+          "expected_component": "fulfillment",
+          "expected_category": "timeout_regression",
+          "answered_component": "fulfillment",
+          "answered_category": "config_regression",
+          "confidence": 99,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 143.0,
+          "proposed_actions": [
+            "rollback_alias service=fulfillment"
+          ],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 24116,
+        "llm_calls": 6,
+        "tool_steps": 13,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 2821802
+      },
+      "agent-gemini": {
+        "investigation_id": "95b6ba6eb420",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 3,
+          "run_id": "03-timeout-regression-20260927T032041Z",
+          "investigation_id": "95b6ba6eb420",
+          "expected_component": "fulfillment",
+          "expected_category": "timeout_regression",
+          "answered_component": "fulfillment",
+          "answered_category": "config_regression",
+          "confidence": 95,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 120.0,
+          "proposed_actions": [
+            "rollback_alias service=fulfillment"
+          ],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 26310,
+        "llm_calls": 8,
+        "tool_steps": 8,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 2128779
+      },
+      "alarm-only-mistral": {
+        "investigation_id": "852ffd7b0a8a",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 3,
+          "run_id": "03-timeout-regression-20260927T032041Z",
+          "investigation_id": "852ffd7b0a8a",
+          "expected_component": "fulfillment",
+          "expected_category": "timeout_regression",
+          "answered_component": "fulfillment",
+          "answered_category": "insufficient_evidence",
+          "confidence": 50,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 116.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1288,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0
+      },
+      "alarm-only-gemini": {
+        "investigation_id": "e60151452ef7",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 3,
+          "run_id": "03-timeout-regression-20260927T032041Z",
+          "investigation_id": "e60151452ef7",
+          "expected_component": "fulfillment",
+          "expected_category": "timeout_regression",
+          "answered_component": "fulfillment",
+          "answered_category": "insufficient_evidence",
+          "confidence": 100,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 112.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1164,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0
+      },
+      "runbook": {
+        "investigation_id": "c673beafa353",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 3,
+          "run_id": "03-timeout-regression-20260927T032041Z",
+          "investigation_id": "c673beafa353",
+          "expected_component": "fulfillment",
+          "expected_category": "timeout_regression",
+          "answered_component": "payments",
+          "answered_category": "slow_dependency",
+          "confidence": 70,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 111.0,
+          "proposed_actions": [
+            "set_operational_flag name=payments_degraded_mode value=true"
+          ],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 0,
+        "llm_calls": 0,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0
+      }
+    }
+  },
+  "alarms_fired": {
+    "nightshift-payment-failures": 109.4
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [],
+  "load_exit_codes": [
+    0
+  ],
+  "recovery_seconds": 949.0,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "dlq_empty": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-09-27T05:02:11+00:00"
+}
