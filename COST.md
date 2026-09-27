@@ -28,7 +28,7 @@ Proposed: `ca-central-1` (Canada Central). Aurora DSQL single-Region clusters be
 
 ## Always Free services we plan to use
 
-Usage model for "Projected": one busy month = development plus one full benchmark pass. A benchmark pass is 14 scenarios x 3 runs = 42 injected incidents. Traffic is 2 requests/s for 20 minutes per incident. Every agent and baseline configuration investigates the same injected incident, so incidents are not repeated per configuration.
+Usage model for "Projected": one busy month = development plus one full benchmark pass. A benchmark pass is 14 scenarios x 3 runs = 42 injected incidents. Traffic is 2 requests/s for 20 minutes per incident. Every agent and baseline configuration investigates the same injected incident, so incidents are not repeated per configuration. From M7 the benchmark runs every configuration as a local process against that shared incident, so the agent Lambda is not invoked by the benchmark (see "M7 benchmark pass" below).
 
 | Service | Always Free allowance | Projected busy month | Headroom | Guardrails |
 |---|---|---|---|---|
@@ -453,6 +453,29 @@ The Billing console's Cost and usage widget showed **$0.03** for September with 
 ### SQS polling with a concurrency cap (measured 2026-09-22)
 
 The placed-orders mapping now has `scaling_config { maximum_concurrency = 2 }`, equal to fulfillment's reserved concurrency. AWS documents that with a cap set, Lambda cannot scale idle polling down to 2 concurrent invokes, so polling could have risen. Measured over 5 idle minutes with the consumer enabled: **6 empty receives per minute**, steady. That is below the ~20 per minute seen before, although that earlier figure included a load run, so the two are not like for like. If the consumer were left on around the clock at 6 per minute, that would be about 259K requests a month, 26% of the allowance; it stays enabled only for runs. The generator keeps its 20 per minute as a conservative figure.
+
+### M7 benchmark pass (checked 2026-09-26, M7 step 1)
+
+What changed since the projection above: the four configurations (full agent on Mistral `ministral-14b` and on Gemini Flash Lite, the scripted runbook, and the alarm-text baseline) all investigate the same incident as local processes. Nothing here is a new service.
+
+Measured basis, from the six agent runs in `results/chaos/` (M5 step 7 and M6 step 7, all Mistral): 5 to 8 LLM calls and 18,513 to 32,729 tokens per investigation; 21 to 30 minutes of active time per incident (warm-up, detection, investigation, recovery, health), ignoring the run the laptop slept through.
+
+| Resource | Basis | Pass | Share of the monthly allowance |
+|---|---|---|---|
+| DSQL | 100,800 orders x 0.25 DPU (load run, 2026-09-22) plus 42 x 0.425 fixed | ~25,200 DPU | 25% |
+| Lambda requests | 100,800 orders x 4.7 | ~474K | 47% |
+| Lambda GB-s (agent) | The benchmark does not invoke the agent Lambda | 0 | 0% |
+| SQS | 100,800 x 2.2, plus 20 empty receives a minute for ~70 hours with the consumer on for whole batches | ~306K | 31% |
+| Logs Insights scans | 42 incidents x 3 querying configurations x 20 MB cap | 2.52 GB | Logs total 3.41 GB of 5, unchanged |
+| X-Ray | As projected above | ~65K traces | 65% |
+| CloudTrail `LookupEvents` | Free; throttled at 2 requests per second per account and region, which parallel investigations can hit. The agent sets no retry config, so boto3's default mode retries throttling errors. | | |
+| DynamoDB `nightshift-investigations` | Two agents checkpointing at once at 5 WCU; checkpoints are a few KB, and DynamoDB burst capacity absorbs short peaks. Watched in the first batch, not assumed. | | |
+
+The pass spans about a week and will cross a month boundary, which splits the numbers above between two months. Each month still has the headroom of the whole.
+
+**LLM budget per pass.** Mistral: 42 investigations x ~30K = ~1.3M tokens, against 937,500 tokens a minute and no visible monthly cap. Gemini Flash Lite: 42 x 8 calls plus 42 baseline calls = ~380 requests for the whole pass, against 500 a day. **Groq is not in the pass**: at 200K tokens a day it finishes about 6 investigations a day, and a third querying configuration would take Logs scans to 3.36 GB (4.25 GB total, ~15% headroom).
+
+**Wall clock.** About 25 minutes active plus a 75-minute quiet gap (the 60-minute tool lookback plus 15 minutes of margin, M7 step 2) is about 100 minutes per incident: **~70 hours per pass**, in about 7 batches of 6, each about 10 hours, inside the 12-hour `aws login` session.
 
 ## Not Always Free
 
