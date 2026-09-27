@@ -40,6 +40,7 @@ import time
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Protocol
 
 import boto3
 
@@ -330,6 +331,16 @@ def run_step(step, injector: Injector, loads: list, run_dir: Path, reason: str) 
         injector.drain_dlq_message(f"{PROJECT}-placed-orders-dlq")
 
 
+class Panel(Protocol):
+    """Investigations run locally beside a scenario (evaluation/bench.py).
+    They start on the first alarm, as the real trigger would, and are
+    collected and graded after the alarm wait."""
+
+    def start(self, alarm: str) -> None: ...
+
+    def finish(self, result: dict, run_dir: Path) -> dict: ...
+
+
 def run(
     scenario: Scenario,
     *,
@@ -337,6 +348,7 @@ def run(
     with_agent: bool = False,
     hold: bool = False,
     wait_quiet: bool = False,
+    panel: Panel | None = None,
 ) -> int:
     run_id = f"{scenario.id:02d}-{scenario.slug}-{datetime.now(UTC):%Y%m%dT%H%M%SZ}"
     run_dir = RESULTS / run_id
@@ -388,7 +400,7 @@ def run(
     base_seconds = (
         scenario.warm_up_seconds + scenario.alarm_wait_seconds + RECOVERY_MARGIN
     )
-    if with_agent:
+    if with_agent or panel:
         # Keep traffic flowing while the agent investigates, as it would in a
         # real incident, within load.py's 30 minute ceiling.
         base_seconds = min(base_seconds + AGENT_TRAFFIC_SECONDS, MAX_LOAD_SECONDS)
@@ -429,9 +441,19 @@ def run(
         while time.time() < deadline:
             for name in firing(alarm_states(c.cw)):
                 first_alarm.setdefault(name, time.time())
+            if panel and first_alarm and "paged_with" not in result:
+                # The page goes out on the first alarm, expected or not.
+                result["paged_with"] = min(first_alarm, key=first_alarm.__getitem__)
+                print(f"  investigating {result['paged_with']}", flush=True)
+                panel.start(result["paged_with"])
             if expected and expected <= set(first_alarm):
                 break
             time.sleep(POLL)
+    if panel and not dry_run:
+        print("Collecting the investigations:", flush=True)
+        # Called even when nothing paged, so the panel learns the run's
+        # directory and records that no investigation started.
+        result["investigations"] = panel.finish(result, run_dir)
     if with_agent and dry_run:
         print("WOULD wait for the agent's report and grade it")
     if with_agent and not dry_run:

@@ -37,7 +37,12 @@ def main() -> None:
     )
     parser.add_argument("--model")
     parser.add_argument("--store", choices=["dynamo", "memory"], default="dynamo")
-    parser.add_argument("--profile", default="nightshift-admin")
+    parser.add_argument(
+        "--profile",
+        default="nightshift-admin",
+        help="'ambient' to use the Investigator credentials already in the environment",
+    )
+    parser.add_argument("--investigation-id", help="choose the ID (the benchmark does)")
     args = parser.parse_args()
 
     load_dotenv(REPO_ROOT / ".env")
@@ -49,7 +54,9 @@ def main() -> None:
     )
     if args.kind == "runbook":
         config = {"kind": "runbook"}
-        state = runbook.investigate(ToolContext(session), args.alarm)
+        state = runbook.investigate(
+            ToolContext(session), args.alarm, args.investigation_id
+        )
         store.save(state)
     else:
         agent_config = for_provider(args.provider, args.model)
@@ -62,7 +69,9 @@ def main() -> None:
         baseline = AlarmOnly(
             llm, ToolContext(session, agent_config), store, agent_config
         )
-        state = baseline.run(baseline.start_from_alarm(args.alarm))
+        state = baseline.run(
+            baseline.start_from_alarm(args.alarm, args.investigation_id)
+        )
     print(f"{args.kind} {state.investigation_id}")
     print_summary(state, save(state, config, store), pending=False)
 

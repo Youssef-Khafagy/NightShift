@@ -12,9 +12,14 @@ from agent.tools import run_tool
 from agent.tools.context import ToolContext
 
 
-def new_state(trigger: dict[str, Any], provider: str, model: str) -> InvestigationState:
+def new_state(
+    trigger: dict[str, Any],
+    provider: str,
+    model: str,
+    investigation_id: str | None = None,
+) -> InvestigationState:
     return InvestigationState(
-        investigation_id=uuid.uuid4().hex[:12],
+        investigation_id=investigation_id or uuid.uuid4().hex[:12],
         trigger=trigger,
         started_at=now_iso(),
         provider=provider,

@@ -31,9 +31,21 @@ def assume_investigator(base: boto3.Session, session_name: str) -> boto3.Session
     )
 
 
+AMBIENT = "ambient"
+
+
 def investigator_session(
     profile: str | None = None, region: str = REGION
 ) -> boto3.Session:
+    """With profile "ambient", use the credentials already in the
+    environment, which must be the Investigator role's: the benchmark starts
+    each investigation as a process holding nothing else."""
+    if profile == AMBIENT:
+        session = boto3.Session(region_name=region)
+        arn = session.client("sts").get_caller_identity()["Arn"]
+        if f":assumed-role/{ROLE_NAME}/" not in arn:
+            raise SystemExit(f"ambient credentials are not the {ROLE_NAME} role")
+        return session
     return assume_investigator(
         boto3.Session(profile_name=profile, region_name=region),
         "nightshift-agent-local",

@@ -171,9 +171,11 @@ def by_alarm(state: InvestigationState, tools: ToolContext, alarm: str) -> dict:
     )
 
 
-def investigate(tools: ToolContext, alarm_name: str) -> InvestigationState:
+def investigate(
+    tools: ToolContext, alarm_name: str, investigation_id: str | None = None
+) -> InvestigationState:
     trigger = get_alarm(tools, alarm_name)
-    state = new_state(trigger, provider="runbook", model="scripted")
+    state = new_state(trigger, "runbook", "scripted", investigation_id)
     record(state, tools, "get_alarm", {"name": short_name(trigger["name"])})
     alarm = short_name(trigger["name"])
     final = from_deploy(state, tools, alarm) or by_alarm(state, tools, alarm)
