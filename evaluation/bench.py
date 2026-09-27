@@ -81,13 +81,43 @@ CONFIGS = (
 # ---------------------------------------------------------------------------
 
 
-def make_plan(scenarios: list[int], runs: int, seed: int) -> list[dict]:
-    order = [(s, r) for s in sorted(scenarios) for r in range(1, runs + 1)]
-    random.Random(seed).shuffle(order)
-    return [
-        {"entry": i + 1, "scenario": s, "run": r, "attempt": 1}
-        for i, (s, r) in enumerate(order)
+def make_plan(
+    scenarios: list[int],
+    runs: int,
+    seed: int,
+    first_runs: dict[int, int] | None = None,
+) -> list[dict]:
+    """Every scenario `runs` times, in two phases, each shuffled.
+
+    Phase 1 is what gets run first: each scenario `first_runs.get(s, 1)`
+    times. Phase 2 is the rest, up to `runs`. Stopping after phase 1 gives a
+    complete, reportable benchmark chosen before any result was seen;
+    running phase 2 later only adds runs at the same commit. Without
+    `first_runs`, everything is phase 1."""
+    rng = random.Random(seed)
+    first = first_runs if first_runs is not None else {s: runs for s in scenarios}
+    phases = [
+        [(s, r) for s in sorted(scenarios) for r in range(1, first.get(s, 1) + 1)],
+        [
+            (s, r)
+            for s in sorted(scenarios)
+            for r in range(first.get(s, 1) + 1, runs + 1)
+        ],
     ]
+    plan: list[dict] = []
+    for phase, order in enumerate(phases, start=1):
+        rng.shuffle(order)
+        plan += [
+            {
+                "entry": len(plan) + i + 1,
+                "scenario": s,
+                "run": r,
+                "attempt": 1,
+                "phase": phase,
+            }
+            for i, (s, r) in enumerate(order)
+        ]
+    return plan
 
 
 def command(config: Config, alarm: str, investigation_id: str) -> list[str]:
@@ -388,6 +418,11 @@ def main() -> None:
         "--scenarios", help="comma separated; default every scenario file"
     )
     parser.add_argument("--runs", type=int, default=RUNS_PER_SCENARIO)
+    parser.add_argument(
+        "--first-runs",
+        help="phase 1 runs per scenario, e.g. 1:3,4:3,11:3 (others once); "
+        "default: every run is phase 1",
+    )
     parser.add_argument("--status", action="store_true")
     parser.add_argument("--batch", type=int)
     parser.add_argument("--run", action="store_true")
@@ -409,7 +444,13 @@ def main() -> None:
             if args.scenarios
             else sorted(s.id for s in load_all(SCENARIOS))
         )
-        plan = make_plan(ids, args.runs, args.seed)
+        first = None
+        if args.first_runs:
+            first = {s: 1 for s in ids}
+            for pair in args.first_runs.split(","):
+                s, n = pair.split(":")
+                first[int(s)] = int(n)
+        plan = make_plan(ids, args.runs, args.seed, first)
         root.mkdir(parents=True, exist_ok=True)
         (root / "plan.json").write_text(
             json.dumps(
@@ -417,6 +458,7 @@ def main() -> None:
                     "seed": args.seed,
                     "scenarios": ids,
                     "runs": args.runs,
+                    "first_runs": first,
                     "entries": plan,
                 },
                 indent=2,
@@ -442,8 +484,9 @@ def main() -> None:
         counts: dict[str, int] = {}
         for p in plan:
             s = states.get(p["entry"], {}).get("status", "pending")
-            counts[s] = counts.get(s, 0) + 1
-        print(f"{len(plan)} entries: {counts}")
+            key = f"phase {p.get('phase', 1)} {s}"
+            counts[key] = counts.get(key, 0) + 1
+        print(f"{len(plan)} entries: {dict(sorted(counts.items()))}")
         return
 
     todo = next_entries(plan, states, args.batch)
@@ -467,7 +510,9 @@ def main() -> None:
                 "entry": max(p["entry"] for p in plan) + 1,
                 "attempt": item["attempt"] + 1,
             }
-            plan.append(again)
+            # Right after the entry it replaces, not at the end: appended, a
+            # phase 1 re-run would wait behind all of phase 2.
+            plan.insert(plan.index(item) + 1, again)
             data = json.loads((root / "plan.json").read_text())
             data["entries"] = plan
             (root / "plan.json").write_text(json.dumps(data, indent=2) + "\n")

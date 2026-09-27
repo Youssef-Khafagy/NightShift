@@ -11,7 +11,11 @@ from typing import TypedDict
 # longer than this between incidents (chaos/quiet.py), so an investigation can
 # never read the previous incident's leftovers. In M5 two of five wrong
 # answers came from exactly that, when the widest tool looked back 7 days.
-LOOKBACK_MINUTES = 60
+# 30, not 60 (owner decision 2026-09-27): the longest incident, from warm-up
+# to the end of an investigation at its time limit, is 28.6 minutes (the
+# poison message: 3 warm-up, 11.6 to its alarm, 14 investigating), and the
+# shorter gap between incidents fits the benchmark into two sittings.
+LOOKBACK_MINUTES = 30
 
 
 @dataclass(frozen=True)

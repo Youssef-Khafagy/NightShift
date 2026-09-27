@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -123,6 +124,27 @@ class Clients:
 def alarm_states(cw) -> dict[str, str]:
     alarms = cw.describe_alarms(AlarmNamePrefix=f"{PROJECT}-")["MetricAlarms"]
     return {a["AlarmName"]: a["StateValue"] for a in alarms if a["ActionsEnabled"]}
+
+
+def first_to_fire(cw, names: set[str]) -> str:
+    """Of alarms seen firing in the same poll, the one whose state changed
+    first, by the alarm's own timestamp: the one the real trigger would have
+    paged with. Name order only breaks an exact tie. The first version
+    picked by name, which sent scenario 9's investigations to orders-errors
+    when throttles had fired in the same 15 seconds."""
+    alarms = cw.describe_alarms(AlarmNames=sorted(names))["MetricAlarms"]
+    return min(alarms, key=lambda a: (a["StateUpdatedTimestamp"], a["AlarmName"]))[
+        "AlarmName"
+    ]
+
+
+def stop_traffic(loads: list[subprocess.Popen]) -> None:
+    """Every investigation has answered, so the rest of the traffic only
+    delays the quiet gap. SIGTERM makes load.py stop sending, finish what is
+    in flight, write its summary and exit 0."""
+    for p in loads:
+        if p.poll() is None:
+            p.send_signal(signal.SIGTERM)
 
 
 def consumer_on(lam) -> bool:
@@ -475,7 +497,7 @@ def run(
                 first_alarm.setdefault(name, time.time())
             if panel and first_alarm and "paged_with" not in result:
                 # The page goes out on the first alarm, expected or not.
-                result["paged_with"] = min(first_alarm, key=first_alarm.__getitem__)
+                result["paged_with"] = first_to_fire(c.cw, set(first_alarm))
                 print(f"  investigating {result['paged_with']}", flush=True)
                 panel.start(result["paged_with"])
             if expected and expected <= set(first_alarm):
@@ -486,6 +508,8 @@ def run(
         # Called even when nothing paged, so the panel learns the run's
         # directory and records that no investigation started.
         result["investigations"] = panel.finish(result, run_dir)
+        stop_traffic(loads)
+        result["traffic_stopped_after_investigations"] = True
     if with_agent and dry_run:
         print("WOULD wait for the agent's report and grade it")
     if with_agent and not dry_run:

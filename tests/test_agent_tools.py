@@ -137,7 +137,7 @@ def test_every_problem_is_reported_at_once():
     assert "missing required argument 'metric'" in text
     assert "missing required argument 'statistic'" in text
     assert "must be one of" in text
-    assert "at most 60" in text
+    assert "at most 30" in text
     assert "unknown argument 'colour'" in text
 
 
@@ -338,9 +338,9 @@ def test_query_logs_stops_at_the_scan_budget():
 
 
 def test_query_logs_window_is_capped_by_config():
-    ctx = context(AgentConfig(max_log_query_minutes=30), logs=logs_client(1))
-    out = call("query_logs", {"service": "orders", "query": "x", "minutes": 45}, ctx)
-    assert "at most 30" in out["untrusted_data"]["error"]
+    ctx = context(AgentConfig(max_log_query_minutes=20), logs=logs_client(1))
+    out = call("query_logs", {"service": "orders", "query": "x", "minutes": 25}, ctx)
+    assert "at most 20" in out["untrusted_data"]["error"]
 
 
 def test_function_config_redacts_secret_names_but_shows_config():
@@ -395,13 +395,13 @@ def test_deployments_newest_first_within_the_window():
         return {"Items": rows[kw["ExpressionAttributeValues"][":s"]["S"]]}
 
     ddb = Recorder(query=query)
-    out = call("list_recent_deployments", {"minutes": 45}, context(dynamodb=ddb))[
+    out = call("list_recent_deployments", {"minutes": 20}, context(dynamodb=ddb))[
         "untrusted_data"
     ]
     assert [m["service"] for m in out["moves"]] == ["fulfillment", "orders"]
     assert (
         ddb.calls[0][1]["ExpressionAttributeValues"][":t"]["S"]
-        == "2026-09-23T14:15:00.000+00:00"
+        == "2026-09-23T14:40:00.000+00:00"
     )
 
 

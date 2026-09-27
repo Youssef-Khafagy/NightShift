@@ -210,3 +210,21 @@ def test_percentile_nearest_rank(load):
     assert load.percentile(values, 50) == 50.0
     assert load.percentile(values, 99) == 99.0
     assert load.percentile([], 50) is None
+
+
+def test_a_stop_ends_the_schedule_and_is_recorded(load):
+    import threading
+
+    t = FakeTime()
+    stop = threading.Event()
+    sent = []
+
+    def submit(i, done):
+        sent.append(i)
+        if i == 1:
+            stop.set()
+        done()
+
+    pacer = load.Pacer(rate=1, total=10, max_in_flight=8, clock=t.clock, sleep=t.sleep)
+    pacer.run(submit, stop)
+    assert sent == [0, 1] and pacer.stopped_early
