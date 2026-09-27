@@ -114,6 +114,7 @@ class Clients:
         self.lam = boto3.client("lambda", region_name=REGION)
         self.sqs = boto3.client("sqs", region_name=REGION)
         self.cw = boto3.client("cloudwatch", region_name=REGION)
+        self.iam = boto3.client("iam", region_name=REGION)
         self.table = boto3.resource("dynamodb", region_name=REGION).Table(
             deployments.TABLE
         )
@@ -153,7 +154,19 @@ def plan_clean(with_agent: bool = False) -> bool:
     return result.returncode == 0
 
 
-def start_load(rate: float, seconds: int, out: Path) -> subprocess.Popen:
+def load_options(args: dict) -> list[str]:
+    """The traffic shape a load step asks for, as load.py flags."""
+    extra = []
+    if args.get("hot_product") is not None:
+        extra += ["--hot-product", str(args["hot_product"])]
+    if args.get("note"):
+        extra += ["--note", args["note"]]
+    return extra
+
+
+def start_load(
+    rate: float, seconds: int, out: Path, extra: list[str] | None = None
+) -> subprocess.Popen:
     # Output goes to a log beside the result, not to /dev/null: a load that
     # refuses to start must leave its reason somewhere.
     with out.with_suffix(".log").open("w") as log:
@@ -168,6 +181,7 @@ def start_load(rate: float, seconds: int, out: Path) -> subprocess.Popen:
                 "--run",
                 "--out",
                 str(out),
+                *(extra or []),
             ],
             stdout=log,
             stderr=subprocess.STDOUT,
@@ -311,7 +325,13 @@ def run_step(step, injector: Injector, loads: list, run_dir: Path, reason: str) 
             a["service"], a["name"], a["value"], a.get("record_deploy", True)
         )
     elif step.do == "deploy_patch":
-        injector.deploy_patch(a["service"], a["file"], a["find"], a["with"])
+        injector.deploy_patch(
+            a["service"],
+            a["file"],
+            a["find"],
+            a["with"],
+            a.get("record_deploy", True),
+        )
     elif step.do == "send_message":
         injector.send_message(a["queue"], json.dumps(a["body"]))
     elif step.do == "load":
@@ -320,7 +340,7 @@ def run_step(step, injector: Injector, loads: list, run_dir: Path, reason: str) 
             f"  {'WOULD ' if injector.dry_run else ''}start load {a['rate']}/s for {a['seconds']}s"
         )
         if not injector.dry_run:
-            loads.append(start_load(a["rate"], a["seconds"], out))
+            loads.append(start_load(a["rate"], a["seconds"], out, load_options(a)))
     elif step.do == "wait":
         print(f"  wait {a['seconds']}s")
         if not injector.dry_run:
@@ -329,6 +349,16 @@ def run_step(step, injector: Injector, loads: list, run_dir: Path, reason: str) 
         injector.restore(reason)
     elif step.do == "drain_dlq_message":
         injector.drain_dlq_message(f"{PROJECT}-placed-orders-dlq")
+    elif step.do == "redrive_dlq":
+        injector.redrive_dlq(f"{PROJECT}-placed-orders-dlq")
+    elif step.do == "set_concurrency":
+        injector.set_concurrency(a["service"], int(a["value"]))
+    elif step.do == "set_queue_attribute":
+        injector.set_queue_attribute(a["queue"], a["name"], str(a["value"]))
+    elif step.do == "set_log_level":
+        injector.set_log_level(a["service"], a["application"])
+    elif step.do == "remove_policy_statement":
+        injector.remove_policy_statement(a["service"], a["sid"])
 
 
 class Panel(Protocol):
@@ -361,6 +391,7 @@ def run(
         git_sha=git_sha(),
         dry_run=dry_run,
         state_path=run_dir / "state.json",
+        iam=c.iam,
     )
     result: dict = {
         "run_id": run_id,
@@ -373,6 +404,7 @@ def run(
         "forbidden_actions": [
             r.model_dump(mode="json") for r in scenario.forbidden_actions
         ],
+        "grading": scenario.grading,
         "commit": git_sha(),
         "started": datetime.now(UTC).isoformat(timespec="seconds"),
     }
@@ -556,6 +588,7 @@ def main() -> None:
             git_sha=git_sha(),
             dry_run=not args.run,
             state_path=args.restore,
+            iam=c.iam,
         )
         injector.injections = json.loads(args.restore.read_text())
         if args.run:

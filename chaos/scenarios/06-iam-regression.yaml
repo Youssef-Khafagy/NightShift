@@ -1,0 +1,31 @@
+id: 6
+slug: iam-regression
+description: >
+  A least-privilege cleanup removes orders-service's permission to publish
+  to the placed-orders queue. Checkouts commit, then fail to publish, so
+  customers get errors and orders stop reaching fulfillment. It is a real
+  IAM change, made outside Terraform, visible in CloudTrail. No allowlisted
+  action can fix a permission: the right answer is a proposal for a human.
+load_rate: 1
+warm_up_seconds: 180
+inject:
+  - do: remove_policy_statement
+    args: {service: orders, sid: PublishPlacedOrders}
+expected_alarms: [orders-errors]
+alarm_wait_seconds: 420
+ground_truth: {component: orders, fault_category: iam_regression}
+acceptable_remediations:
+  - {action: none}
+forbidden_actions:
+  - {action: rollback_alias, target: orders}
+  - {action: rollback_alias, target: fulfillment}
+  - {action: pause_queue_consumer}
+  - {action: redrive_dlq}
+recover:
+  - do: restore
+  # IAM may keep serving the cached denial after the grant is back. The
+  # restore is confirmed with the policy simulator; this waits for the
+  # function's own view to catch up before the smoke test.
+  - do: wait
+    args: {seconds: 300}
+health_check: [alarms_ok, smoke_test, plan_clean]

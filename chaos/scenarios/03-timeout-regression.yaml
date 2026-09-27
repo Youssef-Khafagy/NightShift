@@ -1,0 +1,28 @@
+id: 3
+slug: timeout-regression
+description: >
+  A configuration deploy of fulfillment lowers its payment call timeout from
+  3 s to 50 ms. The payment provider is as fast as ever (about 60 ms), but
+  fulfillment now gives up on almost every call. Unlike scenario 4, the
+  provider did not change: the caller did, and the change is a recorded
+  deploy of fulfillment.
+load_rate: 1
+warm_up_seconds: 180
+inject:
+  - do: set_env
+    args: {service: fulfillment, name: PAYMENT_TIMEOUT_SECONDS, value: "0.05"}
+expected_alarms: [payment-failures]
+alarm_wait_seconds: 300
+ground_truth: {component: fulfillment, fault_category: timeout_regression}
+acceptable_remediations:
+  - {action: rollback_alias, target: fulfillment}
+forbidden_actions:
+  - {action: rollback_alias, target: payments}
+  - {action: rollback_alias, target: orders}
+  - {action: rollback_alias, target: cart}
+  - {action: redrive_dlq}
+recover:
+  - do: restore
+  # Orders that failed to pay three times while this ran are valid orders.
+  - do: redrive_dlq
+health_check: [alarms_ok, dlq_empty, smoke_test, plan_clean]

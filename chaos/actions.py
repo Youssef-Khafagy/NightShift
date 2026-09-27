@@ -7,6 +7,10 @@ Every fault travels a real path:
 - `deploy_patch` builds the service's zip the way Terraform does, with one
   small code change, publishes it and moves the alias: a bad deploy.
 - `send_message` puts one message on a queue: a producer bug.
+- `set_concurrency`, `set_queue_attribute`, `set_log_level` and
+  `remove_policy_statement` are the operational changes an engineer makes
+  with the console or the CLI: no new version, no deployments row, one
+  CloudTrail event, which is exactly what the investigator would find.
 
 Each alias move is recorded in the deployments table like any other deploy,
 because that is what the investigator would see after a real one.
@@ -28,6 +32,7 @@ import hashlib
 import io
 import json
 import sys
+import time
 import zipfile
 from pathlib import Path
 from typing import Any
@@ -100,10 +105,12 @@ class Injector:
         git_sha: str | None,
         dry_run: bool,
         state_path: Path | None = None,
+        iam: Any = None,
     ) -> None:
         self.lam = lambda_client
         self.sqs = sqs
         self.table = table
+        self.iam = iam
         self.actor = actor
         self.git_sha = git_sha
         self.dry_run = dry_run
@@ -194,10 +201,23 @@ class Injector:
         )
         self._save()
 
-    def deploy_patch(self, service: str, file: str, find: str, with_: str) -> None:
+    def deploy_patch(
+        self,
+        service: str,
+        file: str,
+        find: str,
+        with_: str,
+        record_deploy: bool = True,
+    ) -> None:
+        """With record_deploy false, a deploy by hand that skipped the
+        pipeline: the version and alias move happen, the row does not."""
         function = deployments.function_name(service)
         patched = build_zip(service, {"file": file, "find": find, "with": with_})
-        record: dict[str, Any] = {"kind": "code", "service": service}
+        record: dict[str, Any] = {
+            "kind": "code",
+            "service": service,
+            "recorded": record_deploy,
+        }
         self.injections.append(record)
         self._save()
         self._write(
@@ -207,7 +227,9 @@ class Injector:
             ZipFile=patched,
         )
         self._wait_updated(function)
-        record["previous"], record["new"] = self._publish_and_move(service, "deploy")
+        record["previous"], record["new"] = self._publish_and_move(
+            service, "deploy", record_deploy
+        )
         self._save()
 
     def send_message(self, queue: str, body: str) -> None:
@@ -221,12 +243,191 @@ class Injector:
             MessageBody=body,
         )
 
+    def set_concurrency(self, service: str, value: int) -> None:
+        function = deployments.function_name(service)
+        original = self.lam.get_function_concurrency(FunctionName=function).get(
+            "ReservedConcurrentExecutions"
+        )
+        self.injections.append(
+            {"kind": "concurrency", "service": service, "original": original}
+        )
+        self._save()
+        self._write(
+            f"set {function} reserved concurrency {original} -> {value}",
+            self.lam.put_function_concurrency,
+            FunctionName=function,
+            ReservedConcurrentExecutions=value,
+        )
+
+    def set_queue_attribute(self, queue: str, name: str, value: str) -> None:
+        url = self.sqs.get_queue_url(QueueName=queue)["QueueUrl"]
+        original = self.sqs.get_queue_attributes(QueueUrl=url, AttributeNames=[name])[
+            "Attributes"
+        ][name]
+        self.injections.append(
+            {"kind": "queue", "queue": queue, "name": name, "original": original}
+        )
+        self._save()
+        self._write(
+            f"set {queue} {name} {original} -> {value}",
+            self.sqs.set_queue_attributes,
+            QueueUrl=url,
+            Attributes={name: value},
+        )
+
+    def set_log_level(self, service: str, application: str) -> None:
+        """Changes $LATEST only: it reaches the live alias with the next
+        published version, so use it before deploy_patch or set_env."""
+        function = deployments.function_name(service)
+        original = self.lam.get_function_configuration(FunctionName=function)[
+            "LoggingConfig"
+        ]
+        self.injections.append(
+            {"kind": "logging", "service": service, "original": original}
+        )
+        self._save()
+        self._write(
+            f"set {function} $LATEST application log level to {application}",
+            self.lam.update_function_configuration,
+            FunctionName=function,
+            LoggingConfig={**original, "ApplicationLogLevel": application},
+        )
+        self._wait_updated(function)
+
+    def remove_policy_statement(self, service: str, sid: str) -> None:
+        """Take one statement out of the service's own inline policy, as a
+        mistaken least-privilege cleanup would."""
+        role = f"{deployments.function_name(service)}-exec"
+        original = self.iam.get_role_policy(RoleName=role, PolicyName="service")[
+            "PolicyDocument"
+        ]
+        kept = [s for s in original["Statement"] if s.get("Sid") != sid]
+        if len(kept) != len(original["Statement"]) - 1:
+            raise ValueError(f"{role} policy 'service' has no statement {sid}")
+        self.injections.append(
+            {"kind": "policy", "role": role, "sid": sid, "original": original}
+        )
+        self._save()
+        self._write(
+            f"remove statement {sid} from {role} inline policy 'service'",
+            self.iam.put_role_policy,
+            RoleName=role,
+            PolicyName="service",
+            PolicyDocument=json.dumps({**original, "Statement": kept}),
+        )
+
     # -- recovery ------------------------------------------------------------
+
+    def _restore_setting(self, record: dict[str, Any]) -> None:
+        kind = record["kind"]
+        if kind == "concurrency":
+            function = deployments.function_name(record["service"])
+            if record["original"] is None:
+                self._write(
+                    f"remove {function} reserved concurrency",
+                    self.lam.delete_function_concurrency,
+                    FunctionName=function,
+                )
+            else:
+                self._write(
+                    f"restore {function} reserved concurrency {record['original']}",
+                    self.lam.put_function_concurrency,
+                    FunctionName=function,
+                    ReservedConcurrentExecutions=record["original"],
+                )
+        elif kind == "queue":
+            url = self.sqs.get_queue_url(QueueName=record["queue"])["QueueUrl"]
+            self._write(
+                f"restore {record['queue']} {record['name']} {record['original']}",
+                self.sqs.set_queue_attributes,
+                QueueUrl=url,
+                Attributes={record["name"]: record["original"]},
+            )
+        elif kind == "logging":
+            function = deployments.function_name(record["service"])
+            self._write(
+                f"restore {function} $LATEST logging config",
+                self.lam.update_function_configuration,
+                FunctionName=function,
+                LoggingConfig=record["original"],
+            )
+            self._wait_updated(function)
+        elif kind == "policy":
+            self._write(
+                f"restore {record['role']} inline policy 'service'",
+                self.iam.put_role_policy,
+                RoleName=record["role"],
+                PolicyName="service",
+                PolicyDocument=json.dumps(record["original"]),
+            )
+            if not self.dry_run:
+                self._check_policy_restored(record)
+        record["restored"] = True
+        self._save()
+
+    def _check_policy_restored(self, record: dict[str, Any]) -> None:
+        """Ask the policy simulator, not the function: IAM caches decisions,
+        so a call that still fails a minute after the restore proves nothing
+        either way (the project notes, "Verifying permissions")."""
+        statement = next(
+            s for s in record["original"]["Statement"] if s.get("Sid") == record["sid"]
+        )
+        actions = statement["Action"]
+        resources = statement["Resource"]
+        actions = [actions] if isinstance(actions, str) else actions
+        resources = [resources] if isinstance(resources, str) else resources
+        role_arn = self.iam.get_role(RoleName=record["role"])["Role"]["Arn"]
+        results = self.iam.simulate_principal_policy(
+            PolicySourceArn=role_arn, ActionNames=actions, ResourceArns=resources
+        )["EvaluationResults"]
+        denied = [
+            r["EvalActionName"] for r in results if r["EvalDecision"] != "allowed"
+        ]
+        if denied:
+            raise RuntimeError(f"{record['role']} still denied after restore: {denied}")
+        print(f"  simulator: {record['role']} is allowed {', '.join(actions)} again")
+
+    def redrive_dlq(self, dlq: str) -> None:
+        """Recovery only: move the dead-letter queue's messages back to their
+        source once the cause is gone, and wait until it is empty."""
+        url = self.sqs.get_queue_url(QueueName=dlq)["QueueUrl"]
+        attrs = self.sqs.get_queue_attributes(
+            QueueUrl=url, AttributeNames=["QueueArn", "ApproximateNumberOfMessages"]
+        )["Attributes"]
+        arn = attrs["QueueArn"]
+        if not int(attrs["ApproximateNumberOfMessages"]):
+            print(f"  {dlq} is empty; nothing to move back")
+            return
+        self._write(
+            f"move {dlq}'s messages back to their source queue",
+            self.sqs.start_message_move_task,
+            SourceArn=arn,
+        )
+        if self.dry_run:
+            return
+        for _ in range(60):
+            attrs = self.sqs.get_queue_attributes(
+                QueueUrl=url,
+                AttributeNames=[
+                    "ApproximateNumberOfMessages",
+                    "ApproximateNumberOfMessagesNotVisible",
+                ],
+            )["Attributes"]
+            if not any(int(v) for v in attrs.values()):
+                print(f"  {dlq} is empty")
+                return
+            time.sleep(10)
+        raise RuntimeError(f"{dlq} did not empty within 10 minutes")
 
     def restore(self, reason: str) -> None:
         """Undo every injection, newest first. Messages are handled by
         drain_dlq_message, since a delivered message cannot be unsent."""
         for record in reversed(self.injections):
+            if record.get("restored"):
+                continue  # a restore that was interrupted and is now resumed
+            if record["kind"] in ("concurrency", "queue", "logging", "policy"):
+                self._restore_setting(record)
+                continue
             if record["kind"] not in ("env", "code"):
                 continue
             service = record["service"]

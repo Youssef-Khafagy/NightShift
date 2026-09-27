@@ -90,19 +90,33 @@ MAX_IN_FLIGHT = 8
 # ---------------------------------------------------------------------------
 
 
-def plan_carts(orders: int, seed: int) -> list[list[dict[str, Any]]]:
+def plan_carts(
+    orders: int, seed: int, hot_product: int | None = None
+) -> list[list[dict[str, Any]]]:
     """Every cart the run will send, decided up front.
 
     Seeded, so a run can be repeated exactly, and computed before sending so
     the stock check knows precisely how many units each product needs.
+
+    With `hot_product` (an index into the catalogue), every cart holds one
+    unit of that product plus up to two others: a flash sale, where every
+    checkout updates the same inventory row.
     """
     rng = random.Random(seed)
     product_ids = [product[0] for product in CATALOGUE]
     carts = []
     for _ in range(orders):
-        chosen = rng.sample(product_ids, rng.randint(1, 3))
+        if hot_product is None:
+            chosen = rng.sample(product_ids, rng.randint(1, 3))
+            carts.append(
+                [{"product_id": pid, "quantity": rng.randint(1, 2)} for pid in chosen]
+            )
+            continue
+        hot = product_ids[hot_product]
+        others = rng.sample([p for p in product_ids if p != hot], rng.randint(0, 2))
         carts.append(
-            [{"product_id": pid, "quantity": rng.randint(1, 2)} for pid in chosen]
+            [{"product_id": hot, "quantity": 1}]
+            + [{"product_id": pid, "quantity": rng.randint(1, 2)} for pid in others]
         )
     return carts
 
@@ -312,7 +326,9 @@ def invoke(function: str, method: str, path: str, body: dict, headers: dict) -> 
     return int(json.loads(response["Payload"].read()).get("statusCode", 500))
 
 
-def one_order(run_id: str, i: int, cart: list[dict]) -> tuple[str, float]:
+def one_order(
+    run_id: str, i: int, cart: list[dict], note: str | None = None
+) -> tuple[str, float]:
     """Store a cart and check out. Returns (outcome, checkout seconds)."""
     correlation_id = f"load-{run_id}-{i}"
     headers = {"x-correlation-id": correlation_id}
@@ -326,7 +342,11 @@ def one_order(run_id: str, i: int, cart: list[dict]) -> tuple[str, float]:
             "orders",
             "POST",
             "/checkout",
-            {"cart_id": cart_id, "customer_id": f"load-{run_id}"},
+            {
+                "cart_id": cart_id,
+                "customer_id": f"load-{run_id}",
+                **({"note": note} if note else {}),
+            },
             {**headers, "idempotency-key": str(uuid.uuid4())},
         )
         return str(status), time.monotonic() - started
@@ -336,7 +356,9 @@ def one_order(run_id: str, i: int, cart: list[dict]) -> tuple[str, float]:
         return f"error_{type(exc).__name__}", 0.0
 
 
-def run(run_id: str, rate: float, carts: list[list[dict]]) -> dict[str, Any]:
+def run(
+    run_id: str, rate: float, carts: list[list[dict]], note: str | None = None
+) -> dict[str, Any]:
     outcomes: Counter = Counter()
     latencies: list[float] = []
     lock = threading.Lock()
@@ -347,7 +369,7 @@ def run(run_id: str, rate: float, carts: list[list[dict]]) -> dict[str, Any]:
         def submit(i: int, done: Callable[[], None]) -> None:
             def task() -> None:
                 try:
-                    outcome, seconds = one_order(run_id, i, carts[i])
+                    outcome, seconds = one_order(run_id, i, carts[i], note)
                     with lock:
                         outcomes[outcome] += 1
                         if outcome in ("201", "409", "429"):
@@ -388,12 +410,19 @@ def main() -> None:
     parser.add_argument("--checkout-only", action="store_true")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--out", default=None, help="write the summary JSON here")
+    parser.add_argument(
+        "--hot-product",
+        type=int,
+        choices=range(len(CATALOGUE)),
+        help="catalogue index: every cart includes one unit of this product",
+    )
+    parser.add_argument("--note", help="a customer note sent with every checkout")
     args = parser.parse_args()
 
     run_id = uuid.uuid4().hex[:8]
     seed = args.seed if args.seed is not None else int(run_id, 16)
     projected = projection(args.rate, args.duration)
-    carts = plan_carts(int(projected["orders"]), seed)
+    carts = plan_carts(int(projected["orders"]), seed, args.hot_product)
     needed = units_needed(carts)
 
     month_dpu = month_to_date(
@@ -440,7 +469,7 @@ def main() -> None:
         return
 
     print("\nSending...")
-    summary = run(run_id, args.rate, carts)
+    summary = run(run_id, args.rate, carts, args.note)
     commit = subprocess.run(
         ["git", "-C", str(REPO_ROOT), "rev-parse", "--short", "HEAD"],
         capture_output=True,
