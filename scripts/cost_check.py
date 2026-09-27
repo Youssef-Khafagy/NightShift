@@ -16,6 +16,11 @@ Each row is marked OK, WATCH (50% or more of the allowance) or ALERT (85% or
 more, the same line AWS's own free tier alerts use). The script exits 1 if any
 row is ALERT, so it can gate a benchmark run.
 
+Alarm metrics are the exception: a fixed allocation, planned to use all 10
+free slots (COST.md alarm ledger, held by tests/test_alarm_ledger.py), so
+they are ALERT only above the limit. At 100% by design they would otherwise
+fail every run of this script, which is what they did until M7.
+
 It also lists any service the Free Tier API reports that this project does
 not expect. Usage that nobody planned is the first sign of a cost surprise,
 however small.
@@ -73,9 +78,11 @@ ALARM_METRICS = 10
 # ---------------------------------------------------------------------------
 
 
-def status(used: float, limit: float) -> str:
+def status(used: float, limit: float, fixed: bool = False) -> str:
     if limit <= 0:
         return "?"
+    if fixed:
+        return "ALERT" if used > limit else "OK"
     share = used / limit
     if share >= ALERT:
         return "ALERT"
@@ -84,14 +91,21 @@ def status(used: float, limit: float) -> str:
     return "OK"
 
 
-def row(source: str, name: str, used: float, limit: float, note: str = "") -> dict:
+def row(
+    source: str,
+    name: str,
+    used: float,
+    limit: float,
+    note: str = "",
+    fixed: bool = False,
+) -> dict:
     return {
         "source": source,
         "name": name,
         "used": used,
         "limit": limit,
         "percent": round(100 * used / limit, 3) if limit else None,
-        "status": status(used, limit),
+        "status": status(used, limit, fixed),
         "note": note,
     }
 
@@ -281,7 +295,14 @@ def live_rows() -> list[dict]:
         )
     )
     rows.append(
-        row("live", "CloudWatch: alarm metrics", alarm_metric_count(), ALARM_METRICS)
+        row(
+            "live",
+            "CloudWatch: alarm metrics",
+            alarm_metric_count(),
+            ALARM_METRICS,
+            "fixed allocation: ALERT only above the limit",
+            fixed=True,
+        )
     )
     return rows
 
