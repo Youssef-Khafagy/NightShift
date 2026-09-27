@@ -1,0 +1,25 @@
+investigation b1b90682fa85 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   4. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=fulf
+   5. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=fu
+   6. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   7. get_function_config {"service": "fulfillment"}
+   8. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, error | filter level = \"ERR
+   9. get_queue_stats {}
+  10. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=f
+  11. get_metrics {"namespace": "AWS/Lambda", "metric": "ConcurrentExecutions", "statistic": "Maximum", "dimensions":
+  12. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, error, correlation_id | filt
+  13. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, error | filter level = \"ERR
+  14. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, error | filter level = \"ERR
+  15. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, error, correlation_id | filt
+  16. get_topology {}
+  17. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, error, correlation_id | filt
+  18. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, error, correlation_id | filt
+  19. query_logs {"service": "fulfillment", "query": "fields @timestamp, message | filter @timestamp >= \"2026-09-27T
+  20. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "insufficient_evidence", "confidence": 70,
+stop: finished
+report: fulfillment / insufficient_evidence, confidence 70
+tokens: 39376 in + 1453 out = 40829 over 9 calls; largest request estimate 4316; log bytes scanned 1,334,043; wall 34s
+saved results/investigations/b1b90682fa85.json

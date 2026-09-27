@@ -134,3 +134,6 @@ def test_the_cluster_id_is_scrubbed():
         '{"cluster_id": "<DSQL_CLUSTER_ID>"}'
     )
     assert bench.scrub("x", "") == "x"
+    assert bench.scrub("account 123456789012 abc123", "abc123", "123456789012") == (
+        "account <ACCOUNT_ID> <DSQL_CLUSTER_ID>"
+    )

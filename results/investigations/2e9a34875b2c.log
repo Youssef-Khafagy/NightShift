@@ -1,0 +1,7 @@
+alarm-only 2e9a34875b2c
+   1. get_alarm {"name": "orders-errors"}
+   2. finish_investigation {"evidence_steps": "1", "fault_category": "insufficient_evidence", "actions": "", "summary": "An ala
+stop: finished
+report: orders / insufficient_evidence, confidence 50
+tokens: 952 in + 124 out = 1076 over 1 calls; largest request estimate 1788; log bytes scanned 0; wall 1s
+saved results/investigations/2e9a34875b2c.json

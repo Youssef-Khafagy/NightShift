@@ -1,0 +1,375 @@
+{
+  "config": {
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "max_tokens_per_investigation": 40000,
+    "max_steps": 15,
+    "max_wall_seconds": 840,
+    "input_token_cap": 24000,
+    "max_output_tokens": 1500,
+    "full_results_kept": 3,
+    "max_tool_output_chars": 2500,
+    "log_scan_cap_bytes": 20971520,
+    "max_log_query_minutes": 60
+  },
+  "state": {
+    "investigation_id": "95b6ba6eb420",
+    "trigger": {
+      "name": "nightshift-payment-failures",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [56.0 (27/09/26 04:44:00)] was greater than or equal to the threshold (3.0).",
+      "since": "2026-09-27T04:45:37Z",
+      "metric": {
+        "namespace": "NightShift",
+        "name": "PaymentFailures",
+        "dimensions": {
+          "service": "fulfillment"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 3.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-09-27T04:45:37Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-09-27T04:45:50+00:00",
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "turn": 8,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-09-27T04:45:51+00:00",
+        "tool": "get_alarm",
+        "args": {},
+        "call_id": "call_1032762",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"alarms\":[{\"name\":\"nightshift-cart-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-checkout-latency\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-dlq-depth\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-fulfillment-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-orders-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"since\":\"2026-09-27T04:45:37Z\"},{\"name\":\"nightshift-payments-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-queue-age\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-serialization-retries\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-throttles\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"}]}}",
+        "summary": "{\"alarms\":[{\"name\":\"nightshift-cart-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-checkout-latency\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-dlq-depth\",\"state\":\"OK\",\"since\":\"more th...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TXGl0Bar/fum/9Eo1SQESj9DHyHRTXYrE2j/48WEcSncT/LSgTFTWv9F+R0+y9xFlGM8pe9xSzPJihvkhB7XpimLCSMQfjB8ILu+LWHdq9CV4q2Lmcks2A8w="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 2,
+        "at": "2026-09-27T04:45:52+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "possible: payment failures in fulfillment service are caused by a bad deploy\npossible: payment failures in fulfillment service are caused by a configuration regression"
+        },
+        "call_id": "call_835257",
+        "result": "{\"ok\": \"2 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"2 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TEpt6hDBQj4WPTFnQhZ8JUkKmVYKCTBefuU0dkb8BfAPbbbj9aTf2YrOS/SZYYB/mxTphF/+JaNFbizXX8VuTOW7BZEUTmIGZvfvfNpTVueXZStB6DzosnxY="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 3,
+        "turn": 3,
+        "at": "2026-09-27T04:45:53+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "service": "fulfillment"
+        },
+        "call_id": "call_962441",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":60,\"moves\":[{\"at\":\"2026-09-27T04:44:01.786+00:00\",\"service\":\"fulfillment\",\"kind\":\"deploy\",\"version\":\"7 -> 8\",\"git_sha\":\"8213358\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env PAYMENT_TIMEOUT_SECONDS\"]}}]}}",
+        "summary": "{\"window_minutes\":60,\"moves\":[{\"at\":\"2026-09-27T04:44:01.786+00:00\",\"service\":\"fulfillment\",\"kind\":\"deploy\",\"version\":\"7 -> 8\",\"git_sha\":\"8213358\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env PAYM...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TYF/LUmtdcQgWrPf3rvL2/QMW5CXbAm6FjWgVYLJlM18ZceGX6TAQj58O9EESVlJTvrY5p54Fi0nxrtdUpB4jsueqkW02hyL/zYs2TQ48Zm1HKMkVxLm12Hw="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 4,
+        "turn": 4,
+        "at": "2026-09-27T04:45:55+00:00",
+        "tool": "query_logs",
+        "args": {
+          "service": "fulfillment",
+          "query": "fields @timestamp, message, level | sort @timestamp desc",
+          "minutes": 15
+        },
+        "call_id": "call_1087463",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-27 04:45:49.451\"},{\"@timestamp\":\"2026-09-27 04:45:48.872\"},{\"@timestamp\":\"2026-09-27 04:45:48.832\"},{\"@timestamp\":\"2026-09-27 04:45:48.832\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 04:45:48.832\",\"message\":\"batch had failures\",\"level\":\"WARNING\"},{\"@timestamp\":\"2026-09-27 04:45:48.430\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 04:45:48.069\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 04:45:47.774\"},{\"@timestamp\":\"2026-09-27 04:45:46.672\"},{\"@timestamp\":\"2026-09-27 04:45:46.590\"},{\"@timestamp\":\"2026-09-27 04:45:46.590\",\"message\":\"batch had failures\",\"level\":\"WARNING\"},{\"@timestamp\":\"2026-09-27 04:45:46.589\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 04:45:46.230\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 04:45:45.892\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 04:45:45.478\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 04:45:45.082\"},{\"@timestamp\":\"2026-09-27 04:45:40.893\"},{\"@timestamp\":\"2026-09-27 04:45:40.891\"},{\"@timestamp\":\"2026-09-27 04:45:40.891\",\"message\":\"batch had failures\",\"level\":\"WARNING\"},{\"@timestamp\":\"2026-09-27 04:45:40.872\",\"message\":\"message failed\",\"level\":\"ERROR\"}],\"bytes_scanned\":2128779,\"scan_budget_left_bytes\":18842741}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-27 04:45:49.451\"},{\"@timestamp\":\"2026-09-27 04:45:48.872\"},{\"@timestamp\":\"2026-09-27 04:45:48.832\"},{\"@timestamp\":\"2026-09-27 04:45:48.832\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@t...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TNHRd8yFOYIXEx8K3/2w9vXAAL2HFh+FP6xweGe1ENt5AH2DWdXzPr6jjmdV8xGHpgcZDPHQZnrn7JBVP1sVuVqRvO1tneh8UCTcy4mSWjAStMdxhOJ5KU1g="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 5,
+        "turn": 5,
+        "at": "2026-09-27T04:45:56+00:00",
+        "tool": "get_function_config",
+        "args": {
+          "service": "fulfillment"
+        },
+        "call_id": "call_968847",
+        "result": "{\"tool\":\"get_function_config\",\"truncated\":false,\"untrusted_data\":{\"function\":\"nightshift-fulfillment\",\"live_alias_version\":\"8\",\"last_modified\":\"2026-09-27T04:43:59Z\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":30,\"reserved_concurrency\":2,\"state\":\"Active\",\"code_sha256\":\"Qu3/XPxCmXaWPXZdVpICalRSNrIXkZ6si8xPuHY/geY=\",\"environment\":{\"DSQL_ENDPOINT\":\"<DSQL_CLUSTER_ID>.dsql.ca-central-1.on.aws\",\"DSQL_ROLE\":\"fulfillment_service\",\"PAYMENTS_DEGRADED_MODE_PARAMETER\":\"/nightshift/flags/payments_degraded_mode\",\"PAYMENTS_FUNCTION_NAME\":\"nightshift-payments\",\"PAYMENT_TIMEOUT_SECONDS\":\"0.05\",\"POWERTOOLS_LOG_LEVEL\":\"INFO\",\"POWERTOOLS_SERVICE_NAME\":\"fulfillment\"}}}",
+        "summary": "{\"function\":\"nightshift-fulfillment\",\"live_alias_version\":\"8\",\"last_modified\":\"2026-09-27T04:43:59Z\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":30,\"reserved_concurrency\":2,\"state\":\"Active\",\"code_sha256\":\"Qu3/XPxCmXaWPXZdVpICal...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TDllxKNNFPY21zezYTwQS5DCeTx+dAq25C1TFm+uuajhqyxNxvFecXk8TUpAylMiYie4PPF7mos0mLmJtOUkTsHacU34mD3pZnV8VfUtR05BCwoaFoB+w53k="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 6,
+        "turn": 6,
+        "at": "2026-09-27T04:45:57+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "ruled_out: payment failures in fulfillment service are caused by a bad deploy\nlikely: payment failures in fulfillment service are caused by a configuration regression"
+        },
+        "call_id": "call_1054199",
+        "result": "{\"ok\": \"2 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"2 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TRgS7PVbO3ID2iebExbBLOo+KQain0j612ZFgWUp4f2i33UJjDOmPYrHBPOV1n9ZyMdMav+r9CiuAYyeuNoOX3tlPDg22AjlgK0GHUDBi4a/Bev6tp4mC1fM="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 7,
+        "turn": 7,
+        "at": "2026-09-27T04:45:58+00:00",
+        "tool": "finish_investigation",
+        "args": {
+          "confidence": 95,
+          "actions": [
+            "rollback_alias service=fulfillment"
+          ],
+          "fault_category": "config_regression",
+          "evidence_steps": "3,5",
+          "root_cause_component": "fulfillment",
+          "proposed_actions": "Verify payment error rates after rolling back the fulfillment alias or restoring the previous settings.",
+          "summary": "A recent deployment changed settings on the fulfillment service, specifically updating the PAYMENT_TIMEOUT_SECONDS environment variable to 0.05. This extremely low timeout caused payment requests from fulfillment to time out repeatedly, resulting in the payment failures alarm.",
+          "hypotheses": "ruled_out: payment failures in fulfillment service are caused by a bad deploy\nlikely: payment failures in fulfillment service are caused by a configuration regression"
+        },
+        "call_id": "call_1025093",
+        "result": "{\"error\": \"finish_investigation rejected\", \"problems\": [\"'actions' must be string, got list\"]}",
+        "summary": "\"{\\\"error\\\": \\\"finish_investigation rejected\\\", \\\"problems\\\": [\\\"'actions' must be string, got list\\\"]}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0T+lKIdhq5xB2C26GWJUwBTTwiKTfc3zLT6ermkbJNorv9q4d8/eWu3pyvYBb3bXf05vJQsiRseAECGHSHB8+1LfV1hsMKKzvZDY43Wah51MTB00aGbDwyp88="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 8,
+        "turn": 8,
+        "at": "2026-09-27T04:45:59+00:00",
+        "tool": "finish_investigation",
+        "args": {
+          "confidence": 95,
+          "evidence_steps": "3,5",
+          "actions": "rollback_alias service=fulfillment",
+          "fault_category": "config_regression",
+          "hypotheses": "ruled_out: payment failures in fulfillment service are caused by a bad code deploy\nlikely: payment failures in fulfillment service are caused by a configuration regression in PAYMENT_TIMEOUT_SECONDS",
+          "proposed_actions": "Verify payment error rates after rolling back the fulfillment alias or restoring the previous settings.",
+          "summary": "A recent deployment changed settings on the fulfillment service, specifically updating the PAYMENT_TIMEOUT_SECONDS environment variable to 0.05. This extremely low timeout caused payment requests from fulfillment to time out repeatedly, resulting in the payment failures alarm.",
+          "root_cause_component": "fulfillment"
+        },
+        "call_id": "call_917361",
+        "result": "{\"ok\": \"investigation closed\"}",
+        "summary": "\"{\\\"ok\\\": \\\"investigation closed\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0T3OYpPFP+N4UyJqpYTCSJ0e4UnaW8uarz0bQDyddtJ/M+4LkShYL8pST0UOZQ3Dh61DYHaBksVusZ70Km+s1TUXeQ84BLfyajDraOBNboS+pOzG8tjO34jnM="
+        },
+        "in_trigger": false
+      }
+    ],
+    "calls": [
+      {
+        "turn": 1,
+        "at": "2026-09-27T04:45:51+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2433,
+        "output_tokens": 10,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2168,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 2,
+        "at": "2026-09-27T04:45:52+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2727,
+        "output_tokens": 46,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2434,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 3,
+        "at": "2026-09-27T04:45:52+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2834,
+        "output_tokens": 19,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2559,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 4,
+        "at": "2026-09-27T04:45:54+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2991,
+        "output_tokens": 38,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2671,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 5,
+        "at": "2026-09-27T04:45:56+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3548,
+        "output_tokens": 18,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2939,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 6,
+        "at": "2026-09-27T04:45:57+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3829,
+        "output_tokens": 48,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3150,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 7,
+        "at": "2026-09-27T04:45:58+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3888,
+        "output_tokens": 169,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3198,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 8,
+        "at": "2026-09-27T04:45:59+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3536,
+        "output_tokens": 176,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3116,
+        "rate_limit_headers": {}
+      }
+    ],
+    "hypotheses": [
+      {
+        "status": "ruled_out",
+        "text": "payment failures in fulfillment service are caused by a bad code deploy"
+      },
+      {
+        "status": "likely",
+        "text": "payment failures in fulfillment service are caused by a configuration regression in PAYMENT_TIMEOUT_SECONDS"
+      }
+    ],
+    "hypothesis_changes": [
+      {
+        "step": 2,
+        "before": [],
+        "after": [
+          {
+            "status": "possible",
+            "text": "payment failures in fulfillment service are caused by a bad deploy"
+          },
+          {
+            "status": "possible",
+            "text": "payment failures in fulfillment service are caused by a configuration regression"
+          }
+        ]
+      },
+      {
+        "step": 6,
+        "before": [
+          {
+            "status": "possible",
+            "text": "payment failures in fulfillment service are caused by a bad deploy"
+          },
+          {
+            "status": "possible",
+            "text": "payment failures in fulfillment service are caused by a configuration regression"
+          }
+        ],
+        "after": [
+          {
+            "status": "ruled_out",
+            "text": "payment failures in fulfillment service are caused by a bad deploy"
+          },
+          {
+            "status": "likely",
+            "text": "payment failures in fulfillment service are caused by a configuration regression"
+          }
+        ]
+      },
+      {
+        "step": 8,
+        "before": [
+          {
+            "status": "ruled_out",
+            "text": "payment failures in fulfillment service are caused by a bad deploy"
+          },
+          {
+            "status": "likely",
+            "text": "payment failures in fulfillment service are caused by a configuration regression"
+          }
+        ],
+        "after": [
+          {
+            "status": "ruled_out",
+            "text": "payment failures in fulfillment service are caused by a bad code deploy"
+          },
+          {
+            "status": "likely",
+            "text": "payment failures in fulfillment service are caused by a configuration regression in PAYMENT_TIMEOUT_SECONDS"
+          }
+        ]
+      }
+    ],
+    "log_bytes_scanned": 2128779,
+    "rejected_calls": 0,
+    "wall_seconds_used": 9.492975364999438,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "confidence": 95,
+      "evidence_steps": "3,5",
+      "actions": "rollback_alias service=fulfillment",
+      "fault_category": "config_regression",
+      "hypotheses": "ruled_out: payment failures in fulfillment service are caused by a bad code deploy\nlikely: payment failures in fulfillment service are caused by a configuration regression in PAYMENT_TIMEOUT_SECONDS",
+      "proposed_actions": "Verify payment error rates after rolling back the fulfillment alias or restoring the previous settings.",
+      "summary": "A recent deployment changed settings on the fulfillment service, specifically updating the PAYMENT_TIMEOUT_SECONDS environment variable to 0.05. This extremely low timeout caused payment requests from fulfillment to time out repeatedly, resulting in the payment failures alarm.",
+      "root_cause_component": "fulfillment"
+    }
+  }
+}

@@ -1,0 +1,206 @@
+{
+  "run_id": "09-throttling-20260927T013912Z",
+  "scenario": 9,
+  "slug": "throttling",
+  "ground_truth": {
+    "component": "cart",
+    "fault_category": "throttling"
+  },
+  "acceptable_remediations": [
+    {
+      "action": "set_operational_flag",
+      "target": "checkout_rate_limit"
+    }
+  ],
+  "forbidden_actions": [
+    {
+      "action": "rollback_alias",
+      "target": null
+    },
+    {
+      "action": "pause_queue_consumer",
+      "target": null
+    },
+    {
+      "action": "redrive_dlq",
+      "target": null
+    }
+  ],
+  "grading": "exact",
+  "commit": "8213358",
+  "started": "2026-09-27T01:39:12+00:00",
+  "previous_last_write": null,
+  "injected_at": "2026-09-27T03:02:29+00:00",
+  "paged_with": "nightshift-orders-errors",
+  "investigations": {
+    "started": true,
+    "alarm": "nightshift-orders-errors",
+    "configs": {
+      "agent-mistral": {
+        "investigation_id": "adc740b2a0cd",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 9,
+          "run_id": "09-throttling-20260927T013912Z",
+          "investigation_id": "adc740b2a0cd",
+          "expected_component": "cart",
+          "expected_category": "throttling",
+          "answered_component": "orders",
+          "answered_category": "timeout_regression",
+          "confidence": 85,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 121.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 35219,
+        "llm_calls": 8,
+        "tool_steps": 19,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 476403
+      },
+      "agent-gemini": {
+        "investigation_id": "6466ed988934",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 9,
+          "run_id": "09-throttling-20260927T013912Z",
+          "investigation_id": "6466ed988934",
+          "expected_component": "cart",
+          "expected_category": "throttling",
+          "answered_component": "orders",
+          "answered_category": "throttling",
+          "confidence": 90,
+          "component_correct": false,
+          "category_correct": true,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 107.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 39142,
+        "llm_calls": 11,
+        "tool_steps": 11,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 1087854
+      },
+      "alarm-only-mistral": {
+        "investigation_id": "7b2ba82f1de8",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 9,
+          "run_id": "09-throttling-20260927T013912Z",
+          "investigation_id": "7b2ba82f1de8",
+          "expected_component": "cart",
+          "expected_category": "throttling",
+          "answered_component": "orders",
+          "answered_category": "insufficient_evidence",
+          "confidence": 50,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 98.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1323,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0
+      },
+      "alarm-only-gemini": {
+        "investigation_id": "2e9a34875b2c",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 9,
+          "run_id": "09-throttling-20260927T013912Z",
+          "investigation_id": "2e9a34875b2c",
+          "expected_component": "cart",
+          "expected_category": "throttling",
+          "answered_component": "orders",
+          "answered_category": "insufficient_evidence",
+          "confidence": 50,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 94.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1076,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0
+      },
+      "runbook": {
+        "investigation_id": "c77583a23836",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 9,
+          "run_id": "09-throttling-20260927T013912Z",
+          "investigation_id": "c77583a23836",
+          "expected_component": "cart",
+          "expected_category": "throttling",
+          "answered_component": "none",
+          "answered_category": "insufficient_evidence",
+          "confidence": 0,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 93.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 0,
+        "llm_calls": 0,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0
+      }
+    }
+  },
+  "alarms_fired": {
+    "nightshift-orders-errors": 91.7,
+    "nightshift-throttles": 91.7
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [
+    "nightshift-orders-errors"
+  ],
+  "load_exit_codes": [
+    0,
+    0
+  ],
+  "recovery_seconds": 970.3,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-09-27T03:20:41+00:00"
+}

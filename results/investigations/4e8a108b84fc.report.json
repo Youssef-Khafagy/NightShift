@@ -1,0 +1,14 @@
+{
+  "investigation_id": "4e8a108b84fc",
+  "root_cause_component": "none",
+  "fault_category": "insufficient_evidence",
+  "confidence": 0,
+  "summary": "The investigation stopped before reaching a conclusion (max_tokens).",
+  "evidence": [],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "max_tokens",
+  "evidence_tools": {},
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

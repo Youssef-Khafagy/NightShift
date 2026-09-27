@@ -30,8 +30,10 @@ repos:
   - repo: local
     hooks:
       - id: no-aws-account-id         # keeps real account IDs out of a public repo
-        name: no AWS account ID in ARNs or --account-id
-        entry: '(arn:aws:[a-z0-9-]*:[a-z0-9-]*:\d{12}:|--account-id[ =]\d{12})'
+        name: no AWS account ID in ARNs, queue URLs, accountId fields or --account-id
+        # Queue URLs added 2026-09-27: an SQS URL carries the account ID too,
+        # and one had been committed in an investigation file since M5.
+        entry: '(arn:aws:[a-z0-9-]*:[a-z0-9-]*:\d{12}:|--account-id[ =]\d{12}|sqs\.[a-z0-9-]+\.amazonaws\.com/\d{12}/|"account_?[iI]d"\s*:\s*"\d{12}")'
         language: pygrep
       - id: terraform-fmt             # uses the Terraform we installed with apt
         name: terraform fmt

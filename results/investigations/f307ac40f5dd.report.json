@@ -1,0 +1,20 @@
+{
+  "investigation_id": "f307ac40f5dd",
+  "root_cause_component": "fulfillment",
+  "fault_category": "insufficient_evidence",
+  "confidence": 90,
+  "summary": "An alarm fired indicating payment failures in the fulfillment service (25 failures against a threshold of 3). Since no other tools are available, further investigation into fulfillment logs and dependencies is required.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate fulfillment service logs and payment integration metrics."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

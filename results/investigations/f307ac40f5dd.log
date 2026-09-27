@@ -1,0 +1,7 @@
+alarm-only f307ac40f5dd
+   1. get_alarm {"name": "payment-failures"}
+   2. finish_investigation {"proposed_actions": "Investigate fulfillment service logs and payment integration metrics.", "root_
+stop: finished
+report: fulfillment / insufficient_evidence, confidence 90
+tokens: 951 in + 165 out = 1116 over 1 calls; largest request estimate 1788; log bytes scanned 0; wall 2s
+saved results/investigations/f307ac40f5dd.json

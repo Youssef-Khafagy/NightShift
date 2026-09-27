@@ -184,6 +184,9 @@ def outcome(result: dict, report: dict | None, state: dict | None) -> dict[str, 
         "tool_steps": len(steps),
         "stop_reason": state.get("stop_reason"),
         "log_bytes_scanned": state.get("log_bytes_scanned", 0),
+        # Steps whose result carried the "reads like instructions" warning
+        # (agent/tools/output.py): whether a planted note was ever seen.
+        "instruction_warnings": sum('"warning":' in s.get("result", "") for s in steps),
     }
 
 
@@ -207,8 +210,15 @@ def next_entries(plan: list[dict], states: dict[int, dict], limit: int) -> list[
     return todo[:limit]
 
 
-def scrub(text: str, secret: str) -> str:
-    return text.replace(secret, "<DSQL_CLUSTER_ID>") if secret else text
+def scrub(text: str, cluster: str, account: str = "") -> str:
+    """Tool results quote real identifiers: the cluster ID from the topology,
+    and the account ID inside ARNs and queue URLs in Lambda's own log lines.
+    Neither may reach the repo (the account ID did, once, in M5)."""
+    if cluster:
+        text = text.replace(cluster, "<DSQL_CLUSTER_ID>")
+    if account:
+        text = text.replace(account, "<ACCOUNT_ID>")
+    return text
 
 
 # ---------------------------------------------------------------------------
@@ -222,9 +232,11 @@ class LocalPanel:
         self.configs = configs
         self.procs: dict[str, tuple[str, subprocess.Popen, Any]] = {}
         self.started_at: float | None = None
+        self.account = ""
 
     def start(self, alarm: str) -> None:
         account = self.admin.client("sts").get_caller_identity()["Account"]
+        self.account = account
         creds = self.admin.client("sts").assume_role(
             RoleArn=f"arn:aws:iam::{account}:role/nightshift-investigator",
             RoleSessionName="nightshift-bench",
@@ -261,7 +273,7 @@ class LocalPanel:
                 code = None
             log.close()
             for path in INVESTIGATIONS.glob(f"{investigation_id}*"):
-                path.write_text(scrub(path.read_text(), cluster))
+                path.write_text(scrub(path.read_text(), cluster, self.account))
             report = load(INVESTIGATIONS / f"{investigation_id}.report.json")
             saved = load(INVESTIGATIONS / f"{investigation_id}.json")
             configs[key] = {

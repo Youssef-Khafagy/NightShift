@@ -1,0 +1,16 @@
+investigation 6466ed988934 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. note_hypotheses {"hypotheses": "likely: orders service has a bad deploy or error regression causing Lambda errors\np
+   3. list_recent_deployments {"service": "orders"}
+   4. query_logs {"service": "orders", "minutes": 15, "query": "fields @timestamp, level, message, error | filter lev
+   5. get_metrics {"metric": "Errors", "minutes": 15, "namespace": "AWS/Lambda", "statistic": "Sum"}
+   6. get_traces {"minutes": 15, "service": "orders"}
+   7. query_logs {"minutes": 15, "query": "fields @timestamp, @message | sort @timestamp desc", "service": "orders"}
+   8. query_logs {"service": "orders", "minutes": 15, "query": "fields @timestamp, level, message, @message | filter
+   9. get_function_config {"service": "orders"}
+  10. note_hypotheses {"hypotheses": "ruled_out: orders service has a bad deploy or error regression causing Lambda errors
+  11. finish_investigation {"summary": "The nightshift-orders Lambda function experienced Lambda errors driven by TooManyReques
+stop: finished
+report: orders / throttling, confidence 90
+tokens: 38620 in + 522 out = 39142 over 11 calls; largest request estimate 3927; log bytes scanned 1,087,854; wall 15s
+saved results/investigations/6466ed988934.json

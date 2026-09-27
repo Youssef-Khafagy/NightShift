@@ -915,6 +915,7 @@ What 19 costs, as 95% intervals: an observed 50% accuracy means somewhere from 3
 | Recovery left the bad version newest | The plan-clean health check | Recovery deletes the version it published (17) |
 | The answer key sat in a table the agent reads | Building the tool that reads it | Neutral rollback reason, held to the banned-words test (17, 18) |
 | Back-to-back scenarios fed each other evidence | Reading the postmortems of wrong answers | Every tool capped at 30 minutes, a 45-minute quiet gap checked three ways, and a leak check on every run (18, 20) |
+| The account ID committed inside an SQS queue URL, missed by a hook that only knew ARNs | The same hook blocking a later commit, and grepping the repo for the ID itself | Hook widened to queue URLs and `accountId` fields and tested with a fake ID; results scrubbed on save. The rule is "no account ID anywhere", so the check has to look for the ID, not for one format it appears in (20) |
 | Audit records keyed by the second overwrote each other | A test replaying a refused approval | Random suffix plus a no-overwrite condition (19) |
 | The queue trigger listed by bare function name returned nothing | A smoke run of `consumer.py` | Look it up on the `live` alias, in three places (19) |
 | The model counted steps itself and cited the wrong ones | An answer citing steps 8 and 9 of 6 | Every result starts with `Step N.` (18) |

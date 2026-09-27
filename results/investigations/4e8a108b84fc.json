@@ -1,0 +1,425 @@
+{
+  "config": {
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "max_tokens_per_investigation": 40000,
+    "max_steps": 15,
+    "max_wall_seconds": 840,
+    "input_token_cap": 24000,
+    "max_output_tokens": 1500,
+    "full_results_kept": 3,
+    "max_tool_output_chars": 2500,
+    "log_scan_cap_bytes": 20971520,
+    "max_log_query_minutes": 60
+  },
+  "state": {
+    "investigation_id": "4e8a108b84fc",
+    "trigger": {
+      "name": "nightshift-payment-failures",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [52.0 (27/09/26 08:13:00)] was greater than or equal to the threshold (3.0).",
+      "since": "2026-09-27T08:14:37Z",
+      "metric": {
+        "namespace": "NightShift",
+        "name": "PaymentFailures",
+        "dimensions": {
+          "service": "fulfillment"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 3.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-09-27T08:14:37Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-09-27T08:14:50+00:00",
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "turn": 12,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-09-27T08:14:59+00:00",
+        "tool": "get_alarm",
+        "args": {},
+        "call_id": "call_607543",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"alarms\":[{\"name\":\"nightshift-cart-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-checkout-latency\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-dlq-depth\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-fulfillment-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-orders-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"since\":\"2026-09-27T08:14:37Z\"},{\"name\":\"nightshift-payments-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-queue-age\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-serialization-retries\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-throttles\",\"state\":\"ALARM\",\"since\":\"2026-09-27T08:14:55Z\"}]}}",
+        "summary": "{\"alarms\":[{\"name\":\"nightshift-cart-errors\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-checkout-latency\",\"state\":\"OK\",\"since\":\"more than 60 minutes ago\"},{\"name\":\"nightshift-dlq-depth\",\"state\":\"OK\",\"since\":\"more th...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TSRWAHvnsGLJAlRLhy/iiQXbNAo0l+BhFu2hIWbl6hkdjbgvFMZwWydHpWBg41lxWGqgZwAzbxQJOeEZIJxd8mdoDaXQ4KgiPoiT+xJZT6fsxzquI/C05ODU="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 2,
+        "at": "2026-09-27T08:15:00+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "statistic": "Sum",
+          "metric": "PaymentFailures",
+          "minutes": 15,
+          "namespace": "NightShift"
+        },
+        "call_id": "call_359450",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"NightShift PaymentFailures {} Sum per 60s\",\"window_minutes\":15,\"points\":[],\"summary\":\"no data in this window (an idle metric publishes nothing)\"}}",
+        "summary": "{\"metric\":\"NightShift PaymentFailures {} Sum per 60s\",\"window_minutes\":15,\"points\":[],\"summary\":\"no data in this window (an idle metric publishes nothing)\"}",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TFG1Ol3RGC4Fft5rEtWNTGWZsNHLvEgT92lmRPcj2yDX+mQYABm0sPDr4fpTKae+RQ4yyb5lNxrmSedYu7XDwwpoBjOy5R+x2vu0XJRjsZHHpOmP0jo+zKZE="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 3,
+        "turn": 3,
+        "at": "2026-09-27T08:15:01+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "nightshift-payment-failures"
+        },
+        "call_id": "call_530910",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [52.0 (27/09/26 08:13:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-09-27T08:14:37Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"PaymentFailures\",\"dimensions\":{\"service\":\"fulfillment\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 3.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-27T08:14:37Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [52.0 (27/09/26 08:13:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-09-27T08:14:37Z\",\"metric\":{\"namespace\":\"NightShift\",\"...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TuJ9HF5+TFTvijigDVX+J+f6iITXCU7F5h6HWvjfg4NrZSvPutHTM1IkxXqvFNz3tXo/M5OA6Pw44zVXjaY/5t+ccdfyPgqw2L7VhvJpuvlxewlMztdfrkG8="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 4,
+        "turn": 4,
+        "at": "2026-09-27T08:15:02+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "namespace": "NightShift",
+          "statistic": "Sum",
+          "metric": "PaymentFailures",
+          "minutes": 30,
+          "dimensions": "service=fulfillment"
+        },
+        "call_id": "call_1050454",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"NightShift PaymentFailures {'service': 'fulfillment'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"08:13:00Z\",52.0],[\"08:14:00Z\",48.0]],\"summary\":{\"min\":48.0,\"max\":52.0,\"count\":2}}}",
+        "summary": "{\"metric\":\"NightShift PaymentFailures {'service': 'fulfillment'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"08:13:00Z\",52.0],[\"08:14:00Z\",48.0]],\"summary\":{\"min\":48.0,\"max\":52.0,\"count\":2}}",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TD2aTKrgeslQ9jcPEuZkSXyVMXLixzQq3+73iiK5xaZsitm+7Q5NuUIhsGred/2LQsSRgH/LUD6c30cCD9Z04lgK3up8Gqcf+Ndxlg9yr7JE0FBav5wDoqXk="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 5,
+        "turn": 5,
+        "at": "2026-09-27T08:15:04+00:00",
+        "tool": "get_traces",
+        "args": {
+          "service": "fulfillment",
+          "minutes": 30
+        },
+        "call_id": "call_1067880",
+        "result": "{\"tool\":\"get_traces\",\"truncated\":false,\"untrusted_data\":{\"service\":\"nightshift-fulfillment\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":151,\"with_error\":0,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":1.09,\"p99\":11.808,\"max\":20.225},\"slowest\":[{\"id\":\"1-6ab8d065-ca80f3aab3eef82fcdb52e31\",\"seconds\":20.225},{\"id\":\"1-6ab8d050-f833549d5c91c83157220c18\",\"seconds\":12.156},{\"id\":\"1-6ab8d05d-03a57e8bcbd7be88c68a3615\",\"seconds\":11.808},{\"id\":\"1-6ab8d025-7695bffbae5eaed1d1bee4db\",\"seconds\":11.797},{\"id\":\"1-6ab8d045-7f2df1839c9e9999ccd39764\",\"seconds\":11.771}]}}",
+        "summary": "{\"service\":\"nightshift-fulfillment\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":151,\"with_error\":0,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":1.09,\"p99\":11.808,\"max\":20.225},\"slo...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TWqFiP2Xa4RfX2pCJSvo2OaJbIuoPFv53bVuMIvvE1mZyYWmyJZ+xqbjIB2vXvHXPadukl/Nj7KYuR+mIrgfhL4xIHpZP3ibqVOdQoitYBW57tstILtHUm8w="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 6,
+        "turn": 6,
+        "at": "2026-09-27T08:15:06+00:00",
+        "tool": "query_logs",
+        "args": {
+          "query": "fields @timestamp, message, level | sort @timestamp desc",
+          "service": "fulfillment",
+          "minutes": 30
+        },
+        "call_id": "call_913161",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-27 08:14:59.846\"},{\"@timestamp\":\"2026-09-27 08:14:56.965\"},{\"@timestamp\":\"2026-09-27 08:14:53.411\"},{\"@timestamp\":\"2026-09-27 08:14:53.372\"},{\"@timestamp\":\"2026-09-27 08:14:53.372\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 08:14:53.372\",\"message\":\"batch had failures\",\"level\":\"WARNING\"},{\"@timestamp\":\"2026-09-27 08:14:51.222\"},{\"@timestamp\":\"2026-09-27 08:14:51.145\"},{\"@timestamp\":\"2026-09-27 08:14:51.145\",\"message\":\"batch had failures\",\"level\":\"WARNING\"},{\"@timestamp\":\"2026-09-27 08:14:51.143\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 08:14:50.924\"},{\"@timestamp\":\"2026-09-27 08:14:50.802\"},{\"@timestamp\":\"2026-09-27 08:14:50.705\"},{\"@timestamp\":\"2026-09-27 08:14:50.705\",\"message\":\"batch had failures\",\"level\":\"WARNING\"},{\"@timestamp\":\"2026-09-27 08:14:50.704\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 08:14:50.410\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 08:14:50.014\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 08:14:49.674\",\"message\":\"message failed\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-27 08:14:49.387\"},{\"@timestamp\":\"2026-09-27 08:14:48.213\"}],\"bytes_scanned\":1094400,\"scan_budget_left_bytes\":19877120}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-27 08:14:59.846\"},{\"@timestamp\":\"2026-09-27 08:14:56.965\"},{\"@timestamp\":\"2026-09-27 08:14:53.411\"},{\"@timestamp\":\"2026-09-27 08:14:53.372\"},{\"@timestamp\":\"2026-09-27 08:14:53.372\",\"messag...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TQiitULRt3xLLHzxHMebVezDjCi4Y1h+Caul6QUE5dNvoWijyoQchrA2H3fwt8Hrr8GLyHkgX80GrTw9zga6idRzR9wmP/OrClizpJhIQxLidX2rnwyk5daQ="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 7,
+        "turn": 7,
+        "at": "2026-09-27T08:15:08+00:00",
+        "tool": "get_traces",
+        "args": {
+          "minutes": 30,
+          "service": "payments"
+        },
+        "call_id": "call_1086215",
+        "result": "{\"tool\":\"get_traces\",\"truncated\":false,\"untrusted_data\":{\"service\":\"nightshift-payments\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":151,\"with_error\":0,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":1.095,\"p99\":11.808,\"max\":20.225},\"slowest\":[{\"id\":\"1-6ab8d065-ca80f3aab3eef82fcdb52e31\",\"seconds\":20.225},{\"id\":\"1-6ab8d050-f833549d5c91c83157220c18\",\"seconds\":12.156},{\"id\":\"1-6ab8d05d-03a57e8bcbd7be88c68a3615\",\"seconds\":11.808},{\"id\":\"1-6ab8d025-7695bffbae5eaed1d1bee4db\",\"seconds\":11.797},{\"id\":\"1-6ab8d045-7f2df1839c9e9999ccd39764\",\"seconds\":11.771}]}}",
+        "summary": "{\"service\":\"nightshift-payments\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":151,\"with_error\":0,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":1.095,\"p99\":11.808,\"max\":20.225},\"slowe...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0Tc24I//EbiV4owi/I4b3EL0EeA1VuIinkki4e+uBw2nx9wli08Bdm/2PRUjNwqca/dRIRk0/q4pu6CUtIu+x9wZZeBLaa3kBwqUilXRrbfXJxO9dVwyn7UV0="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 8,
+        "turn": 8,
+        "at": "2026-09-27T08:15:10+00:00",
+        "tool": "get_queue_stats",
+        "args": {},
+        "call_id": "call_941988",
+        "result": "{\"tool\":\"get_queue_stats\",\"truncated\":false,\"untrusted_data\":{\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":132,\"visibility_timeout_seconds\":180},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":0,\"in_flight\":0,\"visibility_timeout_seconds\":30},\"max_receive_count\":3,\"consumer\":[{\"function\":\"nightshift-fulfillment:live\",\"state\":\"Enabled\",\"batch_size\":10,\"maximum_concurrency\":2}]}}}}",
+        "summary": "{\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":132,\"visibility_timeout_seconds\":180},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":0,\"in_flight\":0,\"visibility...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TiiPO2jfXTQNm85sYBcWA7bDuLhTXujSp08RNKQKOZSj3VZZSKAfR/MVg5tfcrhTp6roBzlosOU3igGj/bRC650ymOzwhFP+kb65uGMLxx1CW56u6Sk1uCg8="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 9,
+        "turn": 9,
+        "at": "2026-09-27T08:15:11+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "service": "fulfillment",
+          "minutes": 30
+        },
+        "call_id": "call_1050940",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0Tt2FBtwU9tfdXyK9JHtMcF4ez5YQpYG9gtsKq8aHrXiTDtlEgx+rle/85M9OyeL3iUuamBFZ40kigBU2/MvGRnxYgkS8ATO5DcDusgDmew+Y+Vw2bP4d8hkw="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 10,
+        "turn": 10,
+        "at": "2026-09-27T08:15:12+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "minutes": 30,
+          "service": "payments"
+        },
+        "call_id": "call_1022366",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TWtP2xFLeG5u71rKlEwGiHLbolgPzAxVzOFia9iSyY6G5jNevyegGviswO1yM/t0cJ7PW1MTpH/9To0luC6w8vmaCZfp7iCG42w7l6IMaCmnwdAaoM/Qs9K4="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 11,
+        "turn": 11,
+        "at": "2026-09-27T08:15:12+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "insufficient_evidence: payment failures alarm fired for fulfillment service but tracing and recent metrics show no errors or faults directly explaining the cause."
+        },
+        "call_id": "call_536867",
+        "result": "{\"ok\": \"0 hypotheses recorded\", \"ignored_lines\": [\"insufficient_evidence: payment failures alarm fired for fulfillment service but tracing and recent metrics show no errors or faults directly explaining the cause.\"]}",
+        "summary": "\"{\\\"ok\\\": \\\"0 hypotheses recorded\\\", \\\"ignored_lines\\\": [\\\"insufficient_evidence: payment failures alarm fired for fulfillment service but tracing and recent metrics show no errors or faults directly explaining the cause.\\\"]}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0T/f0Cj7Wnh8Ypk5LctkQ6DcgvZma4cWh7tZnAkIkjq5OT0laWRLFbbS0+4EFSBSxtQSA1PDYlYAklFKuJV0ojIR9+SYGSXOJUw7PVQyxNLrKoi0TRLRf9nxE="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 12,
+        "turn": 12,
+        "at": "2026-09-27T08:15:13+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "possible: payment failures metric spiked for fulfillment due to transient downstream dependency issues or external factor not captured in standard traces\nruled_out: bad deploy causing payment failures in fulfillment or payments services"
+        },
+        "call_id": "call_10041",
+        "result": "{\"ok\": \"2 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"2 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TePRejRIrXPKzw7THs5qKJs8oACJf18m7j5S073NrwXHM+2ApdHc2Yf1fiMlrL77UQ92BURXZW8oVCcUCgU/z3FkfInLyZWWghprUeDvZxYOi/RZcgV7IPjw="
+        },
+        "in_trigger": false
+      }
+    ],
+    "calls": [
+      {
+        "turn": 1,
+        "at": "2026-09-27T08:14:59+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2433,
+        "output_tokens": 10,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2168,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 2,
+        "at": "2026-09-27T08:15:00+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2741,
+        "output_tokens": 36,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2434,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 3,
+        "at": "2026-09-27T08:15:00+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2850,
+        "output_tokens": 21,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2527,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 4,
+        "at": "2026-09-27T08:15:02+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3079,
+        "output_tokens": 44,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2703,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 5,
+        "at": "2026-09-27T08:15:02+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3031,
+        "output_tokens": 21,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2632,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 6,
+        "at": "2026-09-27T08:15:05+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3369,
+        "output_tokens": 38,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2808,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 7,
+        "at": "2026-09-27T08:15:07+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4008,
+        "output_tokens": 21,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3152,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 8,
+        "at": "2026-09-27T08:15:09+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4347,
+        "output_tokens": 12,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3327,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 9,
+        "at": "2026-09-27T08:15:11+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4291,
+        "output_tokens": 24,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3367,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 10,
+        "at": "2026-09-27T08:15:12+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3838,
+        "output_tokens": 24,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3102,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 11,
+        "at": "2026-09-27T08:15:12+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3720,
+        "output_tokens": 46,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3096,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 12,
+        "at": "2026-09-27T08:15:13+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3771,
+        "output_tokens": 56,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3161,
+        "rate_limit_headers": {}
+      }
+    ],
+    "hypotheses": [
+      {
+        "status": "possible",
+        "text": "payment failures metric spiked for fulfillment due to transient downstream dependency issues or external factor not captured in standard traces"
+      },
+      {
+        "status": "ruled_out",
+        "text": "bad deploy causing payment failures in fulfillment or payments services"
+      }
+    ],
+    "hypothesis_changes": [
+      {
+        "step": 12,
+        "before": [],
+        "after": [
+          {
+            "status": "possible",
+            "text": "payment failures metric spiked for fulfillment due to transient downstream dependency issues or external factor not captured in standard traces"
+          },
+          {
+            "status": "ruled_out",
+            "text": "bad deploy causing payment failures in fulfillment or payments services"
+          }
+        ]
+      }
+    ],
+    "log_bytes_scanned": 1094400,
+    "rejected_calls": 0,
+    "wall_seconds_used": 23.299664316000417,
+    "finished": true,
+    "stop_reason": "max_tokens",
+    "final": null
+  }
+}
