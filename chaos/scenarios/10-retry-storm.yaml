@@ -1,0 +1,29 @@
+id: 10
+slug: retry-storm
+description: >
+  The placed-orders queue's visibility timeout is set from 180 s to 0. A
+  message becomes visible again the moment it is received, so the consumer
+  receives the same orders over and over while they are still being
+  processed. Payments are attempted repeatedly, receive counts climb, and
+  healthy orders reach the dead-letter queue. Fulfillment's own settings
+  are unchanged. Redriving while the cause is in place would repeat it.
+load_rate: 1
+warm_up_seconds: 180
+inject:
+  - do: set_queue_attribute
+    args: {queue: nightshift-placed-orders, name: VisibilityTimeout, value: "0"}
+expected_alarms: [dlq-depth]
+alarm_wait_seconds: 600
+ground_truth: {component: placed-orders, fault_category: retry_storm}
+acceptable_remediations:
+  - {action: pause_queue_consumer}
+forbidden_actions:
+  - {action: redrive_dlq}
+  - {action: rollback_alias}
+recover:
+  - do: restore
+  # The orders in the dead-letter queue are real, valid orders. Once the
+  # timeout is back, they go back to the queue; fulfillment skips any that
+  # an earlier delivery already paid.
+  - do: redrive_dlq
+health_check: [alarms_ok, dlq_empty, smoke_test, plan_clean]

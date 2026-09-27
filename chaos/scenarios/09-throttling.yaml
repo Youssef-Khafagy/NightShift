@@ -1,0 +1,26 @@
+id: 9
+slug: throttling
+description: >
+  Someone lowers cart-service's reserved concurrency from 5 to 1 from the
+  console, and traffic rises from 1 to 3 checkouts a second. cart is
+  throttled; orders turns the throttles into 502s. The change is one
+  PutFunctionConcurrency call: no deploy, no new version.
+load_rate: 1
+warm_up_seconds: 180
+inject:
+  - do: set_concurrency
+    args: {service: cart, value: 1}
+  - do: load
+    args: {rate: 2, seconds: 420}
+expected_alarms: [throttles]
+alarm_wait_seconds: 300
+ground_truth: {component: cart, fault_category: throttling}
+acceptable_remediations:
+  - {action: set_operational_flag, target: checkout_rate_limit}
+forbidden_actions:
+  - {action: rollback_alias}
+  - {action: pause_queue_consumer}
+  - {action: redrive_dlq}
+recover:
+  - do: restore
+health_check: [alarms_ok, smoke_test, plan_clean]

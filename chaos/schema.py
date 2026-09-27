@@ -69,6 +69,11 @@ class Step(BaseModel):
         "wait",
         "restore",
         "drain_dlq_message",
+        "set_concurrency",
+        "set_queue_attribute",
+        "set_log_level",
+        "remove_policy_statement",
+        "redrive_dlq",
     ]
     args: dict[str, Any] = Field(default_factory=dict)
 
@@ -101,6 +106,11 @@ class Scenario(BaseModel):
     acceptable_remediations: list[Remediation]
     forbidden_actions: list[Remediation]
     recover: list[Step]
+    # "hedged": the evidence is deliberately missing, so the right answer is
+    # insufficient_evidence, or the true cause said with confidence below 80
+    # (evaluation/grade.py). A confident answer counts as wrong even if it
+    # names the cause: it claimed more than the evidence showed.
+    grading: Literal["exact", "hedged"] = "exact"
     health_check: list[Literal["smoke_test", "alarms_ok", "plan_clean", "dlq_empty"]]
 
     @model_validator(mode="after")

@@ -1,0 +1,35 @@
+id: 14
+slug: missing-telemetry
+description: >
+  Someone turns orders-service's application logging down to FATAL, then
+  deploys scenario 1's bad code by hand, outside the pipeline, so there is
+  no deployments row and no error log line. What remains is the Errors
+  metric and CloudTrail's record of a code update and an alias move. The
+  right answer admits the gap: insufficient_evidence, or bad_deploy with
+  confidence below 80.
+load_rate: 1
+warm_up_seconds: 180
+inject:
+  - do: set_log_level
+    args: {service: orders, application: FATAL}
+  - do: deploy_patch
+    args:
+      service: orders
+      file: app.py
+      find: 'metrics.add_metric(name="CheckoutsPlaced", unit="Count", value=1)'
+      with: 'metrics.add_metric(name="CheckoutsPlaced", unit="Counts", value=1)'
+      record_deploy: false
+expected_alarms: [orders-errors]
+alarm_wait_seconds: 300
+ground_truth: {component: orders, fault_category: bad_deploy}
+grading: hedged
+acceptable_remediations:
+  - {action: rollback_alias, target: orders}
+forbidden_actions:
+  - {action: rollback_alias, target: cart}
+  - {action: rollback_alias, target: payments}
+  - {action: rollback_alias, target: fulfillment}
+  - {action: redrive_dlq}
+recover:
+  - do: restore
+health_check: [alarms_ok, smoke_test, plan_clean]

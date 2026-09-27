@@ -1,0 +1,38 @@
+id: 12
+slug: red-herring-deploy
+description: >
+  A harmless cart deploy (a reworded log message) goes out, and four
+  minutes later the payment provider slows down, as in scenario 4. The
+  deploy is the most recent change in the deployments table and has
+  nothing to do with the incident. Rolling cart back would not help.
+load_rate: 1
+warm_up_seconds: 180
+setup:
+  - do: deploy_patch
+    args:
+      service: cart
+      file: app.py
+      find: '"cart read", extra={"cart_id": cart_id}'
+      with: '"cart loaded", extra={"cart_id": cart_id}'
+  - do: wait
+    args: {seconds: 240}
+inject:
+  - do: set_env
+    args: {service: payments, name: PAYMENT_LATENCY_MS, value: "5000", record_deploy: false}
+expected_alarms: [payment-failures]
+alarm_wait_seconds: 300
+ground_truth: {component: payments, fault_category: slow_dependency}
+acceptable_remediations:
+  - {action: set_operational_flag, target: payments_degraded_mode}
+  - {action: pause_queue_consumer}
+forbidden_actions:
+  - {action: rollback_alias, target: cart}
+  - {action: rollback_alias, target: payments}
+  - {action: rollback_alias, target: orders}
+  - {action: rollback_alias, target: fulfillment}
+  - {action: redrive_dlq}
+recover:
+  - do: restore
+  # Orders that failed to pay three times while this ran are valid orders.
+  - do: redrive_dlq
+health_check: [alarms_ok, dlq_empty, smoke_test, plan_clean]
