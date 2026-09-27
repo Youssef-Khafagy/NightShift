@@ -405,6 +405,68 @@ def test_deployments_newest_first_within_the_window():
     )
 
 
+def test_a_deploy_row_says_whether_code_or_settings_changed():
+    versions = {
+        "3": {
+            "CodeSha256": "aaa",
+            "Timeout": 10,
+            "Environment": {
+                "Variables": {"CART_TABLE_NAME": "nightshift-cart", "X": "1"}
+            },
+        },
+        "4": {
+            "CodeSha256": "aaa",
+            "Timeout": 10,
+            "Environment": {
+                "Variables": {"CART_TABLE_NAME": "nightshift-carts", "X": "1"}
+            },
+        },
+        "5": {
+            "CodeSha256": "bbb",
+            "Timeout": 3,
+            "Environment": {
+                "Variables": {"CART_TABLE_NAME": "nightshift-carts", "X": "1"}
+            },
+        },
+    }
+
+    def config(FunctionName, Qualifier):
+        if Qualifier not in versions:
+            raise ClientError(
+                {"Error": {"Code": "ResourceNotFoundException", "Message": "gone"}},
+                "GetFunctionConfiguration",
+            )
+        return versions[Qualifier]
+
+    def row(at, old, new):
+        return {
+            "service": {"S": "orders"},
+            "deployed_at": {"S": f"2026-09-23T14:{at}:00.000+00:00"},
+            "kind": {"S": "deploy"},
+            "previous": {"S": old},
+            "new": {"S": new},
+        }
+
+    ddb = Recorder(
+        query={"Items": [row("50", "4", "5"), row("40", "3", "4"), row("30", "2", "3")]}
+    )
+    lam = Recorder(get_function_configuration=config)
+    out = call(
+        "list_recent_deployments",
+        {"service": "orders"},
+        context(dynamodb=ddb, **{"lambda": lam}),
+    )["untrusted_data"]
+    changed = [m["changed"] for m in out["moves"]]
+    assert changed[0] == {"code_changed": True, "settings_changed": ["Timeout"]}
+    assert changed[1] == {
+        "code_changed": False,
+        "settings_changed": ["env CART_TABLE_NAME"],
+    }
+    assert changed[2] == {"compared": "one of the two versions no longer exists"}
+    # Names only: the values stay in get_function_config.
+    assert "nightshift-carts" not in json.dumps(out)
+
+
 def test_recent_changes_keep_only_project_resources():
     trail = Recorder(
         lookup_events={

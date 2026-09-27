@@ -16,6 +16,8 @@ import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from botocore.exceptions import ClientError
+
 from agent.config import LOOKBACK_MINUTES
 from agent.tools.context import ToolContext, ToolError
 
@@ -273,6 +275,40 @@ def get_traces(ctx: ToolContext, service: str, minutes: int = 15) -> dict:
 
 # -- list_recent_deployments ---------------------------------------------------
 
+# Settings that change behaviour without changing code. Environment
+# variables are compared separately, by name.
+CONFIG_FIELDS = ("Timeout", "MemorySize", "Handler", "Runtime", "Layers")
+MOVES_COMPARED = 5
+
+
+def what_changed(ctx: ToolContext, service: str, old: str, new: str) -> dict:
+    """Whether a move changed code, settings, or both. Names only, no values:
+    get_function_config shows the live values. Without this, a configuration
+    change shipped as a deploy looked exactly like a code deploy (M5)."""
+    lam = ctx.client("lambda")
+    function = ctx.service(service)["function"]
+    try:
+        a, b = (
+            lam.get_function_configuration(FunctionName=function, Qualifier=v)
+            for v in (old, new)
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ResourceNotFoundException":
+            return {"compared": "one of the two versions no longer exists"}
+        raise
+    env_a = a.get("Environment", {}).get("Variables", {})
+    env_b = b.get("Environment", {}).get("Variables", {})
+    changed = [f for f in CONFIG_FIELDS if a.get(f) != b.get(f)]
+    changed += [
+        f"env {k}"
+        for k in sorted(set(env_a) | set(env_b))
+        if env_a.get(k) != env_b.get(k)
+    ]
+    return {
+        "code_changed": a.get("CodeSha256") != b.get("CodeSha256"),
+        "settings_changed": changed,
+    }
+
 
 def list_recent_deployments(
     ctx: ToolContext, service: str | None = None, minutes: int = LOOKBACK_MINUTES
@@ -291,21 +327,21 @@ def list_recent_deployments(
         )["Items"]
         rows += [{k: v["S"] for k, v in item.items() if "S" in v} for item in items]
     rows.sort(key=lambda r: r["deployed_at"], reverse=True)
-    return {
-        "window_minutes": minutes,
-        "moves": [
-            {
-                "at": r["deployed_at"],
-                "service": r["service"],
-                "kind": r.get("kind"),
-                "version": f"{r.get('previous')} -> {r.get('new')}",
-                "git_sha": r.get("git_sha"),
-                "actor": r.get("actor"),
-                "reason": r.get("reason"),
-            }
-            for r in rows[:20]
-        ],
-    }
+    moves = []
+    for i, r in enumerate(rows[:20]):
+        move = {
+            "at": r["deployed_at"],
+            "service": r["service"],
+            "kind": r.get("kind"),
+            "version": f"{r.get('previous')} -> {r.get('new')}",
+            "git_sha": r.get("git_sha"),
+            "actor": r.get("actor"),
+            "reason": r.get("reason"),
+        }
+        if i < MOVES_COMPARED and r.get("previous") and r.get("new"):
+            move["changed"] = what_changed(ctx, r["service"], r["previous"], r["new"])
+        moves.append(move)
+    return {"window_minutes": minutes, "moves": moves}
 
 
 # -- lookup_recent_changes -------------------------------------------------------

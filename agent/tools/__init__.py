@@ -130,7 +130,8 @@ TOOLS: dict[str, Tool] = {
         _tool(
             "list_recent_deployments",
             "List recent alias moves (deploys, rollbacks) from the deployments table, "
-            "newest first: which version went live, when, from which commit, by whom. "
+            "newest first: which version went live, when, from which commit, by whom, "
+            "and whether the move changed code, settings, or both. "
             "Covers at most the last hour.",
             {
                 "service": SERVICE,
