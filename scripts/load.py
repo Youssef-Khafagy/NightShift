@@ -39,6 +39,7 @@ import json
 import math
 import os
 import random
+import signal
 import subprocess
 import sys
 import threading
@@ -225,14 +226,22 @@ class Pacer:
         self.in_flight = 0
         self.sent = 0
         self.dropped = 0
+        self.stopped_early = False
 
     def _done(self) -> None:
         with self._lock:
             self.in_flight -= 1
 
-    def run(self, submit: Callable[[int, Callable[[], None]], None]) -> None:
+    def run(
+        self,
+        submit: Callable[[int, Callable[[], None]], None],
+        stop: threading.Event | None = None,
+    ) -> None:
         start = self._clock()
         for i in range(self.total):
+            if stop is not None and stop.is_set():
+                self.stopped_early = True
+                break
             # Order i is due at start + i/rate, regardless of how long earlier
             # orders took. That is what makes it open loop.
             wait = start + i / self.rate - self._clock()
@@ -357,7 +366,11 @@ def one_order(
 
 
 def run(
-    run_id: str, rate: float, carts: list[list[dict]], note: str | None = None
+    run_id: str,
+    rate: float,
+    carts: list[list[dict]],
+    note: str | None = None,
+    stop: threading.Event | None = None,
 ) -> dict[str, Any]:
     outcomes: Counter = Counter()
     latencies: list[float] = []
@@ -380,11 +393,12 @@ def run(
             pool.submit(task)
 
         started = time.monotonic()
-        pacer.run(submit)
+        pacer.run(submit, stop)
     elapsed = time.monotonic() - started
 
     return {
         "sent": pacer.sent,
+        "stopped_early": pacer.stopped_early,
         "dropped_by_generator": pacer.dropped,
         "outcomes": dict(sorted(outcomes.items())),
         "elapsed_seconds": round(elapsed, 1),
@@ -468,8 +482,13 @@ def main() -> None:
         print("\nDry run. Pass --run to send it.")
         return
 
+    # SIGTERM stops sending, lets orders in flight finish and still writes
+    # the summary, exiting 0. The chaos runner uses it to end traffic once
+    # every investigation has answered, instead of a fixed duration.
+    stop = threading.Event()
+    signal.signal(signal.SIGTERM, lambda signum, frame: stop.set())
     print("\nSending...")
-    summary = run(run_id, args.rate, carts, args.note)
+    summary = run(run_id, args.rate, carts, args.note, stop)
     commit = subprocess.run(
         ["git", "-C", str(REPO_ROOT), "rev-parse", "--short", "HEAD"],
         capture_output=True,

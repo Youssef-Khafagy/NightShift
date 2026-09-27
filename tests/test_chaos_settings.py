@@ -256,3 +256,22 @@ def test_exact_grading_is_unchanged():
     assert not grade(
         result("exact"), report("insufficient_evidence", "none", 0)
     ).root_cause_correct
+
+
+def test_the_page_goes_to_the_alarm_that_changed_first_not_the_first_name():
+    from datetime import UTC, datetime
+
+    class Cw:
+        def describe_alarms(self, AlarmNames):
+            at = {
+                "nightshift-orders-errors": datetime(2026, 9, 27, 3, 0, 10, tzinfo=UTC),
+                "nightshift-throttles": datetime(2026, 9, 27, 3, 0, 2, tzinfo=UTC),
+            }
+            return {
+                "MetricAlarms": [
+                    {"AlarmName": n, "StateUpdatedTimestamp": at[n]} for n in AlarmNames
+                ]
+            }
+
+    both = {"nightshift-orders-errors", "nightshift-throttles"}
+    assert runner.first_to_fire(Cw(), both) == "nightshift-throttles"

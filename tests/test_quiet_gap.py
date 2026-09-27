@@ -82,6 +82,6 @@ def test_a_leftover_is_found_in_every_timestamp_format():
         step(2, f'{{"at": "{before:%Y-%m-%dT%H:%M:%S}.000+00:00"}}'),
         step(3, f'{{"@timestamp": "{before:%Y-%m-%d %H:%M:%S}.000"}}'),
         step(4, f'{{"at": "{NOW:%Y-%m-%dT%H:%M:%SZ}"}}'),
-        step(5, '{"since": "more than 60 minutes ago", "points": [["11:59:00Z", 1]]}'),
+        step(5, '{"since": "more than 30 minutes ago", "points": [["11:59:00Z", 1]]}'),
     ]
     assert leftovers(steps, previous) == [1, 2, 3]

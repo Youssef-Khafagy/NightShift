@@ -475,7 +475,7 @@ The pass spans about a week and will cross a month boundary, which splits the nu
 
 **LLM budget per pass.** Mistral: 42 investigations x ~30K = ~1.3M tokens, against 937,500 tokens a minute and no visible monthly cap. Gemini Flash Lite: 42 x 8 calls plus 42 baseline calls = ~380 requests for the whole pass, against 500 a day. **Groq is not in the pass**: at 200K tokens a day it finishes about 6 investigations a day, and a third querying configuration would take Logs scans to 3.36 GB (4.25 GB total, ~15% headroom).
 
-**Wall clock.** About 25 minutes active plus a 75-minute quiet gap (the 60-minute tool lookback plus 15 minutes of margin, M7 step 2) is about 100 minutes per incident: **~70 hours per pass**, in about 7 batches of 6, each about 10 hours, inside the 12-hour `aws login` session.
+**Wall clock.** Measured on scenario 9 (2026-09-27): about 23 minutes active. With traffic stopped once the investigations answer (about 18 minutes active) and the 45-minute quiet gap (30-minute lookback plus 15 minutes of margin, owner decision 2026-09-27), an incident is about 63 minutes. **Phase 1, 19 incidents: about 20 hours, 2 sittings of about 10 hours.** The full 39 would be about 41 hours. The resource figures above are for 42 incidents and so over-state phase 1 by about half.
 
 ## Not Always Free
 

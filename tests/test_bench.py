@@ -53,6 +53,20 @@ def test_the_plan_is_every_scenario_run_shuffled_and_reproducible():
     assert a != bench.make_plan([11, 1, 2], 3, seed=8)
 
 
+def test_phase_one_runs_first_and_phase_two_completes_the_pass():
+    plan = bench.make_plan([1, 2, 4, 11], 3, seed=5, first_runs={1: 3, 4: 3, 11: 3})
+    phase1 = [p for p in plan if p["phase"] == 1]
+    assert len(phase1) == 3 + 1 + 3 + 3
+    assert plan[: len(phase1)] == phase1  # phase 1 is a prefix
+    assert sorted((p["scenario"], p["run"]) for p in plan) == [
+        (s, r) for s in (1, 2, 4, 11) for r in (1, 2, 3)
+    ]
+    assert {(p["scenario"], p["run"]) for p in plan if p["phase"] == 2} == {
+        (2, 2),
+        (2, 3),
+    }
+
+
 def test_every_configuration_uses_ambient_credentials_and_the_agent_never_asks_approval():
     for config in bench.CONFIGS:
         cmd = bench.command(config, "orders-errors", "id1")
