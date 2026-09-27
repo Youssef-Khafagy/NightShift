@@ -17,6 +17,7 @@ from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError
 
+from agent.config import LOOKBACK_MINUTES
 from agent.llm.base import ToolSpec
 from agent.tools import aws_read
 from agent.tools.args import problems
@@ -24,6 +25,13 @@ from agent.tools.context import ToolContext, ToolError
 from agent.tools.output import render
 
 SERVICE = {"type": "string", "enum": aws_read.SERVICES, "description": "Service name."}
+
+
+# Every tool window ends now and reaches back at most LOOKBACK_MINUTES.
+def minutes(least: int) -> dict:
+    return {"type": "integer", "minimum": least, "maximum": LOOKBACK_MINUTES}
+
+
 NAMESPACES = ["AWS/Lambda", "AWS/SQS", "AWS/DynamoDB", "AWS/AuroraDSQL", "NightShift"]
 
 
@@ -84,7 +92,7 @@ TOOLS: dict[str, Tool] = {
                     "description": "Name=Value pairs separated by commas, e.g. "
                     "FunctionName=nightshift-orders",
                 },
-                "minutes": {"type": "integer", "minimum": 5, "maximum": 180},
+                "minutes": minutes(5),
                 "period": {"type": "integer", "minimum": 60, "maximum": 3600},
             },
             ["namespace", "metric", "statistic"],
@@ -102,7 +110,7 @@ TOOLS: dict[str, Tool] = {
                     "description": "Logs Insights query, e.g. 'fields @timestamp, message "
                     '| filter level = "ERROR" | sort @timestamp desc\'',
                 },
-                "minutes": {"type": "integer", "minimum": 1, "maximum": 60},
+                "minutes": minutes(1),
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50},
             },
             ["service", "query"],
@@ -114,7 +122,7 @@ TOOLS: dict[str, Tool] = {
             "throttles and duration percentiles.",
             {
                 "service": SERVICE,
-                "minutes": {"type": "integer", "minimum": 1, "maximum": 60},
+                "minutes": minutes(1),
             },
             ["service"],
             aws_read.get_traces,
@@ -122,10 +130,11 @@ TOOLS: dict[str, Tool] = {
         _tool(
             "list_recent_deployments",
             "List recent alias moves (deploys, rollbacks) from the deployments table, "
-            "newest first: which version went live, when, from which commit, by whom.",
+            "newest first: which version went live, when, from which commit, by whom. "
+            "Covers at most the last hour.",
             {
                 "service": SERVICE,
-                "hours": {"type": "integer", "minimum": 1, "maximum": 168},
+                "minutes": minutes(5),
             },
             [],
             aws_read.list_recent_deployments,
@@ -133,8 +142,9 @@ TOOLS: dict[str, Tool] = {
         _tool(
             "lookup_recent_changes",
             "List write API calls on project resources from CloudTrail event history "
-            "(configuration changes, permission changes, deploys). About 5 minutes behind.",
-            {"minutes": {"type": "integer", "minimum": 5, "maximum": 720}},
+            "(configuration changes, permission changes, deploys). About 5 minutes behind. "
+            "Covers at most the last hour.",
+            {"minutes": minutes(5)},
             [],
             aws_read.lookup_recent_changes,
         ),

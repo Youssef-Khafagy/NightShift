@@ -7,6 +7,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TypedDict
 
+# The furthest back any tool may look, in minutes. The benchmark runner waits
+# longer than this between incidents (chaos/quiet.py), so an investigation can
+# never read the previous incident's leftovers. In M5 two of five wrong
+# answers came from exactly that, when the widest tool looked back 7 days.
+LOOKBACK_MINUTES = 60
+
 
 @dataclass(frozen=True)
 class AgentConfig:
@@ -33,7 +39,7 @@ class AgentConfig:
     # Logs Insights bills bytes scanned: the budget in COST.md is 20 MB per
     # investigation, and the widest window a query may cover.
     log_scan_cap_bytes: int = 20 * 1024 * 1024
-    max_log_query_minutes: int = 60
+    max_log_query_minutes: int = LOOKBACK_MINUTES
 
 
 # Default model and per-request input cap for each provider, from the limits

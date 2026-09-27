@@ -137,7 +137,7 @@ def test_every_problem_is_reported_at_once():
     assert "missing required argument 'metric'" in text
     assert "missing required argument 'statistic'" in text
     assert "must be one of" in text
-    assert "at most 180" in text
+    assert "at most 60" in text
     assert "unknown argument 'colour'" in text
 
 
@@ -355,6 +355,7 @@ def test_function_config_redacts_secret_names_but_shows_config():
                 }
             },
             "Timeout": 10,
+            "LastModified": "2026-09-23T14:30:00.000+0000",
         },
         get_function_concurrency={"ReservedConcurrentExecutions": 5},
     )
@@ -366,6 +367,7 @@ def test_function_config_redacts_secret_names_but_shows_config():
         "DB_PASSWORD": "[redacted]",
         "GROQ_API_KEY": "[redacted]",
     }
+    assert out["last_modified"] == "2026-09-23T14:30:00Z"
     assert lam.calls[1] == (
         "get_function_configuration",
         {"FunctionName": "nightshift-orders", "Qualifier": "18"},
@@ -393,13 +395,13 @@ def test_deployments_newest_first_within_the_window():
         return {"Items": rows[kw["ExpressionAttributeValues"][":s"]["S"]]}
 
     ddb = Recorder(query=query)
-    out = call("list_recent_deployments", {"hours": 2}, context(dynamodb=ddb))[
+    out = call("list_recent_deployments", {"minutes": 45}, context(dynamodb=ddb))[
         "untrusted_data"
     ]
     assert [m["service"] for m in out["moves"]] == ["fulfillment", "orders"]
     assert (
         ddb.calls[0][1]["ExpressionAttributeValues"][":t"]["S"]
-        == "2026-09-23T13:00:00.000+00:00"
+        == "2026-09-23T14:15:00.000+00:00"
     )
 
 

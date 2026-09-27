@@ -7,6 +7,9 @@
 
 A run:
 
+0. **Quiet gap.** At least QUIET_GAP_MINUTES since the previous incident's
+   last write, longer than any agent tool looks back (chaos/quiet.py), so
+   the agent cannot read the previous incident's leftovers.
 1. **Preflight.** The queue consumer is on (load needs it), `terraform plan`
    is clean, and for every service the scenario changes, the live $LATEST
    code is byte-identical to Terraform's zip, so restoring it cannot drift.
@@ -44,9 +47,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from chaos import agent_wait
+from chaos import agent_wait, quiet
 from chaos.actions import BUILD, ROLLBACK_REASON, Injector, code_sha256
 from chaos.schema import Scenario, load_all
+from evaluation.contamination import leftovers
 from evaluation.grade import grade
 from ops import deployments
 
@@ -214,7 +218,7 @@ def preflight(scenario: Scenario, c: Clients, with_agent: bool = False) -> list[
             "export DSQL_ENDPOINT=$(terraform -chdir=terraform output -raw dsql_endpoint)"
         )
     if not consumer_on(c.lam):
-        problems.append("the queue consumer is off; enable it through Terraform first")
+        problems.append("the queue consumer is off; scripts/consumer.py on")
     if not plan_clean(with_agent):
         problems.append("terraform plan is not clean")
     for service in sorted(services_changed(scenario)):
@@ -246,6 +250,19 @@ def agent_preflight() -> list[str]:
     return problems
 
 
+def wait_for_quiet(c: Clients, wait: bool) -> list[str]:
+    """Problems with the quiet gap, after waiting it out if asked to. Waits
+    at most two gaps: longer means something keeps writing."""
+    trail = boto3.client("cloudtrail", region_name=REGION)
+    deadline = time.time() + 2 * quiet.QUIET_GAP_MINUTES * 60
+    while True:
+        problems = quiet.check(c.cw, trail)
+        if not problems or not wait or time.time() >= deadline:
+            return problems
+        print(f"  waiting for quiet: {problems[0]}", flush=True)
+        time.sleep(300)
+
+
 def agent_verdict(result: dict, injected_at: float, run_dir: Path) -> dict:
     """Wait for the report, keep a copy beside the result, and grade it."""
     ddb = boto3.client("dynamodb", region_name=REGION)
@@ -260,8 +277,13 @@ def agent_verdict(result: dict, injected_at: float, run_dir: Path) -> dict:
     steps = state.get("steps", [])
     verdict = grade(result, report, steps[-1]["at"] if steps else None)
     calls = state.get("calls", [])
+    previous = result.get("previous_last_write")
+    leaked = leftovers(steps, datetime.fromisoformat(previous)) if previous else []
     return {
         "started": True,
+        # Steps that showed a time from before this incident. Any at all and
+        # the run is re-run rather than graded.
+        "leftover_steps": leaked,
         "investigation_id": found["investigation_id"],
         "grade": asdict(verdict),
         "tokens": sum(c["input_tokens"] + c["output_tokens"] for c in calls),
@@ -309,7 +331,12 @@ def run_step(step, injector: Injector, loads: list, run_dir: Path, reason: str) 
 
 
 def run(
-    scenario: Scenario, *, dry_run: bool, with_agent: bool = False, hold: bool = False
+    scenario: Scenario,
+    *,
+    dry_run: bool,
+    with_agent: bool = False,
+    hold: bool = False,
+    wait_quiet: bool = False,
 ) -> int:
     run_id = f"{scenario.id:02d}-{scenario.slug}-{datetime.now(UTC):%Y%m%dT%H%M%SZ}"
     run_dir = RESULTS / run_id
@@ -339,7 +366,16 @@ def run(
     }
     print(f"Scenario {scenario.id} ({scenario.slug}){' [dry run]' if dry_run else ''}")
 
+    previous = quiet.last_write()
+    result["previous_last_write"] = previous.isoformat() if previous else None
+    print(
+        f"Quiet gap: {quiet.QUIET_GAP_MINUTES} min; last run wrote at {previous or 'never'}"
+    )
     if not dry_run:
+        problems = wait_for_quiet(c, wait_quiet)
+        if problems:
+            print("NOT QUIET, nothing was done:\n  " + "\n  ".join(problems))
+            return 2
         problems = preflight(scenario, c, with_agent)
         if with_agent:
             problems += agent_preflight()
@@ -360,6 +396,7 @@ def run(
         f"Warm-up: {scenario.load_rate}/s, {scenario.warm_up_seconds}s, traffic runs {base_seconds}s"
     )
     if not dry_run:
+        quiet.touch(f"{run_id} warm-up")
         loads.append(
             start_load(scenario.load_rate, base_seconds, run_dir / "load-base.json")
         )
@@ -478,6 +515,11 @@ def main() -> None:
         "reject each proposed action and for the Actor to finish",
     )
     parser.add_argument(
+        "--wait-for-quiet",
+        action="store_true",
+        help=f"wait out the {quiet.QUIET_GAP_MINUTES}-minute quiet gap instead of refusing",
+    )
+    parser.add_argument(
         "--restore", type=Path, help="state.json from an interrupted run"
     )
     args = parser.parse_args()
@@ -494,21 +536,30 @@ def main() -> None:
             state_path=args.restore,
         )
         injector.injections = json.loads(args.restore.read_text())
-        injector.restore(ROLLBACK_REASON)
-        injector.drain_dlq_message(f"{PROJECT}-placed-orders-dlq")
+        if args.run:
+            quiet.touch(f"restore {args.restore.parent.name}")
+        try:
+            injector.restore(ROLLBACK_REASON)
+            injector.drain_dlq_message(f"{PROJECT}-placed-orders-dlq")
+        finally:
+            quiet.touch_if_started("restore ended")
         return
 
     by_id = {s.id: s for s in load_all(SCENARIOS)}
     if args.scenario not in by_id:
         sys.exit(f"no scenario {args.scenario}; have {sorted(by_id)}")
-    sys.exit(
-        run(
+    try:
+        code = run(
             by_id[args.scenario],
             dry_run=not args.run,
             with_agent=args.agent,
             hold=args.hold_for_approval,
+            wait_quiet=args.wait_for_quiet,
         )
-    )
+    finally:
+        # Last, and even after a crash: recovery and health checks write.
+        quiet.touch_if_started("run ended")
+    sys.exit(code)
 
 
 if __name__ == "__main__":
