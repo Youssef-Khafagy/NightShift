@@ -160,6 +160,7 @@ class Investigator:
         self.config = config
         self.clock = clock
         self.specs = [*tool_specs(), NOTE_HYPOTHESES, FINISH]
+        self.system: str | None = None  # the agent's own prompt
 
     def start(
         self, trigger: dict[str, Any], investigation_id: str | None = None
@@ -199,6 +200,7 @@ class Investigator:
                 full_results=cfg.full_results_kept,
                 input_token_cap=cfg.input_token_cap,
                 notice=self._pending_notice or self._notice(state, elapsed, text_only),
+                system=self.system,
             )
             self._pending_notice = ""
             try:

@@ -52,7 +52,7 @@ def test_the_agent_never_imports_the_chaos_package():
     chaos would put scenario files and ground truth one attribute away."""
     files = [
         f
-        for d in ("agent", "agent_lambda", "actor", "actor_lambda")
+        for d in ("agent", "agent_lambda", "actor", "actor_lambda", "baselines")
         for f in sorted((REPO_ROOT / d).rglob("*.py"))
     ]
     assert files, "found no agent source files"
@@ -82,7 +82,7 @@ def test_the_agent_never_imports_the_grader():
     """evaluation/ reads ground truth; the agent must not be able to."""
     agent_files = [
         f
-        for d in ("agent", "agent_lambda", "actor", "actor_lambda")
+        for d in ("agent", "agent_lambda", "actor", "actor_lambda", "baselines")
         for f in sorted((REPO_ROOT / d).rglob("*.py"))
     ]
     for path in agent_files:

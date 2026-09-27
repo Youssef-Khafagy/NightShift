@@ -26,6 +26,11 @@ class Step:
     summary: str  # a short form, used once the full result is too old to keep
     reasoning: str = ""  # the model's text in the turn that made this call
     provider_data: dict[str, Any] = field(default_factory=dict)
+    # A step whose result the model already has in the page message (the
+    # alarm-only baseline's alarm read). It stays in the journal, so it can
+    # be cited, but is not sent again as a tool call: the model never made
+    # it, and Gemini refuses a function call it did not sign.
+    in_trigger: bool = False
 
 
 @dataclass

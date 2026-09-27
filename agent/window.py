@@ -42,27 +42,32 @@ def build(
     full_results: int,
     input_token_cap: int,
     notice: str = "",
+    system: str | None = None,
 ) -> tuple[list[Message], int]:
     """The messages to send, and their estimated token count. `notice` is a
-    note from the loop itself (a budget nearly spent), sent last."""
+    note from the loop itself (a budget nearly spent), sent last. `system`
+    replaces the agent's prompt, for the alarm-only baseline."""
     keep_full = full_results
     while True:
-        messages = _render(state, keep_full, notice)
+        messages = _render(state, keep_full, notice, system or system_prompt())
         estimate = estimate_tokens(messages)
         if estimate <= input_token_cap or keep_full == 0:
             return messages, estimate
         keep_full -= 1
 
 
-def _render(state: InvestigationState, keep_full: int, notice: str) -> list[Message]:
+def _render(
+    state: InvestigationState, keep_full: int, notice: str, system: str
+) -> list[Message]:
     messages = [
-        Message("system", system_prompt()),
+        Message("system", system),
         Message("user", trigger_message(state.trigger)),
     ]
     full_from = len(state.steps) - keep_full
     turns: dict[int, list] = {}
     for step in state.steps:
-        turns.setdefault(step.turn, []).append(step)
+        if not step.in_trigger:
+            turns.setdefault(step.turn, []).append(step)
     for turn in sorted(turns):
         steps = turns[turn]
         messages.append(
