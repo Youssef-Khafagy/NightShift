@@ -756,6 +756,7 @@ One right out of five, every answer at 90 or 95 confidence, no run above 33K tok
 
 - **The answer key was in the deployments table.** Chaos recovery wrote "recovery after scenario run 02-config-regression-..." as the rollback reason, in the table the agent reads. Found while building the tools; now a neutral constant held to the banned-words test, and the four old rows were rewritten.
 - **Back-to-back scenarios contaminate each other.** Scenario 5's answer was built on a CloudTrail event from scenario 4's cleanup; scenario 11's on scenario 4's throttles. The runs were minutes apart and the tools look back an hour or more. Fixed in M7 with a lookback cap and a quiet gap (section 20).
+- **A configuration change looked exactly like a bad deploy.** Scenario 2 ships a wrong table name as a new version, and the deployments tool only said "version 14 -> 15". The model could not tell a code change from a settings change, so it answered bad_deploy. Each move in the last hour now says whether the code changed and which settings changed, by name only (M7 step 3).
 - **Groq validates tool arguments itself** and answered HTTP 400 to `limit: 100`, which the loop first treated as fatal. It now goes back to the model like any bad call.
 - **Times were in the laptop's zone.** boto3 returns local datetimes; logs and deployments are UTC. Tools now always say UTC.
 - **An answer cited steps the loop had skipped.** Evidence now has to be a step that returned data.
