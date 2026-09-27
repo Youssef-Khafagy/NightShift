@@ -39,6 +39,13 @@ def test_thresholds(cost, used, expected):
     assert cost.status(used, 100) == expected
 
 
+def test_a_fixed_allocation_alerts_only_above_its_limit(cost):
+    """The alarm ledger uses all 10 free slots on purpose."""
+    assert cost.status(10, 10, fixed=True) == "OK"
+    assert cost.status(11, 10, fixed=True) == "ALERT"
+    assert cost.status(10, 10) == "ALERT"  # usage rows keep the 85% line
+
+
 def test_a_zero_limit_is_unknown_not_ok(cost):
     assert cost.status(5, 0) == "?"
 
