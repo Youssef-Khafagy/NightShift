@@ -1,0 +1,44 @@
+{
+  "what": "Re-run of scenario 7's hot rate after deploying the product_ids retry log line (orders version 26): base 1/s plus hot product 0 at 3/s for 180 s. Same load as the 3/s leg of results/scenario7-hot-rate-2026-09-28.json.",
+  "date": "2026-09-28",
+  "commit": "adaa22f",
+  "times_utc": {
+    "start": "2026-09-28T02:22:16Z",
+    "hot3_start": "2026-09-28T02:22:46Z",
+    "hot_end": "2026-09-28T02:25:53Z",
+    "end": "2026-09-28T02:26:22Z"
+  },
+  "orders_sent": {
+    "base_1_per_s": 240,
+    "hot_3_per_s": 540
+  },
+  "per_minute_utc": {
+    "02:22": {
+      "retries": 3,
+      "placed": 65
+    },
+    "02:23": {
+      "retries": 2,
+      "placed": 236
+    },
+    "02:24": {
+      "retries": 4,
+      "placed": 236
+    },
+    "02:25": {
+      "retries": 1,
+      "placed": 218
+    }
+  },
+  "alarm_fired": false,
+  "retry_lines": {
+    "total": 10,
+    "naming_hot_product": 9,
+    "logs_insights_field_names": "product_ids.0, product_ids.1 (arrays are flattened); stats by product_ids returns null"
+  },
+  "comparison": "First measurement, same 3/s hot load and the same ~236 orders a minute: 22 to 37 retries a minute. This run: 1 to 4. Not reproducible; cause unknown.",
+  "after": {
+    "queue_drained": true,
+    "dlq": 0
+  }
+}
