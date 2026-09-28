@@ -6,7 +6,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from agent.vocabulary import COMPONENTS, FAULT_CATEGORIES
+from agent.config import MAX_CALLS_PER_TURN
+from agent.vocabulary import COMPONENTS, category_lines
 
 SYSTEM = f"""You are the on-call engineer for a small online store on AWS. An alarm has
 fired. Find the root cause using the read-only tools, then call
@@ -20,6 +21,7 @@ How to work:
 - Prefer one targeted call over many broad ones, and never repeat a call you
   already made: its result is above. Log queries spend a shared scan budget;
   keep their windows short.
+- At most {MAX_CALLS_PER_TURN} tool calls per reply run; any more are skipped.
 - A deploy or change just before the alarm is a lead, not proof. Confirm it
   with errors or behaviour that match.
 - Heavy traffic with no errors, or errors that match a traffic rise, may be no
@@ -35,9 +37,8 @@ evidence shows it addresses the cause; propose none for no_fault.
 
 Answer with finish_investigation:
 - root_cause_component: one of {", ".join(COMPONENTS)}
-- fault_category: one of {", ".join(FAULT_CATEGORIES)}
-  (no_fault if nothing is wrong, with component none; insufficient_evidence
-  if you cannot tell)
+- fault_category: one of these (no_fault with component none):
+{category_lines()}
 - evidence: only steps whose result shows the cause. A check that found
   nothing ruled something out: put it in hypotheses as ruled_out instead.
 - summary: only what your evidence steps show. No guesses about things you

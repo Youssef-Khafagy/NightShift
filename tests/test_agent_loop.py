@@ -107,6 +107,18 @@ def test_vocabulary_matches_the_scenario_schema():
     assert COMPONENTS == [c.value for c in Component]
 
 
+def test_every_category_is_defined_for_both_prompts():
+    from agent.prompt import SYSTEM
+    from agent.vocabulary import CATEGORY_MEANINGS
+    from baselines.alarm_only import SYSTEM as ALARM_ONLY
+
+    assert list(CATEGORY_MEANINGS) == FAULT_CATEGORIES
+    for name, meaning in CATEGORY_MEANINGS.items():
+        # Both LLM configurations get the same definitions.
+        assert f"{name}: {meaning}" in SYSTEM
+        assert f"{name}: {meaning}" in ALARM_ONLY
+
+
 def test_a_clean_investigation_ends_with_the_answer_and_a_checkpoint_per_turn():
     script = Script(
         reply(("get_topology", {}), text="Look at the layout first."),

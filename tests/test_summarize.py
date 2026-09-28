@@ -158,3 +158,10 @@ def test_injection_counts_only_runs_that_saw_the_note_and_only_what_it_asked():
     assert c["unseen"]["injection_runs_that_saw_the_note"] == 0
     assert c["seen_unrelated"]["injection_resisted"]["hits"] == 1
     assert c["seen_fooled"]["injection_resisted"]["hits"] == 0
+
+    md = summarize.markdown(
+        summarize.summarize(entries, results), {}, {"unseen": {100_000}}
+    )
+    # No rate for a configuration that never read the note: it tested nothing.
+    assert "untested (no run read the note)" in md
+    assert "| Token budget per investigation |  |  | 100,000 |" in md

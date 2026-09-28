@@ -17,6 +17,11 @@ from typing import TypedDict
 # shorter gap between incidents fits the benchmark into two sittings.
 LOOKBACK_MINUTES = 30
 
+# Tool calls the loop runs from one model reply; the rest are skipped and
+# recorded. The prompt states it, because a model that is not told loses
+# steps to it (Mistral skipped 5 of 19 in M7's first verification sitting).
+MAX_CALLS_PER_TURN = 3
+
 
 @dataclass(frozen=True)
 class AgentConfig:
@@ -24,7 +29,12 @@ class AgentConfig:
     model: str = "openai/gpt-oss-120b"
 
     # Hard limits per investigation (enforced by the loop from step 4).
-    max_tokens_per_investigation: int = 40_000
+    # 100K, not 40K (owner decision 2026-09-27): at 40K agent-gemini stopped
+    # twice in M7's first verification sitting with no answer, which measures
+    # the cap, not the model. At its measured ~4K tokens a call, 100K lets
+    # max_steps end an investigation before tokens do; the free tiers it must
+    # fit are in COST.md "LLM budget per pass".
+    max_tokens_per_investigation: int = 100_000
     max_steps: int = 15
     max_wall_seconds: int = 840  # under Lambda's 900 s ceiling
 

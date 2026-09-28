@@ -1,16 +1,19 @@
 id: 7
 slug: hot-row
 description: >
-  A flash sale: on top of normal traffic, 2 checkouts a second all buy the
+  A flash sale: on top of normal traffic, 3 checkouts a second all buy the
   same product, so every checkout updates the same inventory row and Aurora
   DSQL's optimistic concurrency aborts the losers, which retry. It fires the
   same serialization-retries alarm as scenario 11's legitimate spike; the
   difference is that the retries concentrate on one product, not on volume.
+  The hot rate is 3, not 2: measured 2026-09-28, 2 a second gave 1 to 3
+  retries a minute and never paged, 3 a second gave 22 to 37 and paged in
+  134 s (results/scenario7-hot-rate-2026-09-28.json).
 load_rate: 1
 warm_up_seconds: 180
 inject:
   - do: load
-    args: {rate: 2, seconds: 600, hot_product: 0}
+    args: {rate: 3, seconds: 600, hot_product: 0}
 expected_alarms: [serialization-retries]
 alarm_wait_seconds: 600
 ground_truth: {component: dsql, fault_category: hot_row_contention}

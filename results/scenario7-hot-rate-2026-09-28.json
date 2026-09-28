@@ -1,0 +1,113 @@
+{
+  "what": "Scenario 7 redesign measurement: SerializationRetries per minute with base traffic 1/s plus one hot product at 3/s then 4/s (load.py --hot-product 0). Consumer on; orders reserved concurrency 5.",
+  "date": "2026-09-28",
+  "commit_of_code_under_test": "b7c278c",
+  "times_utc": {
+    "start": "2026-09-28T01:31:16+00:00",
+    "hot3_start": "2026-09-28T01:33:18+00:00",
+    "hot4_start": "2026-09-28T01:38:27+00:00",
+    "hot_end": "2026-09-28T01:43:37+00:00",
+    "end": "2026-09-28T01:44:34+00:00"
+  },
+  "orders_sent": {
+    "base_1_per_s": 780,
+    "hot_3_per_s": 900,
+    "hot_4_per_s": 1200
+  },
+  "alarm": {
+    "name": "nightshift-serialization-retries",
+    "threshold": "Sum >= 10 per minute for 2 minutes",
+    "ALARM_at": "2026-09-28T01:35:32Z",
+    "OK_at": "2026-09-28T01:50:32Z"
+  },
+  "per_minute_utc": {
+    "01:35": {
+      "retries": 25.0,
+      "placed": 235.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    },
+    "01:34": {
+      "retries": 30.0,
+      "placed": 236.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    },
+    "01:43": {
+      "retries": 20.0,
+      "placed": 204.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    },
+    "01:42": {
+      "retries": 30.0,
+      "placed": 295.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    },
+    "01:33": {
+      "retries": 22.0,
+      "placed": 169.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    },
+    "01:41": {
+      "retries": 29.0,
+      "placed": 294.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    },
+    "01:40": {
+      "retries": 41.0,
+      "placed": 295.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    },
+    "01:31": {
+      "retries": 2.0,
+      "placed": 40.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    },
+    "01:39": {
+      "retries": 38.0,
+      "placed": 295.0,
+      "errors": 0.0,
+      "throttles": 1.0
+    },
+    "01:38": {
+      "retries": 31.0,
+      "placed": 253.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    },
+    "01:37": {
+      "retries": 37.0,
+      "placed": 235.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    },
+    "01:36": {
+      "retries": 26.0,
+      "placed": 236.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    },
+    "01:44": {
+      "placed": 34.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    },
+    "01:32": {
+      "placed": 58.0,
+      "errors": 0.0,
+      "throttles": 0.0
+    }
+  },
+  "after": {
+    "orders_paid": 2879,
+    "dlq": 0,
+    "payment_failures": 0,
+    "queue_backlog_drained": 152
+  }
+}
