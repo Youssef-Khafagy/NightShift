@@ -100,15 +100,18 @@ TOOLS: dict[str, Tool] = {
         ),
         _tool(
             "query_logs",
-            "Run a CloudWatch Logs Insights query on one service's logs. Logs are JSON; "
-            "useful fields include level, message, correlation_id, function_version, "
-            "error. Every query spends a shared scan budget, so keep windows short.",
+            "Run a CloudWatch Logs Insights query on one service's logs. Each line "
+            "is JSON with level, message and correlation_id, plus fields that "
+            "depend on the line, such as order_id, reason and status. "
+            "`fields @timestamp, @message` returns whole lines; naming fields "
+            "returns only those fields. Every query spends a shared scan budget, "
+            "so keep windows short.",
             {
                 "service": SERVICE,
                 "query": {
                     "type": "string",
-                    "description": "Logs Insights query, e.g. 'fields @timestamp, message "
-                    '| filter level = "ERROR" | sort @timestamp desc\'',
+                    "description": "Logs Insights query, e.g. 'fields @timestamp, "
+                    '@message | filter level = "ERROR" | sort @timestamp desc\'',
                 },
                 "minutes": minutes(1),
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50},

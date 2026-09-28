@@ -273,6 +273,11 @@ def checkout(
                 "attempt": attempt_number,
                 "delay_ms": round(delay * 1000, 1),
                 "sqlstate": getattr(exc, "sqlstate", None),
+                # Which inventory rows the transaction wrote. The conflict
+                # error does not say which row collided, so this is how a
+                # hot product shows up: the same ID on every retry, where
+                # ordinary busy traffic spreads across the catalogue.
+                "product_ids": sorted({str(i["product_id"]) for i in items}),
             },
         )
 

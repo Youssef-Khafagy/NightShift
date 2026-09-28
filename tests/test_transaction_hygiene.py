@@ -237,7 +237,7 @@ def test_rejected_checkout_leaves_no_transaction_open(
 
 
 def test_retried_checkout_leaves_no_transaction_open(
-    orders_app, orders_wired, checkout_event, lambda_context
+    orders_app, orders_wired, checkout_event, lambda_context, caplog
 ):
     """A serialization conflict is retried, and neither attempt leaks.
 
@@ -257,12 +257,23 @@ def test_retried_checkout_leaves_no_transaction_open(
 
     conn = wire(connection(CHECKOUT_RULES, cls=ConflictOnce))
 
-    response = orders_app.handler(checkout_event(), lambda_context)
+    # Tests run the logger at CRITICAL; the retry line is a warning.
+    orders_app.logger.setLevel("WARNING")
+    try:
+        response = orders_app.handler(checkout_event(), lambda_context)
+    finally:
+        orders_app.logger.setLevel("CRITICAL")
 
     assert response["statusCode"] == 201
     assert attempts["n"] == 2, "expected one conflict and one successful retry"
     assert conn.is_idle()
     assert conn.events == ["begin", "rollback", "begin", "commit"]
+
+    # The retry line names the products the transaction wrote, which is the
+    # only evidence that separates a hot row from a busy store.
+    retries = [r for r in caplog.records if "serialization conflict" in r.getMessage()]
+    assert len(retries) == 1
+    assert retries[0].product_ids == sorted([KEYBOARD, MOUSE])
 
 
 def test_checkout_publishes_to_the_queue_after_committing(
