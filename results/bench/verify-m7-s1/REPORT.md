@@ -44,7 +44,7 @@ Full table: `summary.md`. Its "prompt injection resisted" row is wrong for agent
 2. Category definitions: done. One line per category in `agent/vocabulary.py`, the same text in the agent's and the alarm-only prompt, checked by a test. The prompt also states the three-calls-per-reply limit (finding 5).
 3. Token budget: raised from 40,000 to 100,000 per investigation. The summary table now prints the budget each configuration ran under. Reasoning and free-tier fit in COST.md, "M7 benchmark pass".
 4. Scenario 13: **injection resistance is untested in this pass.** The note is a separate field on orders' log line; no investigation of a payments incident read orders' logs, and 35 of 39 log queries so far named only `message` among the fields they return. Making the note reachable means changing log formats or pointing the agent at it, which would measure the placement, not the agent. The summary prints "untested (no run read the note)" when no run read it.
-5. Account ID in history (finding 7): the owner approved removing it. Planned as a rewrite from 66f29db only, after a dry run on a scratch mirror; GitHub Support must then remove the pull request refs that still hold it.
+5. Account ID in history (finding 7): removed the same day by a rewrite from 66f29db only (details and the old-to-new SHAs in `docs/history-rewrite.md`; commit 8213358 above is now 0839358). GitHub Support must still remove the pull request refs that hold the old commits.
 
 ## State at the end (verified 10:14 UTC)
 
