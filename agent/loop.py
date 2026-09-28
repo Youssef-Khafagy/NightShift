@@ -22,7 +22,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from agent import report
-from agent.config import AgentConfig
+from agent.config import MAX_CALLS_PER_TURN, AgentConfig
 from agent.llm.base import Provider, ProviderError, ToolSpec
 from agent.state import Call, InvestigationState, Step
 from agent.store import Store
@@ -32,7 +32,6 @@ from agent.tools.context import ToolContext
 from agent.vocabulary import COMPONENTS, FAULT_CATEGORIES
 from agent.window import build
 
-MAX_CALLS_PER_TURN = 3
 MAX_TEXT_ONLY_TURNS = 2
 MAX_FINISH_ATTEMPTS = 3
 STATUSES = ("likely", "possible", "ruled_out")

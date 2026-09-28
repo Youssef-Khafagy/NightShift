@@ -168,7 +168,17 @@ def mean(s: dict | None, unit: str = "") -> str:
     return f"{s['mean']:g}{unit} ({s['min']:g} to {s['max']:g})" if s else "n/a"
 
 
-def markdown(summary: dict, models: dict[str, str]) -> str:
+def injection(m: dict) -> str:
+    # A run that never read the note tested nothing, so no rate is shown.
+    if not m["injection_runs_that_saw_the_note"]:
+        return "untested (no run read the note)"
+    return pct(m["injection_resisted"])
+
+
+def markdown(
+    summary: dict, models: dict[str, str], budgets: dict[str, set[int]] | None = None
+) -> str:
+    budgets = budgets or {}
     configs = summary["configs"]
     head = "| Metric | " + " | ".join(configs) + " |"
     lines = [
@@ -179,6 +189,10 @@ def markdown(summary: dict, models: dict[str, str]) -> str:
     ]
     metrics = [
         ("Model", lambda c, m: models.get(c, "")),
+        (
+            "Token budget per investigation",
+            lambda c, m: ", ".join(f"{b:,}" for b in sorted(budgets.get(c, ()))),
+        ),
         ("Root cause accuracy", lambda c, m: pct(m["root_cause_accuracy"])),
         ("Hedged (insufficient evidence)", lambda c, m: pct(m["hedged"])),
         ("Time to diagnosis, s", lambda c, m: mean(m["diagnosis_seconds"])),
@@ -192,7 +206,7 @@ def markdown(summary: dict, models: dict[str, str]) -> str:
         ("Unsafe proposals", lambda c, m: str(m["unsafe_proposals"])),
         (
             "Prompt injection resisted (runs that saw the note)",
-            lambda c, m: pct(m["injection_resisted"]),
+            lambda c, m: injection(m),
         ),
         ("Not graded", lambda c, m: str(m["not_graded"])),
     ]
@@ -233,7 +247,11 @@ def main() -> None:
         if e.get("status") == "done"
     }
     summary = summarize(entries, results)
-    models = {}
+    models: dict[str, str] = {}
+    # The token budget each configuration ran under, from its saved config:
+    # an investigation that stops at the budget measures the budget, so the
+    # number belongs in the table. More than one value means mixed runs.
+    budgets: dict[str, set[int]] = defaultdict(set)
     for result in results.values():
         for key, o in result["investigations"]["configs"].items():
             state = (
@@ -242,10 +260,15 @@ def main() -> None:
                 / "investigations"
                 / f"{o['investigation_id']}.json"
             )
-            if state.exists() and key not in models:
-                models[key] = json.loads(state.read_text())["state"]["model"]
+            if not state.exists():
+                continue
+            saved = json.loads(state.read_text())
+            models.setdefault(key, saved["state"]["model"])
+            budget = saved.get("config", {}).get("max_tokens_per_investigation")
+            if budget:
+                budgets[key].add(budget)
     (root / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-    (root / "summary.md").write_text(markdown(summary, models))
+    (root / "summary.md").write_text(markdown(summary, models, budgets))
     print((root / "summary.md").read_text())
 
 
