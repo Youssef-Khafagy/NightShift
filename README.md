@@ -4,6 +4,8 @@ An AI on-call engineer for AWS. It gets paged, investigates with read-only tools
 
 The benchmark is the point, not the store. A chaos framework breaks a small store on AWS in realistic ways, and a harness measures how often the agent is right against a scripted runbook and against the same model shown only the alarm.
 
+Dashboard: https://night-shift-tau-amber.vercel.app (every incident and investigation, replayed from the recorded results).
+
 Status: milestones M0 to M7 are complete. M8 (dashboard, these docs, making the repository public) is in progress. It is built to run inside AWS's Always Free allowances; see Cost.
 
 ## Results
@@ -26,7 +28,7 @@ Pass `m7`: 36 staged incidents (12 fault scenarios, three runs each), run 2026-0
 
 After this pass the fault category definitions were rewritten to describe what changed rather than what the error looks like, and proposing a dead-letter redrive while the cause is a poison message or retry storm is now refused. Neither change has been benchmarked; the results above are for the code at `5641bb7`.
 
-Every incident can be read step by step in the [dashboard](dashboard/) (a static replay of these results). The reasoning behind each finding and what went wrong is in [LEARNING.md](LEARNING.md), section 20. Raw results are in `results/bench/m7/`.
+Every incident can be read step by step on the dashboard, **https://night-shift-tau-amber.vercel.app**, a static replay of these results (source in [`dashboard/`](dashboard/)). The reasoning behind each finding and what went wrong is in [LEARNING.md](LEARNING.md), section 20. Raw results are in `results/bench/m7/`.
 
 ## How it works
 
