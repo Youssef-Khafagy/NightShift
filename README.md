@@ -2,7 +2,9 @@
 
 An AI on-call engineer for AWS. It gets paged, investigates, finds the root cause, proposes allowlisted fixes (and runs them with approval), verifies recovery, and writes a postmortem. A benchmark harness measures how often it is right against baselines.
 
-Status: M0 to M6 complete; M7 (the benchmark) has its first full pass and is in review. The dashboard, demo and a full README come in M8.
+Status: M0 to M7 complete. The dashboard, demo and a full README come in M8.
+
+After this pass, the fault category definitions were rewritten and the agent now refuses to propose a dead-letter redrive while the cause is a poison message or retry storm. Neither change has been benchmarked; the results below are for the code at `5641bb7`.
 
 ## Benchmark results
 
