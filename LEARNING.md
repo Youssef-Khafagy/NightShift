@@ -719,7 +719,7 @@ All five recovered with every health check passing. The poison message is slow b
 
 **What would break without each part.** Without the hard limits, a confused model loops until the free quota is gone. Without checkpoints, a Lambda timeout throws the investigation away. Without the Investigator role, a prompt injected into a log line could reach a write API. Without the report validation, "no fault, component orders" goes into the results as an answer.
 
-### No framework: a while loop of about 65 lines
+### No framework: a while loop of about 75 lines
 
 Each turn: rebuild the conversation from the saved state, send it with the tool definitions, run the tool calls the model asks for (at most three), save a checkpoint. Stop when the model calls `finish_investigation` or a limit is hit: 15 steps, 100,000 tokens (40,000 until M7, see section 20), 840 seconds. A stop on a limit is an answer too: `insufficient_evidence`, with the reason.
 
@@ -783,7 +783,7 @@ One right out of five, every answer at 90 or 95 confidence, no run above 33K tok
 
 **Questions about the agent**
 
-- *Why no agent framework?* The `run` method is about 65 lines, and `agent/loop.py` about 280 with the control tools and limits. I can explain every one: rebuild the conversation, call the model, run tools, checkpoint, check limits. A framework would hide exactly the parts the project is about: limits, checkpoints, and what the model is allowed to reach.
+- *Why no agent framework?* The `run` method is about 75 lines, and `agent/loop.py` about 380 with the control tools and limits. I can explain every one: rebuild the conversation, call the model, run tools, checkpoint, check limits. A framework would hide exactly the parts the project is about: limits, checkpoints, and what the model is allowed to reach.
 - *How do you stop a prompt injection from doing damage?* The model can only call read-only tools, and those run as a role that is denied every write, with a boundary on top. Tool output is labelled as untrusted data. The worst an injection can do today is make the answer wrong, which the benchmark measures.
 - *What happens if the Lambda times out mid-investigation?* The state is checkpointed after every step, Lambda retries the event, and the retry resumes from the checkpoint. I tested it by killing the process with SIGKILL and resuming from the table.
 - *Why did your agent get four out of five wrong?* One small model, one run each. Two answers came from the previous scenario's leftovers, which is a flaw in how I ran the batch, not only in the model. The others show the model taking a symptom or a recent deploy for the cause, at 90 to 95 confidence every time. That is what M7 exists to measure, against baselines and bigger models.
