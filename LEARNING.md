@@ -9,7 +9,7 @@ How NightShift works and why it was built this way, written for someone who know
 3. **Section 8, Aurora DSQL.** The deepest technical story in the project: a bug with no symptom, found in a billing metric.
 4. **Section 15, deploys and rollbacks.** The premise of the whole project is that an agent can roll back safely; this is how.
 5. **Section 20, the benchmark.** What the agent actually scores against simpler baselines, and why.
-6. **Section 21, mistakes that taught the most.** A one-page index of every wrong turn, which is where interview questions usually go.
+6. **Section 22, mistakes that taught the most.** A one-page index of every wrong turn, which is where interview questions usually go.
 
 Then read the rest in order when you have time. Section 2 is the AWS vocabulary the rest assumes.
 
@@ -44,7 +44,7 @@ client ──POST /checkout──▶ orders ──GET cart──▶ cart
 
 Every log line on that path carries the same correlation ID, so "what happened to this order" is a filter, not a search.
 
-**Around the store:** Terraform builds everything. GitHub Actions plans on every pull request and applies only when I trigger it by hand. Lambda publishes metrics and logs to CloudWatch. Five custom business metrics, two feature flags in SSM Parameter Store, a topology description for the agent, a deployments table, and (in progress) alarms that email me.
+**Around the store:** Terraform builds everything. GitHub Actions plans on every pull request and applies only when I trigger it by hand. Lambda publishes metrics and logs to CloudWatch. Five custom business metrics, two feature flags in SSM Parameter Store, a topology description for the agent, a deployments table, alarms that email me, and a public dashboard that replays the benchmark.
 
 **Why this shape.** Each piece exists partly for what it does and partly for how it fails. A queue in the middle makes poison messages and backlogs possible. Two different databases fail in different ways. A mock payment provider can be made slow or broken by changing configuration, not code. Aliases on every function make rollback a one-call action. All of it fits inside AWS's Always Free allowances.
 
@@ -914,7 +914,7 @@ Models: Gemini `gemini-3.5-flash-lite` and Mistral `ministral-14b-latest`, token
 | Action proposed when nothing was wrong | 0 of 3 | 0 of 3 | 0 of 3 | 0 of 3 | 0 of 3 |
 | Unsafe proposals | 4 | 7 | 10 | 2 | 0 |
 | Mean tokens | 21.8K | 28.9K | 2.1K | 1.8K | 0 |
-| Mean time to answer after the page | 149 s | 167 s | 137 s | 140 s | 135 s |
+| Mean time from injection to answer | 149 s | 167 s | 137 s | 140 s | 135 s |
 
 | Scenario | agent-gemini | agent-mistral | alarm-only-gemini | alarm-only-mistral | runbook |
 |---|---|---|---|---|---|
@@ -995,7 +995,46 @@ The fix is to define a category by what changed and how, not by what the error l
 
 ---
 
-## 21. Mistakes that taught the most
+## 21. The dashboard: the results in public, the system out of reach
+
+**What it is.** A website that replays the benchmark: the results with their intervals, all 36 incidents, and every configuration's investigation step by step, with each tool call, what came back, the answer, its grade and the postmortem. It is a Next.js app in `dashboard/`, hosted on Vercel's free Hobby plan.
+
+**Why it exists.** The README's table is a summary of 180 investigations. A claim like "the agent won where an answer needs investigating" is only worth something if a reader can open the incident and watch it happen. The journals are the evidence; the site makes them readable without cloning the repository.
+
+**What would break without the way it is built.** Anything public is attack surface. A site that read the results from AWS, or rendered pages per request, would put server code on the internet next to the store. And 180 journals of raw tool output are easy to leak from: the account ID was already committed once inside a queue URL (section 20). So the site is built so that it cannot do the dangerous things, rather than trusting that it doesn't.
+
+### Safe by construction, in three layers
+
+1. **The data.** The public site shows one directory, `dashboard/public/replay/`, and only `scripts/build_replay.py` writes it. The script reads one pass, keeps what a reader needs, and drops what they don't (Gemini's thought signatures, call IDs, shortened copies of results). It scrubs every string, then scans the finished files and refuses to write if anything still looks like an account ID (in an ARN, in a URL, or any other 12-digit number), a 26-character cluster ID, or an email address. Its output depends only on its input, byte for byte, so `tests/test_build_replay.py` rebuilds it and fails if the committed copy differs. What is public is exactly what a pull request showed.
+2. **The site.** Every page is built once, at build time, from those files. No page runs code when someone visits, so no visitor can cause an AWS call or a model call. "Every page is static" is easy to say and easy to break: one call to `headers()` or an uncached fetch quietly turns a page into server code. So after every build, `scripts/check-static.mjs` reads what Next.js actually prerendered (`.next/prerender-manifest.json`) and fails on any route that would render per request. I proved it by adding a page that reads request headers: the build succeeded, the check failed.
+3. **The browser.** Tool output is untrusted everywhere, including here. Scenario 13 plants an instruction in an order note, and that text can end up in a journal. React escapes all text it renders, and postmortems are rendered as markdown with raw HTML skipped, so a planted `<script>` shows as text. Every response carries `X-Frame-Options: DENY`, `nosniff` and a strict referrer policy, which cost nothing on static files.
+
+### Numbers computed, not copied
+
+The paired comparisons on the site (5 to 8, p = 0.58, and so on) were worked out by hand for section 20. The site doesn't copy them: `evaluation.summarize.mcnemar` computes them from the per-incident grades, and a test pins it to the hand calculation. The sentences on the results page take their numbers from the same data, so the text can't drift from the tables. The builder also refuses to publish if the per-incident grades disagree with the pass's `summary.json`, and `tests/test_readme.py` holds the README's results table to that same summary.
+
+### Charts that don't lie with colour
+
+The accuracy chart is a dot at each configuration's rate and a line across its 95% interval: one series, one colour, the values written beside the rows. The scenario grid is a heatmap in one blue ramp, with "k/3" written in every cell, and the ramp was checked with a colour validator in both light and dark mode. Right, hedged and wrong always come with an icon and a word, so nobody needs to tell red from green.
+
+### What we got wrong
+
+- **JavaScript and Python round differently.** The README says agent-gemini's interval is 34 to 66. The site first said 35 to 66. The lower bound is exactly 34.5; Python's formatting rounds a half to the even neighbour, and JavaScript's `Math.round` always rounds it up. Both are correct rounding, and they disagree on the one case that matters for a published number. `lib/format.ts` now rounds half to even, with tests taken from the README.
+- **A label that said the wrong thing for weeks.** Section 20's table said "mean time to answer after the page". The grader measures from the injection, and in this pass the page came from under a second to almost 8 minutes after it. Building the dashboard meant reading the grader again, and the label is now "from injection to answer".
+- **Truncating before scrubbing defeats the scrub.** The runner shortens old tool results in its journal (`summary`) before it scrubs IDs. In one file that left the first two digits of the account ID at the cut, where no 12-digit pattern can match. Two digits identify nothing, but the order is the lesson: scrub, then truncate. The builder drops that field, and the scan would have refused the full ID.
+- **A screenshot that looked like a layout bug.** At 390 pixels the site looked clipped on the right. Desktop Chrome cannot make a window narrower than about 500 pixels, so the page was laid out at 500 and cropped to 390. Rendering it inside a 390-pixel frame showed it fits. The instrument was wrong, not the page, and the way to know was to measure a second way.
+
+**Questions about the dashboard**
+
+- *How do you know no public page can reach AWS?* Because none of them runs at request time, and I don't take that on trust. After every build, a check reads what Next.js actually prerendered and fails on any route that would render per request. I proved the check by planting a page that reads request headers: the build passed and the check failed. A page that only exists as a file on a CDN has no code to make an AWS call with.
+- *Why generate the data with a Python script and commit it, instead of reading `results/` when the site builds?* So that the public data is reviewable. The script is the only door from the results to the internet, it scans every byte for IDs before writing, and a test fails if the committed files differ from what the results build. Reading `results/` at build time would publish whatever happened to be there, unreviewed.
+- *What stops an account ID from leaking through a journal?* Two things after the runner's own scrub. The builder replaces IDs in every string, then scans the output for anything shaped like an ID, including any 12-digit number that isn't an investigation ID, and refuses to write if it finds one. A test plants an ID to prove the scan is actually wired in. And the pre-commit hook blocks account IDs in ARNs, URLs and `accountId` fields on every commit.
+- *Why Vercel and not S3 with CloudFront?* S3 storage has no Always Free tier on this account, and the signed-in part planned for the dashboard needs server functions behind a login. Vercel's Hobby plan has no card attached, so it cannot bill at all: over a limit, the feature pauses for 30 days. That's the property I wanted from every service here.
+- *Why does the site recompute p-values you already had?* Because a number typed twice can be typed wrong once. Computing them from the per-incident grades means the site and the data cannot disagree, and the test that pins the function to my hand calculation checks both at once.
+
+---
+
+## 22. Mistakes that taught the most
 
 | Mistake | How it was found | What changed |
 |---|---|---|
@@ -1018,10 +1057,13 @@ The fix is to define a category by what changed and how, not by what the error l
 | Audit records keyed by the second overwrote each other | A test replaying a refused approval | Random suffix plus a no-overwrite condition (19) |
 | The queue trigger listed by bare function name returned nothing | A smoke run of `consumer.py` | Look it up on the `live` alias, in three places (19) |
 | The model counted steps itself and cited the wrong ones | An answer citing steps 8 and 9 of 6 | Every result starts with `Step N.` (18) |
-| Fault categories defined by their symptoms, so a slow provider read as throttling and a wrong table name as an IAM fault | Wrong answers that matched the definitions word for word | Define each category by what changed; not yet done, because it needs a new freeze and a new pass to measure (20) |
+| Fault categories defined by their symptoms, so a slow provider read as throttling and a wrong table name as an IAM fault | Wrong answers that matched the definitions word for word | Each category redefined by what changed, after the pass, and deployed; not measured, because measuring it needs another 36 incidents (20) |
 | The chaos runner's restore file kept the cluster and account IDs | A grep of the results before committing them | Scrubbed with the runner's own function; a step before every results commit, since the restore needs the real ARN during a run (20) |
 | A cost projection that assumed tracing was a sample | 60K of 100K traces used before the pass began | At under one request a second, Lambda traces nearly everything, so traces grow with orders (3) |
 | A chaos run with no traffic read as a missed detection | Per-minute invocations: zero for orders | The runner logs load output, refuses without `DSQL_ENDPOINT`, and aborts before injecting if a load has died (17) |
+| JavaScript printed an interval as 35 to 66 where the README says 34 to 66 | Unit tests written from the README's numbers | Round half to even, as Python's formatting does (21) |
+| A results table labelled "after the page" for times the grader measures from injection | Reading the grader again to build the dashboard | Label corrected; the site says "from injection" (20, 21) |
+| A journal shortened before it was scrubbed kept two digits of the account ID | Scanning the data before publishing it | Scrub first, then shorten; the public data drops that field and scans for any ID (21) |
 
 ---
 
