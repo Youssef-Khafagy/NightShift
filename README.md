@@ -6,7 +6,7 @@ The benchmark is the point, not the store. A chaos framework breaks a small stor
 
 Dashboard: https://night-shift-tau-amber.vercel.app (every incident and investigation, replayed from the recorded results).
 
-Status: milestones M0 to M7 are complete; M8 (the dashboard, these docs, publishing the repository) is in its final review. It is built to run inside AWS's Always Free allowances; see Cost.
+Status: all milestones, M0 to M8, are complete (2026-10-03). It is built to run inside AWS's Always Free allowances; see Cost.
 
 ## Results
 

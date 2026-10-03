@@ -2,6 +2,7 @@
 
 Every decision that shaped the project, newest first, with the one-line reason it was made. "Approved" means the owner signed it off; the larger ones also have a decision record in this folder. Kept as it was written at the time, so it shows how the plan changed: some entries are reversed by later ones.
 
+- Approved 2026-10-03: M8 closed. Dashboard, live page, documentation and the public repository done and reviewed.
 - Owner 2026-10-03: finish M8 straight on main, no more pull requests; CI now runs on every push to main. Reason: owner's call, to finish without per-step PR round trips; the checks stay, local and in CI.
 - 2026-10-03: the `dsql_endpoint` and `dsql_cluster_identifier` outputs are sensitive. Reason: every Apply run printed them (25 run logs held the cluster ID), and the logs go public with the repo; scripts read them with `-raw`, which still works.
 - Approved 2026-10-03: the M8 plan. Public replay is prerendered from committed JSON, so no public route exists that could reach AWS or an LLM; live views sit behind GitHub login. Reason: the replay is what a visitor sees and must be safe by construction; the live part is the only one that widens permissions and gets its own apply approval.
