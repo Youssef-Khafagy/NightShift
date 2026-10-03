@@ -118,3 +118,15 @@ variable "agent_model" {
   type        = string
   default     = ""
 }
+
+variable "vercel_team" {
+  description = "Vercel team slug: the path in the team's Vercel URL. Part of the dashboard role's OIDC issuer, audience and subject (dashboard.tf)."
+  type        = string
+  default     = "youssef-khafagys-projects"
+}
+
+variable "vercel_project" {
+  description = "Vercel project name. Part of the dashboard role's OIDC subject claim; renaming the project stops access until this matches."
+  type        = string
+  default     = "night-shift"
+}
