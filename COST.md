@@ -526,7 +526,7 @@ Worst case assumed: the live page open 2 hours a day, every day. That is 14,400 
 
 **GitHub Actions.** The dashboard CI job (install, lint, typecheck, tests, build) is about 2 minutes per pull request run. Twenty M8 pull requests with a re-run each is about 80 minutes of the 2,000.
 
-**Vercel builds.** Every push to a connected repository builds a deployment, and Hobby allows 100 a day. The project's `ignoreCommand` skips the build unless `dashboard/` changed.
+**Vercel builds.** Every push to a connected repository builds a deployment, and Hobby allows 100 a day. A skip rule for pushes that did not touch `dashboard/` was tried and removed (it cancelled redeploys made for new environment variables); at a few pushes a day the limit is far away.
 
 ## LLM providers (free tiers, not AWS)
 
