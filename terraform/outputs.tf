@@ -33,14 +33,21 @@ output "ci_apply_role_arn" {
   value       = aws_iam_role.ci_apply.arn
 }
 
+# Sensitive, so `terraform output` and the apply workflow's log print
+# <sensitive> instead of the cluster's hostname. Not a credential (connecting
+# needs an IAM-signed token), but the repo and its Actions logs go public,
+# and 25 apply and plan logs had printed it. Scripts read these with
+# `terraform output -raw`, which still returns the value.
 output "dsql_cluster_identifier" {
   description = "Generated identifier of the Aurora DSQL cluster."
   value       = aws_dsql_cluster.main.identifier
+  sensitive   = true
 }
 
 output "dsql_endpoint" {
   description = "Hostname to connect to. Built from the cluster identifier; DSQL exposes no endpoint attribute."
   value       = local.dsql_endpoint
+  sensitive   = true
 }
 
 output "cart_table_name" {
