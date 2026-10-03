@@ -5,7 +5,7 @@
     # ... apply ...
     python scripts/check_dashboard_role.py --live
 
-the project notes's rule: never conclude a permission works, or is unnecessary,
+The project's rule: never conclude a permission works, or is unnecessary,
 from a request that happened to succeed or fail, because IAM caches
 decisions in both directions. The simulator answers from the policies
 themselves, immediately.

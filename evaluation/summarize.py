@@ -7,7 +7,7 @@ result.json, and writes summary.json and summary.md beside them. Only
 entries whose status is "done" count: contaminated and failed runs are
 listed, never averaged in.
 
-The metrics are the ones the project notes commits to:
+The metrics are the ones the project committed to before the first pass:
 
 - root cause accuracy with its 95% interval and n, and how often the
   answer hedged (every rate in summary.json carries its interval);

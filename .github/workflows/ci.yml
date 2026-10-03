@@ -143,6 +143,8 @@ jobs:
       # Required for the OIDC token that AWS exchanges for credentials.
       id-token: write
       pull-requests: write
+    env:
+      TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
     steps:
       - uses: actions/checkout@v7
 
@@ -185,6 +187,16 @@ jobs:
           name: layer-manifest
           path: build/layer-manifest.txt
           retention-days: 1
+
+      # The alert address is a secret, not a default in the code, because the
+      # repository is public. A missing secret must stop the run here: an
+      # empty address would otherwise replace the alarm subscription.
+      - name: Check the alert address secret
+        run: |
+          if [ -z "$TF_VAR_alert_email" ]; then
+            echo "The ALERT_EMAIL repository secret is not set." >&2
+            exit 1
+          fi
 
       - name: Terraform init
         working-directory: terraform

@@ -6,6 +6,16 @@ Re-verified 2026-09-20 before starting M2a: Aurora DSQL, Lambda and X-Ray. See "
 Re-verified 2026-09-22 before M2b step 2: CloudWatch metrics, EMF and Logs, SSM Parameter Store, X-Ray. See "Sources checked 2026-09-22".
 "Projected" numbers are estimates from stated assumptions, not measurements. They get replaced with measured numbers in M2 to M4.
 
+## The rules
+
+- Only AWS Always Free allowances. Before any service is used, its current free tier is checked on the official pricing page and recorded here: allowance, projected use, headroom.
+- Free plan credits are a safety net, never part of the design.
+- Anything that could cost more than $0.10 in a month waits for the owner's explicit yes.
+- Never used: EC2, NAT gateways, Elastic IPs, load balancers, RDS, Aurora provisioned or Serverless, EKS, ECS or Fargate, Kinesis, MSK, ElastiCache, OpenSearch, Bedrock, SageMaker, CloudWatch Synthetics, Application Signals, Secrets Manager, customer managed KMS keys, Lambdas in a VPC.
+- Traps handled on purpose: every metric name and dimension combination is its own custom metric; alarms stay inside the free count; Logs Insights is billed per GB scanned, so every query has a time bound and a cap; logs are kept 3 to 7 days; an SQS-triggered Lambda polls even when idle, so the trigger stays off between runs.
+- Traffic is generated locally, on demand and rate-capped, never around the clock, and every run's requests are computed before it starts.
+- Three commands exist: deploy, pause (idle usage near zero) and destroy.
+
 ## Account plan
 
 | | Free plan | Paid plan |
@@ -489,7 +499,7 @@ The pass spans about a week and will cross a month boundary, which splits the nu
 2. `nightshift-tripwire`: $0.01/month cost budget. Email at 100% ACTUAL.
 
 Both set `IncludeCredit=false` (the API default is true). With credits included, credits would absorb every charge during the Free plan, net cost would stay at $0, and neither budget would ever fire. Excluding credits means any usage outside Always Free triggers an email, which is what we want.
-Alerts go to <ALERT_EMAIL>. Free tier usage alerts (85% of any tracked allowance) are on by default for standalone accounts and go to the root email; we point them at the same address in Billing preferences.
+Alerts go to the owner's alert address, which is kept out of the repository (Terraform reads it from a variable; the budget files hold a placeholder). Free tier usage alerts (85% of any tracked allowance) are on by default for standalone accounts and go to the root email; we point them at the same address in Billing preferences.
 
 ## Other free allowances (not AWS)
 

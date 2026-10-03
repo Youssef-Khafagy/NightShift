@@ -19,7 +19,7 @@ resource "aws_dsql_cluster" "main" {
   deletion_protection_enabled = false
 
   # The AWS owned key is free. A customer managed KMS key would cost money
-  # and is on the forbidden list in the project notes.
+  # and is on the project's forbidden list (COST.md).
   kms_encryption_key = "AWS_OWNED_KMS_KEY"
 
   tags = {

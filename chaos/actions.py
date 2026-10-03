@@ -368,7 +368,7 @@ class Injector:
     def _check_policy_restored(self, record: dict[str, Any]) -> None:
         """Ask the policy simulator, not the function: IAM caches decisions,
         so a call that still fails a minute after the restore proves nothing
-        either way (the project notes, "Verifying permissions")."""
+        either way (LEARNING.md section 4, the 403 that was never explained)."""
         statement = next(
             s for s in record["original"]["Statement"] if s.get("Sid") == record["sid"]
         )

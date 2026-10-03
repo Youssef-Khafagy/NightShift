@@ -65,7 +65,7 @@ Drop scenario 7 from the benchmark. A scenario whose alarm fires in one run and 
 
 ## Consequences
 
-- the project notes's scenario list keeps 7 with a pointer here, so the numbering of the others is unchanged. The fault category `hot_row_contention` stays in the fixed vocabulary, as `missing_index` did for scenario 8.
+- The project's scenario list keeps 7 with a pointer here, so the numbering of the others is unchanged. The fault category `hot_row_contention` stays in the fixed vocabulary, as `missing_index` did for scenario 8.
 - `serialization-retries` still fires in scenario 11, which is why that scenario exists as a no-fault page.
 - The `product_ids` field on the retry line and `load.py --hot-product` stay: both are useful and cost nothing when unused.
 - COST.md's pass projection is now an over-estimate by one more scenario; left as the conservative figure.

@@ -6,10 +6,19 @@
 # link AWS sends. Terraform cannot click it, so after the first apply the
 # subscription shows as pending until the owner confirms it.
 
+# The address is kept out of the repository, which is public. Locally it
+# comes from terraform/terraform.tfvars (git-ignored; see the .example
+# file), in CI from the ALERT_EMAIL secret. No default on purpose: a missing
+# value must stop the plan, not quietly replace the subscription.
 variable "alert_email" {
-  description = "Where alarms are emailed. Approved by the owner in M0."
+  description = "Where alarms are emailed."
   type        = string
-  default     = "<ALERT_EMAIL>"
+  sensitive   = true
+
+  validation {
+    condition     = can(regex("^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$", var.alert_email))
+    error_message = "alert_email must be an email address. Set it in terraform/terraform.tfvars or the ALERT_EMAIL secret."
+  }
 }
 
 # Not encrypted, deliberately. CloudWatch alarms cannot publish to a topic

@@ -1,6 +1,6 @@
 # Decision records
 
-One page per decision that shaped the system: the context, what was decided, what else was considered and why not, and what followed. The full decisions log, with every smaller call, is in `the project notes`.
+One page per decision that shaped the system: the context, what was decided, what else was considered and why not, and what followed. The full decisions log, with every smaller call, is [log.md](log.md).
 
 | ADR | Decision | Date |
 |---|---|---|

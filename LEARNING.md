@@ -11,7 +11,7 @@ How NightShift works and why it was built this way, written for someone who know
 5. **Section 20, the benchmark.** What the agent actually scores against simpler baselines, and why.
 6. **Section 22, mistakes that taught the most.** A one-page index of every wrong turn, which is where interview questions usually go.
 
-Then read the rest in order when you have time. Section 2 is the AWS vocabulary the rest assumes.
+Then read the rest in order when you have time. Section 2 is the AWS vocabulary the rest assumes. To find where something lives, the appendix "every file in one line" lists every file.
 
 ---
 
@@ -180,7 +180,7 @@ Hand-scoped IAM fails in specific, instructive ways, and each one happened here:
 
 **What we got wrong.** Twice, something looked fixed because a test passed seconds after a change. Both times the pass came from a cached authorization decision or from a deploy replacing warm environments. One wrong conclusion, that a resource policy was unnecessary, was committed and broke checkout. IAM and Lambda cache authorization decisions in both directions, so a fast pass or a fast fail after a change proves nothing.
 
-**What came of it.** Internal calls use the Lambda Invoke API instead of function URLs, which is better anyway: an internal call has no reason to leave AWS. Function URLs remain the external entry point. And the project notes now says: verify permissions with `aws iam simulate-principal-policy` or by waiting longer than the cache, and when results alternate, stop changing things.
+**What came of it.** Internal calls use the Lambda Invoke API instead of function URLs, which is better anyway: an internal call has no reason to leave AWS. Function URLs remain the external entry point. And the project rules now say: verify permissions with `aws iam simulate-principal-policy` or by waiting longer than the cache, and when results alternate, stop changing things.
 
 **Questions about identity and access**
 
@@ -287,7 +287,7 @@ Lambda gives CPU in proportion to memory; 128 MB is roughly a twelfth of a vCPU.
 
 **What we got wrong.** The first function with real dependencies timed out after 5 seconds with no log line. Timing each import at 128 MB, with imports done lazily inside the handler: Powertools 1.7 s, psycopg 5.8 s, boto3 2.8 s, a DSQL client 1.7 s, **11.9 s** in all. The obvious conclusion was "128 MB is too small". A memory sweep showed something subtler: CPU scales linearly with memory, so the same CPU-bound work costs the same GB-seconds at any size (1.49 at 128 MB, 1.39 at 1,024 MB). More memory buys speed, not savings, for CPU work.
 
-The real fix cost nothing. Lambda runs module-level code in an *init* phase with more CPU than the configured memory buys. Moving the identical imports to module scope took them from 11.9 s to **712 ms**, at the same 128 MB. The rule in the project notes: imports and clients at module scope, never lazily in the handler.
+The real fix cost nothing. Lambda runs module-level code in an *init* phase with more CPU than the configured memory buys. Moving the identical imports to module scope took them from 11.9 s to **712 ms**, at the same 128 MB. The project rule since: imports and clients at module scope, never lazily in the handler.
 
 **Init is billed.** Once platform log lines were turned on (below), a cold orders request reported 2,997 ms handler plus 1,107 ms init, billed as 4,105 ms.
 
@@ -1053,7 +1053,7 @@ The public site shows recorded runs. The owner also needs the present: which ala
 A public repository publishes more than its files: every commit on every branch, every pull request, and every Actions run log for its retention period. The checklist is `docs/going-public.md`. Two findings shaped it:
 
 - **The deploy pipeline printed the cluster ID on every run.** The apply workflow ends with `terraform output`, and the cluster ID and its hostname were ordinary outputs. Scrubbing files would have changed nothing about the next deploy's log. The outputs are now `sensitive`, so `terraform output` prints `<sensitive>`, while every script that needs the value reads it with `terraform output -raw`, which still returns it. Of 142 run logs, 25 held the cluster ID and 4 the alert email; none held the account ID, because GitHub masks it as a secret.
-- **A history rewrite is not free.** The alert email is in the first commits. Removing it from history would change every SHA in the repository, including `5641bb7`, the commit every benchmark number is labelled with. The account ID justified a rewrite in M7, which started at the M5 commit that first held it and kept every earlier SHA; an alias address and a hostname that only accepts signed connections do not justify relabelling the results.
+- **A rewrite in place still leaks.** After the account ID was removed from history in M7, the old commits stayed reachable through 23 pull requests until GitHub Support removed them, and a second rewrite for the email and the cluster ID would have done the same for every pull request. So the public repository is a fresh one: the history was rewritten in a copy (both values replaced in every commit) and pushed to a new repository that has no old pull requests and no old logs. The old repository stays private. Every commit ID changed, including `5641bb7`, the commit every benchmark number is labelled with, so the IDs the results and documents cite were relabelled from the rewrite's own old-to-new map (`docs/history-rewrite.md`).
 
 **Questions about the dashboard**
 
@@ -1104,6 +1104,137 @@ A public repository publishes more than its files: every commit on every branch,
 | A history scan that ran after its first command failed, and reported results computed from empty strings | The numbers made no sense (1,431 "matching" files) | Rerun as a strict script that refuses when a value is missing: the fail-loudly rule (6, 21) |
 
 ---
+
+## Appendix: every file in one line
+
+**Root**
+- `README.md`: what the project is, the results, how to run it.
+- `LEARNING.md`: this file; how and why everything works.
+- `COST.md`: every free allowance used, with measurements and headroom.
+- `.env.example`: the settings a local run reads from a git-ignored `.env`: AWS profile and region, and the LLM API keys.
+- `.gitignore`, `.gitattributes`: what git skips; line endings forced to LF.
+- `.pre-commit-config.yaml`: checks run on every commit (secrets, account IDs, formatting, lint).
+- `.tflint.hcl`: Terraform lint rules.
+- `mypy.ini`: type-check settings, the same locally and in CI.
+
+**`.github/workflows/`**
+- `ci.yml`: on every push to main and every pull request: lint, secrets scan, Python tests on 3.12 and 3.14, type check, dashboard checks, `terraform plan`.
+- `apply.yml`: the deploy, started by hand: `terraform apply`, move aliases, smoke test, roll back on failure.
+
+**`src/`: the store (four services, plus a hello-world)**
+- `cart/app.py`: the shopping cart, in DynamoDB.
+- `orders/app.py`: checkout: one DSQL transaction, then a message on the queue.
+- `fulfillment/app.py`: reads the queue, charges each order, marks it paid.
+- `payments/app.py`: a fake payment provider with configurable latency and errors.
+- `hello/app.py`: M1's hello-world, kept as the simplest end-to-end check of the pipeline and the dependency layer.
+- `common/context.py`: correlation IDs and logging.
+- `common/dsql.py`: DSQL connections, autocommit by default, conflict retries.
+- `common/flags.py`: the two operational flags, read from SSM.
+- `common/ratelimit.py`: the token bucket behind the checkout rate limit.
+- `common/service_client.py`: how one service calls another (Lambda Invoke).
+
+**`migrations/`**: the database schema, one SQL statement per file (`0001_products` to `0005_idempotency_keys`).
+
+**`agent/`: the on-call agent**
+- `loop.py`: the investigation loop: model, tools, checkpoint, limits.
+- `prompt.py`: what the model is told.
+- `vocabulary.py`: the fixed component and fault-category words, and their definitions.
+- `config.py`: every limit (steps, tokens, seconds, lookback).
+- `state.py`, `store.py`: an investigation's state, saved to DynamoDB after every step.
+- `window.py`: builds each model call's conversation from the saved state.
+- `report.py`: validates the final answer (evidence must be real steps).
+- `postmortem.py`: writes the markdown postmortem from the record.
+- `actions.py`: the five allowlisted actions, and which ones fit which finding.
+- `approvals.py`: approval records: single use, hash-bound, 15-minute expiry.
+- `incident.py`: one investigation per incident, however many alarms fire.
+- `investigate.py`: run an investigation from the laptop.
+- `aws.py`: credentials for an investigation, always the read-only Investigator role.
+- `env.py`: reads `.env` for local runs.
+- `llm/base.py`: the shapes every provider speaks.
+- `llm/openai_compat.py`, `llm/gemini.py`: Groq and Mistral, and Gemini.
+- `llm/factory.py`: picks the provider from a name.
+- `tools/aws_read.py`: the ten read-only tools.
+- `tools/args.py`: checks a model's tool arguments.
+- `tools/context.py`: what a tool may reach.
+- `tools/output.py`: trims results and marks them as untrusted data.
+- `agent_lambda/handler.py`: the Lambda entry point (alarm, EventBridge, agent).
+
+**`actor/`: carries out approved actions**
+- `handler.py`: the order of checks: lock, budget, consume the approval, re-check, act, verify, audit.
+- `guard.py`: one action at a time, three an hour.
+- `executor.py`: performs each of the five actions.
+- `verify.py`: watches the alarm afterwards and says recovered, not recovered or inconclusive.
+- `actor_lambda/handler.py`: the Lambda entry point.
+
+**`chaos/`: breaking the store on purpose**
+- `run.py`: runs one scenario: quiet gap, warm-up, inject, wait, recover, health checks.
+- `actions.py`: the fault primitives, each with its undo.
+- `schema.py`: what a scenario file may say.
+- `quiet.py`: the 45-minute gap between incidents.
+- `agent_wait.py`: waits for the agent's answer and grades it.
+- `scenarios/*.yaml`: the twelve scenarios, each with its ground truth.
+
+**`baselines/`: what the agent is compared with**
+- `runbook.py`: the scripted runbook, no model.
+- `alarm_only.py`: the same model, shown only the alarm.
+- `steps.py`: records a baseline's tool calls like the agent's journal.
+- `run.py`: runs one baseline from the laptop.
+
+**`evaluation/`: the benchmark**
+- `bench.py`: runs a pass: every configuration on the same incidents.
+- `grade.py`: deterministic grading against the ground truth.
+- `contamination.py`: flags answers that saw the previous incident.
+- `summarize.py`: the results table, Wilson intervals, McNemar's test.
+
+**`ops/deployments.py`**: moving aliases and recording every move; shared by deploy, rollback and the Actor.
+
+**`scripts/`: the commands**
+- `deploy.py`, `rollback.py`: move aliases forward or back, record them, smoke test.
+- `pause.py`, `destroy.py`, `consumer.py`: idle the store, tear it down, switch the queue consumer.
+- `approve.py`: approve or reject a proposed action from the terminal.
+- `load.py`: rate-capped traffic, dry run by default.
+- `smoke_checkout.py`, `trace_correlation.py`: one real checkout; one order traced across every service.
+- `migrate.py`, `grant_db_roles.py`, `seed_catalogue.py`: database schema, roles and synthetic data.
+- `replay_placed_orders.py`: re-sends orders a degraded payment provider left unpaid.
+- `cost_check.py`, `measure_dpu.py`: the monthly cost check; what a checkout costs in DSQL.
+- `lambda_deps.py`: builds the dependency layers reproducibly.
+- `llm_check.py`, `put_llm_keys.py`: test each LLM key; copy keys into SSM.
+- `build_replay.py`: builds the dashboard's public data, refusing anything that looks like an ID.
+- `check_dashboard_role.py`: the dashboard role through the IAM policy simulator.
+
+**`terraform/`: every AWS resource**
+- `services.tf`, `hello.tf`: the store's functions; `modules/lambda_service/`: the module every function uses.
+- `dsql.tf`, `cart_table.tf`, `queues.tf`, `investigations.tf`, `deployments.tf`: database, tables, queues.
+- `flags.tf`, `topology.tf`: the two flags; the topology the agent reads.
+- `alarms.tf`, `alerts.tf`: the ten alarms; the email topic.
+- `agent.tf`, `investigator.tf`, `actor.tf`: the agent Lambda, its read-only role, the Actor.
+- `ci_oidc.tf`: GitHub's OIDC provider and the CI plan and apply roles.
+- `dashboard.tf`: Vercel's OIDC provider and the dashboard role.
+- `deps_layer.tf`: the shared dependency layers.
+- `backend.tf`, `providers.tf`, `versions.tf`, `variables.tf`, `outputs.tf`, `.terraform.lock.hcl`: state location, provider and version pins, inputs, outputs.
+- `terraform.tfvars.example`: the one value kept out of the repo (the alert address).
+
+**`bootstrap/`**: made once by hand, before Terraform: the state bucket (`state/`) and the two budgets (`budgets/`).
+
+**`requirements/`**: pinned Python dependencies: `dev.txt` (laptop), `lambda-deps` and `agent-deps` (`.in` lists, `.lock` hashes).
+
+**`dashboard/`: the website**
+- `app/`: the pages (results, incidents, method, live) and the live API routes.
+- `components/`: charts, tables, the journal replay, tabs, markdown.
+- `lib/`: data loading, formatting, and `live/` (login, AWS clients, approve and reject).
+- `public/replay/`: the public data, generated by `scripts/build_replay.py`.
+- `scripts/check-static.mjs`: fails the build if a public page could run code per request.
+- `README.md`, `package.json`, `vercel.json` and the rest: how it is built, run and deployed.
+
+**`tests/`**: one Python test file per area (`test_<area>.py`), shared fakes in `fakes.py` and `conftest.py`, recorded LLM replies in `fixtures/`. The dashboard's tests sit beside its code (`*.test.ts`).
+
+**`docs/`**
+- `decisions/`: one record per major decision, `log.md` for every smaller one.
+- `demo.md`: the 60-second demo script.
+- `going-public.md`: what was checked and changed before the repository went public.
+- `history-rewrite.md`: how sensitive values were removed from git history.
+
+**`results/`**: everything the runs recorded, never edited by hand: `bench/` (benchmark passes), `chaos/` (one folder per staged incident), `investigations/` (every journal, report and postmortem), plus a few one-off measurements (DPU per order, load runs).
 
 ## Appendix: commands worth knowing
 

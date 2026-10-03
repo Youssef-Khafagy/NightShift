@@ -29,5 +29,5 @@ Drop scenario 8 from the benchmark. The pass is 13 scenarios and 39 incidents.
 
 ## Consequences
 
-- the project notes's scenario list keeps 8 with a pointer here, so the numbering of the other scenarios is unchanged.
+- The project's scenario list keeps 8 with a pointer here, so the numbering of the other scenarios is unchanged.
 - COST.md's pass projection of 42 incidents is now an over-estimate by three incidents; left as the conservative figure.

@@ -14,7 +14,7 @@ Twice something looked fixed because a test passed seconds after a change. Both 
 
 - Service-to-service calls use the Lambda Invoke API on the callee's `live` alias. `service_client.call` sends an event shaped like a function URL request, so every service keeps one handler for both entry points, and sets a read timeout so a slow dependency surfaces as a timeout.
 - Function URLs with `AWS_IAM` auth remain the external entry point.
-- Permissions are verified with `aws iam simulate-principal-policy`, or by waiting longer than the cache, never by "it worked a minute after the change" (rule in the project notes).
+- Permissions are verified with `aws iam simulate-principal-policy`, or by waiting longer than the cache, never by "it worked a minute after the change" (a project rule since then).
 
 ## Options considered
 

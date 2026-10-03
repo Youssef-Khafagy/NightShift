@@ -1,54 +1,22 @@
 # Going public
 
-The repository is private. This is everything that has to be true before it goes public, what is already done, and the steps left, in order. Steps marked **owner** need the owner's GitHub account or decision.
+How this repository became safe to publish. The rule was safety first: anything sensitive is removed everywhere it could be read, not just from the current files.
 
-## Already done (checked 2026-10-03)
+## What could leak, and where
 
-- **AWS account ID.** Removed from history on 2026-09-27 (`docs/history-rewrite.md`). No line ever added on any branch matches the account-ID patterns the pre-commit hook blocks. GitHub masks it in Actions logs as a secret: 0 of 142 run logs contain it.
-- **Commit identities.** Every commit is authored with the GitHub noreply address; merges were committed by GitHub (`noreply@github.com`).
-- **DSQL cluster ID.** Scrubbed from the four committed result files that held it. The Terraform outputs that print it are now sensitive, so apply logs show `<sensitive>`.
-- **The dashboard's public data** is built by `scripts/build_replay.py`, which refuses to write anything shaped like an account ID, cluster ID or email.
+A public GitHub repository publishes more than its files: every commit on every branch, every pull request (GitHub keeps each one's commits under `refs/pull/`), and every Actions run log for 90 days.
 
-## What is still exposed
+| Value | Risk | Where it was found (2026-10-03) |
+|---|---|---|
+| AWS account ID | A target for anyone probing AWS accounts | Removed from history on 2026-09-27 (`history-rewrite.md`), but 23 pull requests still held the old commits. Masked in every Actions log. |
+| DSQL cluster ID | The database's hostname. Connecting needs an IAM-signed token, so it opens nothing, but it is not needed in public | 4 result files, 4 commits, 25 Actions logs (the apply workflow printed it) |
+| The owner's alert email | Spam and phishing | 5 current files, 3 commits from the first milestone, 4 Actions logs |
 
-| Value | Current files | Commits in history | Actions run logs |
-|---|---|---|---|
-| DSQL cluster ID | 0 | 4 (results committed in M2a, M5, M6) | 25 (apply and plan runs that printed it, 2026-09-21 to 2026-10-03) |
-| The owner's `+nightshift` Gmail alias | 5 (the project notes, COST.md, two budget JSON files, `terraform/alerts.tf`) | 3 (from M0 on) | 4 |
+## What was done
 
-Neither is a credential. The cluster ID names a hostname that accepts only connections signed with this account's IAM credentials. The alias is a contact address that delivers to the owner's inbox.
-
-## Decisions (owner)
-
-1. **Rewrite history again?** Recommended: **no.** The email is in the very first commits, so a rewrite changes every commit's SHA, including `5641bb7`, which labels every published benchmark number, the README and the dashboard. Every label would then point at a commit that no longer exists, for two values that grant nothing. If yes: `git filter-repo --sensitive-data-removal --replace-text`, force push every branch, map old SHAs to new as in `docs/history-rewrite.md`, relabel the results, and add the new pull requests to the Support request below.
-2. **Remove the email from the current files?** It would then be visible only in history. Needs a GitHub secret `ALERT_EMAIL`, the workflows passing it as `TF_VAR_alert_email`, a gitignored `terraform.tfvars` locally, and the budget JSON files templated. Recommended only if the address matters to you; the SNS subscription does not change either way.
-3. **Delete the 28 run logs** that contain either value? Recommended: **yes.** It deletes the logs only; the runs and their results stay. Command, run by the owner or by the maintainer after a yes:
-
-```bash
-for id in 35547891236 35556244146 35556360448 35557245628 35558946658 35559069294 \
-          35559171032 35559562644 35559636138 35559733630 35648221426 35784945381 \
-          35785162302 35786000963 35790880790 35793177437 35797052200 35798799639 \
-          35800987322 35803956785 35804074064 35804719486 35804833515 35806659456 \
-          35809338963 36285256245 36369392425 37086639281; do
-  gh api -X DELETE "repos/Youssef-Khafagy/NightShift/actions/runs/$id/logs"
-done
-```
-
-## Steps, in order
-
-1. **owner: GitHub Support request** for the pull request refs that still hold the pre-rewrite commits (outstanding since 2026-09-28). Paste at support.github.com:
-   > Repository: Youssef-Khafagy/NightShift (private). I removed sensitive data (an AWS account ID) from history with git-filter-repo `--sensitive-data-removal` and force pushed all branches. Please dereference the affected pull requests #51 to #73 (23 PRs), run garbage collection, and remove cached views. First changed commits reported by git-filter-repo: b0b38ae5632fefc964a31be25bea6e76fc9f355f and 66f29db1bd97e792ddbaf99bbc5239f563e20caa. No LFS objects.
-
-   Wait for GitHub's confirmation before step 4: until then the old commits are reachable through those pull requests.
-2. **Decide** the three questions above, and carry out what was decided.
-3. **Check again** right before the switch (the maintainer runs it): the history scan, `git grep` for both values, and the pre-commit hooks on all files.
-4. **owner: make it public.** Settings, General, Danger Zone, Change visibility.
-5. **owner, immediately after:**
-   - Settings, Actions, General, "Fork pull request workflows from outside collaborators": **Require approval for all outside collaborators.** A fork's pull request cannot get an OIDC token by default (its token is read-only unless "Send write tokens to workflows from pull requests" is on, which must stay off), but approval also stops it from using the free runners for anything else.
-   - Settings, Code security: turn on **secret scanning** and **push protection** (free on public repositories).
-   - Settings, Rules, new branch ruleset on `main`: **block force pushes** and **restrict deletions**. Not "require a pull request": work goes straight to main.
-6. **The apply gate moves to a GitHub environment** (free on public repositories; the project notes has planned this since M1):
-   1. owner: Settings, Environments, New environment `production`: required reviewer Youssef-Khafagy; deployment branches: `main` only; leave "Prevent self-review" **off** (one maintainer).
-   2. the maintainer: `apply.yml`'s job gains `environment: production`. That changes the OIDC subject GitHub sends from `...:ref:refs/heads/main` to `...:environment:production`, so the apply role's trust policy in `terraform/ci_oidc.tf` changes with it. The CI apply role is denied changing its own trust, so this is a local `terraform apply` (expected 0 to add, 1 to change), plan shown first. Then push the workflow change.
-   3. Test: trigger Apply; it waits for the reviewer; approve; it runs.
-7. **Update** the README's status line and the project notes.
+1. **The values left the current files.** The cluster ID was scrubbed from the four result files; the Terraform outputs that print it are sensitive, so logs show `<sensitive>`. The alert email moved to a Terraform variable with no default, set from a GitHub secret in CI and a git-ignored `terraform.tfvars` locally; the budget files hold a placeholder. A missing value stops the plan instead of replacing the subscription.
+2. **A fresh public repository with cleaned history.** Rather than rewriting the old repository in place, which leaves old commits reachable through its pull requests until GitHub Support removes them, the history was rewritten in a fresh copy and pushed to a new repository. The new one has no pull requests and no old Actions logs, so nothing old is reachable from it at all. The old repository was renamed and stays private.
+3. **Every cited commit ID was relabelled.** A rewrite changes every commit's ID. The ones the results and documents cite (the benchmark's `5641bb7`, for one) were mapped to their new IDs; `history-rewrite.md` has the table.
+4. **Checked before publishing:** no account-ID pattern, cluster ID or email in any file or commit of the new history; every cited commit ID exists; all tests pass.
+5. **Settings after publishing:** outside contributors' workflows need approval before they run (a fork's pull request also cannot get an AWS token: its GitHub token is read-only); secret scanning and push protection on; a ruleset on `main` that blocks force pushes and deletion.
+6. **The apply gate became a GitHub environment** with the owner as required reviewer, which GitHub offers free only on public repositories. The CI roles' trust policies name the new repository's ID and the `production` environment.

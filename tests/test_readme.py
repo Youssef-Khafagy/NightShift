@@ -1,6 +1,6 @@
 """The README's results table says exactly what the pass's summary says.
 
-the project notes's rule is that every README number comes from a real run. The
+The project's rule is that every README number comes from a real run. The
 numbers were typed by hand, so this reads them back out of the README and
 compares each cell with results/bench/m7/summary.json, formatted the way
 evaluation/summarize.py prints them.
