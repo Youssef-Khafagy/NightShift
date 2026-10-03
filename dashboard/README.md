@@ -1,6 +1,6 @@
 # NightShift dashboard
 
-The public replay of the benchmark: results, every incident, and every investigation step by step. Next.js and TypeScript, deployed on Vercel's free Hobby plan.
+The public replay of the benchmark: results, every incident, every investigation step by step, and a one-minute replay of one incident end to end (`/demo`). Next.js and TypeScript, deployed on Vercel's free Hobby plan.
 
 Every page is prerendered at build time from the JSON files in `public/replay/`, which `scripts/build_replay.py` writes from the committed results in `../results/`. Nothing on the public site runs per request, so no visitor can cause an AWS call or a model call. CI checks that after every build (`npm run check:static`).
 
@@ -46,6 +46,7 @@ Every push to main builds a new production deployment. An earlier version skippe
 - **Every route checks the session itself**, not only in middleware, and refuses before creating an AWS client. Writes must be same-origin JSON POSTs. `app/api/live/routes.test.ts` proves both, and fails if any live route stops calling `requireOwner()`.
 - **AWS access** comes from Vercel's OIDC token, exchanged for the `nightshift-dashboard` role (`terraform/dashboard.tf`), which is trusted for this project's production environment only. Preview deployments get no AWS access and no secrets.
 - **Approve** re-reads the record and invokes the Actor with the hash of the action shown, as `scripts/approve.py` does; the Actor checks everything again. **Reject** is the same conditional update as `agent/approvals.py`.
+- **Demo tracker:** during a live demo (`scripts/demo.py`, see `docs/demo.md`), the page follows the incident stage by stage and lists the steps a browser must not do. Nothing on the site can start an incident.
 - **Polling** every 15 seconds, only while the tab is visible; reads by key or one partition, never a scan (budget in COST.md, "M8 dashboard").
 
 Environment variables, set in Vercel for **Production only**:

@@ -122,7 +122,7 @@ def test_the_published_comparisons_are_computed_from_the_incidents():
         (c["first"], c["second"]): (c["only_first"], c["only_second"])
         for c in index["comparisons"]
     }
-    # The same splits LEARNING.md section 20 reports, worked out by hand.
+    # The same splits LEARNING.md section 14 reports, worked out by hand.
     assert pairs[("agent-gemini", "runbook")] == (5, 8)
     assert pairs[("agent-gemini", "alarm-only-gemini")] == (14, 0)
     assert pairs[("agent-gemini", "agent-mistral")] == (15, 2)

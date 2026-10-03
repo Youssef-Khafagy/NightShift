@@ -51,7 +51,7 @@ CONFIGS = [
     ("runbook", "Scripted runbook", "runbook"),
 ]
 
-# The paired comparisons LEARNING.md section 20 reports, and the question each
+# The paired comparisons LEARNING.md section 14 reports, and the question each
 # one answers. Computed here from the per-incident grades, never copied.
 COMPARISONS = [
     ("agent-gemini", "runbook", "Does the agent beat a written runbook?"),

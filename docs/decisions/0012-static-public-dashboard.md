@@ -6,7 +6,7 @@ Status: Accepted by the owner, 2026-10-03 (M8 plan). Recorded 2026-10-03 (M8 ste
 
 The benchmark's evidence is 180 investigations: every tool call, every result, every answer and postmortem. A reader should be able to open any incident and check a claim. The design also calls for live views (service health, a live journal, approving or rejecting a proposed action) for the owner.
 
-Anything public is attack surface. A page that reads AWS at request time lets any visitor spend the account's API requests and table capacity, and puts server code with AWS credentials on the internet. The journals are raw tool output, and an account ID was already committed once inside one (section 20 of LEARNING.md).
+Anything public is attack surface. A page that reads AWS at request time lets any visitor spend the account's API requests and table capacity, and puts server code with AWS credentials on the internet. The journals are raw tool output, and an account ID was already committed once inside one (LEARNING.md, section 17).
 
 ## Decision
 

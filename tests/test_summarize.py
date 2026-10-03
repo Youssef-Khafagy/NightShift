@@ -153,7 +153,7 @@ def test_the_interval_is_wilson_and_stays_inside_0_to_1():
 
 
 def test_mcnemar_matches_the_published_comparisons():
-    """The five paired comparisons in LEARNING.md section 20 were worked
+    """The five paired comparisons in LEARNING.md section 14 were worked
     out by hand before this function existed. 5 to 8 is 2380/8192 doubled;
     14 to 0 is two chances in 16,384."""
     assert round(summarize.mcnemar(5, 8), 2) == 0.58

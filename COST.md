@@ -505,7 +505,7 @@ Alerts go to the owner's alert address, which is kept out of the repository (Ter
 
 | Thing | Free allowance | Projected usage | Headroom |
 |---|---|---|---|
-| GitHub Actions, private repo | 2,000 minutes/month, 500 MB artifact storage | CI on pull requests only, target under 5 minutes per run, so well under 400 minutes/month | Large. Public repos have no minute cap, so this ceiling disappears if the repo is made public. |
+| GitHub Actions | Standard GitHub-hosted runners are free with no minute cap on public repositories (public since 2026-10-03; while private, the cap was 2,000 minutes and 500 MB of artifacts a month) | CI on every pull request and push to main, a few minutes per run | No cap |
 | Vercel Hobby (M8 dashboard) | Per month: 1,000,000 function invocations, 4 CPU-hours of Active CPU, 360 GB-hours of provisioned memory, 1,000,000 CDN requests, 100 GB Fast Data Transfer, 10 GB Fast Origin Transfer; 100 deployments a day (checked 2026-10-03) | One Next.js project. Public replay pages are static files served from the CDN; only the owner's live pages run functions. See "M8 dashboard" below | Over 98% on every line |
 | GitHub OAuth app (M8 login) | Free; part of every GitHub account | One app, one user | n/a |
 

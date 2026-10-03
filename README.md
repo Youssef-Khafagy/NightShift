@@ -30,7 +30,7 @@ Pass `m7`: 36 staged incidents (12 fault scenarios, three runs each), run 2026-0
 
 After this pass the fault category definitions were rewritten to describe what changed rather than what the error looks like, and proposing a dead-letter redrive while the cause is a poison message or retry storm is now refused. Neither change has been benchmarked; the results above are for the code at `5085754`.
 
-Every incident can be read step by step on the dashboard, **https://night-shift-tau-amber.vercel.app**, a static replay of these results (source in [`dashboard/`](dashboard/)). The reasoning behind each finding and what went wrong is in [LEARNING.md](LEARNING.md), section 20. Raw results are in `results/bench/m7/`.
+Every incident can be read step by step on the dashboard, **https://night-shift-tau-amber.vercel.app**, a static replay of these results (source in [`dashboard/`](dashboard/)). The reasoning behind each finding and what went wrong is in [LEARNING.md](LEARNING.md), section 14. Raw results are in `results/bench/m7/`.
 
 ## How it works
 
@@ -93,8 +93,9 @@ The only charge so far was $0.03 in September 2026, from three Cost Explorer API
 Everything runs in WSL2 Ubuntu with Terraform 1.16, AWS CLI v2 (`aws login`, no access keys), Python 3.12 and Node 24.
 
 ```bash
-# Infrastructure: pull requests plan automatically; apply is a manual
-# workflow (GitHub Actions, "Apply", confirmation word "apply"), which then
+# Infrastructure: every pull request and push to main runs a plan. Apply is a
+# manual workflow (GitHub Actions, "Apply", confirmation word "apply") that
+# waits for the owner's approval in the "production" environment, then
 # publishes Lambda versions, moves the aliases and runs a smoke test.
 
 python scripts/pause.py                 # consumer off, then prove nothing polls or runs
@@ -103,6 +104,7 @@ python scripts/destroy.py               # dry run of tearing it all down; --appl
 python scripts/load.py --rate 1 --duration 60          # dry run: projected cost first
 python -m chaos.run --scenario 1                       # dry run: every step and AWS write
 python scripts/approve.py list                         # pending agent proposals
+python scripts/demo.py prepare                         # a live demo, start 45 min later (docs/demo.md)
 python scripts/rollback.py --service orders --reason "..."
 
 python -m evaluation.summarize --pass m7               # the results table above
@@ -125,12 +127,13 @@ python scripts/cost_check.py                           # every free allowance, m
 | `scripts/` | Deploy, rollback, pause, destroy, load, approvals, cost check, replay data |
 | `dashboard/` | The replay site (Next.js), built only from `dashboard/public/replay/` |
 | `results/` | Every chaos run, investigation and benchmark entry, as recorded |
-| `docs/decisions/` | Architecture decision records |
+| `docs/` | Decision records (`decisions/`), how to demo it, how the repository went public |
 
 ## Further reading
 
 - [LEARNING.md](LEARNING.md): how every part works and why, what went wrong first, and the questions I'd expect about it.
 - [COST.md](COST.md): every free allowance, measurement and projection.
 - [docs/decisions/](docs/decisions/): the decisions that shaped the system, one page each.
+- [docs/demo.md](docs/demo.md): the one-minute replay with its narration, and how to run a live demo.
 
 Every number in this README comes from a real run, labelled with its date, commit and model. A test (`tests/test_readme.py`) checks the results table against the pass's summary.

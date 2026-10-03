@@ -1,10 +1,11 @@
 # Terraform apply. This is the approval gate.
 #
-# GitHub environments with required reviewers would be the usual way to gate
-# an apply, but GitHub Free cannot create environments on private repos and
-# required reviewers on a private repo need Enterprise. So the gate is this:
-# the workflow only runs when a human presses "Run workflow" on main and types
-# the confirmation word. GitHub records who triggered every run.
+# The workflow only runs when someone presses "Run workflow" on main and types
+# the confirmation word. The job then waits in the "production" environment
+# until the owner, its required reviewer, approves the run, and the apply role
+# trusts only that environment's OIDC subject, so no other run can get AWS
+# credentials. (While the repository was private, GitHub Free offered no
+# environments, and the confirmation word was the whole gate.)
 name: Apply
 
 on:

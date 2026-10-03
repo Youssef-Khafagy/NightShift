@@ -159,7 +159,7 @@ export default function MethodPage() {
       <p>
         The full reasoning, including what went wrong while building and
         running it, is in{" "}
-        <a href={`${REPO}/blob/main/LEARNING.md`}>LEARNING.md</a>, section 20.
+        <a href={`${REPO}/blob/main/LEARNING.md`}>LEARNING.md</a>, section 14.
       </p>
 
       <h2>Notes recorded during the pass</h2>
