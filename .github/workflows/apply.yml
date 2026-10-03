@@ -30,10 +30,12 @@ jobs:
   apply:
     name: Terraform apply
     runs-on: ubuntu-latest
-    # The apply role's trust policy only accepts refs/heads/main, so a run
-    # from another branch would fail at the credentials step anyway. Failing
-    # here gives a readable error instead.
+    # The job waits in the "production" environment until the owner, its
+    # required reviewer, approves this run. The apply role trusts only that
+    # environment's OIDC subject, and the environment only accepts main; a
+    # run from another branch is stopped here with a readable error instead.
     if: github.ref == 'refs/heads/main'
+    environment: production
     permissions:
       contents: read
       id-token: write

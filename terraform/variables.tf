@@ -35,9 +35,9 @@ variable "github_repo" {
 }
 
 variable "github_repo_id" {
-  description = "Numeric GitHub repository ID. Part of the immutable OIDC subject claim. Find it with: gh api repos/OWNER/REPO --jq .id"
+  description = "Numeric GitHub repository ID. Part of the immutable OIDC subject claim. Find it with: gh api repos/OWNER/REPO --jq .id. Changed on 2026-10-03, when the cleaned history moved to a new public repository (docs/going-public.md)."
   type        = string
-  default     = "1376738088"
+  default     = "1403417240"
 }
 
 variable "hello_memory_mb" {

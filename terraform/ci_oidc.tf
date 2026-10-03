@@ -129,12 +129,14 @@ data "aws_iam_policy_document" "ci_apply_trust" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # main only. A pull request from a fork can change workflow files, so
-    # allowing pull_request here would let anyone who opens a PR run apply.
+    # Only a job that runs in the "production" environment, which GitHub
+    # releases only after the owner, its required reviewer, approves the run,
+    # and only from main (the environment's branch rule). A pull request from
+    # a fork can change workflow files, so pull_request is never accepted.
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["${local.gh_subject}:ref:refs/heads/main"]
+      values   = ["${local.gh_subject}:environment:production"]
     }
   }
 }
