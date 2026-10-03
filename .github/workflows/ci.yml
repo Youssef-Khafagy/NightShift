@@ -90,6 +90,48 @@ jobs:
       - name: Type check
         run: mypy
 
+  dashboard:
+    name: Dashboard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      # npm ci installs exactly the lock file, and fails if package.json and
+      # the lock file disagree.
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      # The public pages are safe only if nothing renders per request. This
+      # reads what the build actually prerendered and fails on any route that
+      # would run code for a visitor.
+      - name: Every public route is static
+        run: npm run check:static
+
   terraform:
     name: Terraform plan
     runs-on: ubuntu-latest

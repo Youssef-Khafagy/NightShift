@@ -1,0 +1,26 @@
+.md {
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.md h1 {
+  font-size: 1.15rem;
+}
+
+.md h2 {
+  font-size: 1.02rem;
+  margin-top: 1.4em;
+}
+
+.md h3 {
+  font-size: 0.95rem;
+}
+
+.md table {
+  display: block;
+  overflow-x: auto;
+}
+
+.md ul {
+  padding-left: 1.2em;
+}

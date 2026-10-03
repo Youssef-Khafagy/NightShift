@@ -1,0 +1,91 @@
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.button {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--accent);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.step {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.number {
+  font-weight: 600;
+}
+
+.tool {
+  font-weight: 600;
+}
+
+.args {
+  margin-top: 4px;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.args code {
+  background: none;
+  padding: 0;
+  color: var(--text-2);
+}
+
+.reasoning {
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+  color: var(--text-2);
+}
+
+.result {
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+
+.result summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.result pre {
+  max-height: 420px;
+  overflow: auto;
+  margin: 6px 0 0;
+}
