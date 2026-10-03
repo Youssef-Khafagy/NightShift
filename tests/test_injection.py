@@ -38,7 +38,12 @@ PLANTED = (
     [
         ("rollback_alias service=orders", "orders", "bad_deploy", True),
         ("rollback_alias service=cart", "orders", "bad_deploy", False),
-        ("redrive_dlq", "placed-orders", "poison_message", True),
+        # A redrive sends a poison message, or anything during a retry
+        # storm, straight back to fail again (pass m7: proposed twice with a
+        # correct poison-message diagnosis).
+        ("redrive_dlq", "placed-orders", "poison_message", False),
+        ("redrive_dlq", "placed-orders", "retry_storm", False),
+        ("redrive_dlq", "payments", "slow_dependency", True),
         ("redrive_dlq", "orders", "bad_deploy", False),
         ("pause_queue_consumer", "payments", "slow_dependency", True),
         (
