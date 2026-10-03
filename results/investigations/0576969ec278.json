@@ -1,0 +1,90 @@
+{
+  "config": {
+    "kind": "runbook"
+  },
+  "state": {
+    "investigation_id": "0576969ec278",
+    "trigger": {
+      "name": "nightshift-orders-errors",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [53.0 (03/10/26 00:34:00)] was greater than or equal to the threshold (1.0).",
+      "since": "2026-10-03T00:35:55Z",
+      "metric": {
+        "namespace": "AWS/Lambda",
+        "name": "Errors",
+        "dimensions": {
+          "FunctionName": "nightshift-orders"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 1.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-10-03T00:35:55Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-10-03T00:36:10+00:00",
+    "provider": "runbook",
+    "model": "scripted",
+    "turn": 2,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-10-03T00:36:10+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "orders-errors"
+        },
+        "call_id": "baseline-a9719e1e",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [53.0 (03/10/26 00:34:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-03T00:35:55Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-03T00:35:55Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [53.0 (03/10/26 00:34:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-03T00:35:55Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"nam...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 2,
+        "at": "2026-10-03T00:36:10+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "minutes": 30,
+          "service": "orders"
+        },
+        "call_id": "baseline-c2002a35",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      }
+    ],
+    "calls": [],
+    "hypotheses": [
+      {
+        "status": "possible",
+        "text": "No runbook rule explains orders-errors without a recent deploy."
+      }
+    ],
+    "hypothesis_changes": [],
+    "log_bytes_scanned": 0,
+    "rejected_calls": 0,
+    "wall_seconds_used": 0.0,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "root_cause_component": "none",
+      "fault_category": "insufficient_evidence",
+      "confidence": 0,
+      "summary": "No runbook rule explains orders-errors without a recent deploy.",
+      "evidence_steps": "",
+      "hypotheses": "possible: No runbook rule explains orders-errors without a recent deploy.",
+      "actions": "",
+      "proposed_actions": ""
+    }
+  }
+}

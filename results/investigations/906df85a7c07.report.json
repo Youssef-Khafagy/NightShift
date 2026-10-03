@@ -1,0 +1,23 @@
+{
+  "investigation_id": "906df85a7c07",
+  "root_cause_component": "dsql",
+  "fault_category": "throttling",
+  "confidence": 85,
+  "summary": "The Lambda function associated with the `dsql` component (likely responsible for data processing or SQL-related tasks in the nightshift workflow) is being throttled, as indicated by the AWS/Lambda Throttles metric crossing the threshold. This suggests the function is exceeding its concurrency limits or AWS service quotas.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "1. Investigate the `dsql` Lambda function's concurrency settings and AWS account/region limits.",
+    "2. Review CloudWatch Logs for the `dsql` Lambda function to identify patterns or errors.",
+    "3. Scale the Lambda function horizontally if needed (e.g., increase reserved concurrency or switch to provisioned concurrency).",
+    "4. Check for unexpected spikes in nightshift task invocations."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

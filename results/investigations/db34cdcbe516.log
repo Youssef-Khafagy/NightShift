@@ -1,0 +1,8 @@
+alarm-only db34cdcbe516
+   1. get_alarm {"name": "orders-errors"}
+   2. finish_investigation {"actions": [], "fault_category": "insufficient_evidence", "hypotheses": "ruled_out: bad_deploy\nrul
+   3. finish_investigation {"summary": "An alarm fired indicating that the nightshift-orders Lambda function experienced errors
+stop: finished
+report: orders / insufficient_evidence, confidence 50
+tokens: 2643 in + 456 out = 3099 over 2 calls; largest request estimate 2391; log bytes scanned 0; wall 3s
+saved results/investigations/db34cdcbe516.json

@@ -1,0 +1,28 @@
+{
+  "investigation_id": "dcc12b7f561c",
+  "root_cause_component": "orders",
+  "fault_category": "bad_deploy",
+  "confidence": 95,
+  "summary": "A deploy of orders version 29 (SHA 5641bb7) introduced a bug causing repeated errors due to an invalid metric unit ('Counts'). The errors began immediately after the deploy and are confirmed by logs and traces.",
+  "evidence": [
+    4,
+    5,
+    6,
+    7
+  ],
+  "actions": [
+    "rollback_alias service=orders"
+  ],
+  "proposed_actions": [
+    "Investigate the metric emission logic in the new orders code to identify and fix the invalid unit issue."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "4": "get_metrics",
+    "5": "list_recent_deployments",
+    "6": "query_logs",
+    "7": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

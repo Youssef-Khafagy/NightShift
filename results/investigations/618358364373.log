@@ -1,0 +1,7 @@
+alarm-only 618358364373
+   1. get_alarm {"name": "serialization-retries"}
+   2. finish_investigation {"actions": "", "summary": "The orders service triggered the 'nightshift-serialization-retries' alar
+stop: finished
+report: orders / hot_row_contention, confidence 90
+tokens: 1212 in + 195 out = 1407 over 1 calls; largest request estimate 2118; log bytes scanned 0; wall 1s
+saved results/investigations/618358364373.json

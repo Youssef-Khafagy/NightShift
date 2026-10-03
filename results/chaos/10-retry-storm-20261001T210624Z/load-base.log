@@ -1,0 +1,37 @@
+Run 7f6f4599: 1.0/s for 1560s, seed 2137998745
+  orders                   1,560
+  Lambda invocations       7,332   month to date     34,401   cap 500,000
+  SQS requests             3,952
+  DSQL DPU                 390.0   month to date    1,761.9   cap 50,000
+  log volume                 9.1 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "7f6f4599",
+  "date": "2026-10-01T21:58:39+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1560,
+  "seed": 2137998745,
+  "projected": {
+    "orders": 1560,
+    "lambda_invocations": 7332.0,
+    "sqs_requests": 3952.0000000000005,
+    "dsql_dpu": 390.0,
+    "log_mb": 9.14004
+  },
+  "sent": 354,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 354
+  },
+  "elapsed_seconds": 353.4,
+  "achieved_rate": 1.002,
+  "checkout_latency_ms": {
+    "p50": 408.1,
+    "p95": 580.4,
+    "p99": 3233.4
+  }
+}

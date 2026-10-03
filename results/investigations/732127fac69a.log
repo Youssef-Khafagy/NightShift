@@ -1,0 +1,21 @@
+investigation 732127fac69a (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. get_queue_stats {}
+   3. query_logs {"service": "fulfillment", "minutes": 15, "query": "fields @timestamp, @message | filter level = \"E
+   4. query_messages_from_dlq_or_logs {"service": "fulfillment", "minutes": 15, "query": "fields @timestamp, @message | sort @timestamp de
+   5. query_logs {"minutes": 15, "query": "fields @timestamp, @message | sort @timestamp desc | limit 20", "service":
+   6. note_hypotheses {"hypotheses": "likely: poison_message causing messages to go to the DLQ after failing max receive c
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message | filter level = \"ERROR\" or level
+   8. list_recent_deployments {"service": "fulfillment", "minutes": 30}
+   9. get_function_config {"service": "fulfillment"}
+  10. get_metrics {"metric": "Errors", "namespace": "AWS/Lambda", "minutes": 15, "statistic": "Sum"}
+  11. query_logs {"query": "fields @timestamp, @message | filter level = \"ERROR\" or level = \"WARN\" | sort @timest
+  12. query_logs {"query": "fields @timestamp, @message | sort @timestamp desc | limit 20", "service": "orders", "min
+  13. get_traces {"service": "fulfillment"}
+  14. get_metrics {"dimensions": "QueueName=nightshift-placed-orders-dlq", "minutes": 15, "statistic": "Maximum", "met
+  15. finish_investigation {"proposed_actions": ["Inspect messages in the dead-letter queue (nightshift-placed-orders-dlq) to i
+  16. finish_investigation {"actions": "", "proposed_actions": "Inspect messages in the dead-letter queue (nightshift-placed-or
+stop: finished
+report: placed-orders / poison_message, confidence 90
+tokens: 24665 in + 925 out = 25590 over 6 calls; largest request estimate 4316; log bytes scanned 1,285,128; wall 16s
+saved results/investigations/732127fac69a.json

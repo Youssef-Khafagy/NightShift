@@ -1,0 +1,14 @@
+investigation dcc12b7f561c (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+   3. list_recent_deployments {"service": "orders", "minutes": 60}
+   4. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+   5. list_recent_deployments {"service": "orders", "minutes": 30}
+   6. query_logs {"service": "orders", "query": "fields @timestamp, @message, level, correlation_id | filter level =
+   7. get_traces {"service": "orders", "minutes": 15}
+   8. finish_investigation {"root_cause_component": "orders", "fault_category": "bad_deploy", "confidence": 95, "summary": "A d
+stop: finished
+report: orders / bad_deploy, confidence 95
+tokens: 15014 in + 1090 out = 16104 over 4 calls; largest request estimate 3838; log bytes scanned 174,477; wall 64s
+proposed (graded, never approved): rollback_alias service=orders
+saved results/investigations/dcc12b7f561c.json

@@ -1,0 +1,20 @@
+investigation 28bade957e9e (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-dlq-depth"}
+   2. get_queue_stats {}
+   3. query_logs {"service": "orders", "query": "fields @timestamp, @message, correlation_id, order_id, reason | filt
+   4. query_logs {"service": "orders", "query": "fields @timestamp, @message, correlation_id, order_id, reason | filt
+   5. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, correlation_id, order_id, reason |
+   6. list_recent_deployments {"service": "fulfillment", "minutes": 30}
+   7. query_logs {"service": "orders", "query": "fields @timestamp, @message, correlation_id, order_id, reason | filt
+   8. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, correlation_id, order_id, reason |
+   9. query_logs {"service": "orders", "query": "fields @timestamp, @message, correlation_id, order_id, reason | filt
+  10. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, correlation_id, order_id, reason |
+  11. query_logs {"service": "orders", "query": "fields @timestamp, @message, correlation_id, order_id, reason | filt
+  12. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, correlation_id, order_id, reason |
+  13. query_logs {"service": "orders", "query": "fields @timestamp, @message, correlation_id, order_id, reason | filt
+  14. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, correlation_id, order_id, reason |
+  15. finish_investigation {"root_cause_component": "placed-orders", "fault_category": "insufficient_evidence", "confidence": 9
+stop: finished
+report: placed-orders / insufficient_evidence, confidence 90
+tokens: 28055 in + 943 out = 28998 over 7 calls; largest request estimate 4120; log bytes scanned 0; wall 21s
+saved results/investigations/28bade957e9e.json

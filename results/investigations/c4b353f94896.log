@@ -1,0 +1,23 @@
+investigation c4b353f94896 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. query_logs {"service": "orders", "minutes": 15, "query": "fields @timestamp, @message, level, correlation_id |
+   3. list_recent_deployments {"service": "orders"}
+   4. note_hypotheses {"hypotheses": "likely: orders service has a bug or configuration error causing Lambda errors\nruled
+   5. query_logs {"query": "fields @timestamp, @message | sort @timestamp desc", "service": "orders", "minutes": 15}
+   6. get_traces {"minutes": 15, "service": "orders"}
+   7. get_function_config {"service": "orders"}
+   8. get_function_config {"service": "orders"}
+   9. query_logs {"service": "orders", "query": "fields @timestamp, @message | filter @message like /Error/ or @messa
+  10. get_metrics {"statistic": "Sum", "metric": "Errors", "namespace": "AWS/Lambda", "minutes": 15}
+  11. lookup_recent_changes {"minutes": 15}
+  12. query_logs {"service": "orders", "minutes": 15, "limit": 50, "query": "fields @timestamp, @message | sort @time
+  13. get_metrics {"minutes": 15, "dimensions": "FunctionName=nightshift-orders", "namespace": "AWS/Lambda", "statisti
+  14. list_recent_deployments {"service": "orders", "minutes": 10}
+  15. query_logs {"service": "orders", "minutes": 10, "limit": 20, "query": "fields @timestamp, @message | filter lev
+  16. get_traces {"minutes": 10, "service": "orders"}
+  17. note_hypotheses {"hypotheses": "likely: orders service has intermittent errors or timeouts causing Lambda errors\nru
+  18. finish_investigation {"hypotheses": "likely: orders service has intermittent errors or timeouts causing Lambda errors\nru
+stop: finished
+report: orders / insufficient_evidence, confidence 65
+tokens: 24845 in + 791 out = 25636 over 6 calls; largest request estimate 4299; log bytes scanned 1,266,756; wall 17s
+saved results/investigations/c4b353f94896.json

@@ -1,0 +1,21 @@
+investigation 4d4de3db9195 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. query_logs {"minutes": 5, "service": "orders", "query": "fields @timestamp, @message, level, reason | filter le
+   3. list_recent_deployments {"service": "orders"}
+   4. note_hypotheses {"hypotheses": "likely: code or configuration error in orders service causing Lambda errors\nruled_o
+   5. get_traces {"service": "orders", "minutes": 10}
+   6. get_function_config {"service": "orders"}
+   7. lookup_recent_changes {"minutes": 30}
+   8. query_logs {"query": "fields @timestamp, @message | sort @timestamp desc | limit 20", "minutes": 5, "service":
+   9. get_metrics {"minutes": 15, "metric": "Errors", "namespace": "AWS/Lambda", "statistic": "Sum"}
+  10. note_hypotheses {"hypotheses": "likely: timeout or dependency issue causing Lambda errors in orders service\nruled_o
+  11. get_topology {}
+  12. get_metrics {"statistic": "Sum", "metric": "Throttles", "minutes": 15, "dimensions": "FunctionName=nightshift-or
+  13. get_metrics {"metric": "Invocations", "minutes": 15, "namespace": "AWS/Lambda", "statistic": "Sum", "dimensions"
+  14. get_traces {"service": "cart", "minutes": 15}
+  15. finish_investigation {"proposed_actions": "Investigate orders function logs further for explicit exception stack traces."
+  16. finish_investigation {"confidence": 50, "fault_category": "insufficient_evidence", "root_cause_component": "orders", "act
+stop: finished
+report: orders / insufficient_evidence, confidence 50
+tokens: 23959 in + 807 out = 24766 over 6 calls; largest request estimate 4018; log bytes scanned 346,440; wall 11s
+saved results/investigations/4d4de3db9195.json

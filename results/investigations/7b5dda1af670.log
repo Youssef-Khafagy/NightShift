@@ -1,0 +1,12 @@
+investigation 7b5dda1af670 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. query_logs {"service": "orders", "minutes": 5, "query": "fields @timestamp, @message, level, reason | filter le
+   3. list_recent_deployments {"minutes": 15, "service": "orders"}
+   4. note_hypotheses {"hypotheses": "likely: bad_deploy caused the orders function to fail due to invalid metric unit 'Co
+   5. finish_investigation {"summary": "A recent deployment (version 27, commit 5641bb7) introduced code that passes an invalid
+   6. finish_investigation {"confidence": 100, "proposed_actions": "Verify code changes in git commit 5641bb7 for orders servic
+stop: finished
+report: orders / bad_deploy, confidence 100
+tokens: 14292 in + 587 out = 14879 over 4 calls; largest request estimate 3529; log bytes scanned 222,096; wall 12s
+proposed (graded, never approved): rollback_alias service=orders
+saved results/investigations/7b5dda1af670.json

@@ -1,0 +1,8 @@
+[
+  {
+    "kind": "concurrency",
+    "service": "cart",
+    "original": 5,
+    "restored": true
+  }
+]

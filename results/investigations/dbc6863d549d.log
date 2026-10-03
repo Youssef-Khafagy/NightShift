@@ -1,0 +1,12 @@
+investigation dbc6863d549d (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-throttles"}
+   2. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+   3. list_recent_deployments {"service": "orders", "minutes": 15}
+   4. get_function_config {"service": "orders"}
+   5. lookup_recent_changes {"minutes": 15}
+   6. get_traces {"service": "orders", "minutes": 5}
+   7. finish_investigation {"root_cause_component": "none", "fault_category": "no_fault", "confidence": 95, "summary": "The 'ni
+stop: finished
+report: none / no_fault, confidence 95
+tokens: 16070 in + 934 out = 17004 over 4 calls; largest request estimate 4301; log bytes scanned 0; wall 23s
+saved results/investigations/dbc6863d549d.json

@@ -1,0 +1,26 @@
+{
+  "investigation_id": "920639a55a3d",
+  "root_cause_component": "payments",
+  "fault_category": "slow_dependency",
+  "confidence": 90,
+  "summary": "The payments service is experiencing severe latency (p99 over 60 seconds) and Lambda throttling, leading to payment failures in fulfillment and triggering the nightshift-payment-failures alarm. No recent deployments or configuration regressions were found.",
+  "evidence": [
+    4,
+    8,
+    10,
+    12
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate the payments service infrastructure, concurrency limits, or downstream database performance causing high p99 latency and Lambda throttling."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "4": "get_traces",
+    "8": "query_logs",
+    "10": "get_metrics",
+    "12": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

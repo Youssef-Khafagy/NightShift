@@ -1,0 +1,24 @@
+{
+  "investigation_id": "f298b70520e8",
+  "root_cause_component": "placed-orders",
+  "fault_category": "slow_dependency",
+  "confidence": 75,
+  "summary": "The SQS queue 'nightshift-placed-orders' has messages that are being processed slowly or not at all, causing the approximate age of the oldest message to exceed the threshold of 300 seconds. This suggests a downstream service or process responsible for consuming these messages is experiencing delays or failures.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "1. Investigate the consumer logs for errors or delays in processing messages from the 'nightshift-placed-orders' queue.",
+    "2. Check the health and performance of the downstream service responsible for processing these messages.",
+    "3. Verify if there are any malformed messages in the queue that could be causing repeated failures.",
+    "4. Monitor the queue for further signs of throttling or retry storms.",
+    "5. If necessary, manually inspect the oldest messages in the queue for anomalies."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

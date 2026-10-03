@@ -1,0 +1,163 @@
+{
+  "config": {
+    "kind": "runbook"
+  },
+  "state": {
+    "investigation_id": "ab2d38e80177",
+    "trigger": {
+      "name": "nightshift-throttles",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [6.0 (02/10/26 18:02:00)] was greater than or equal to the threshold (1.0).",
+      "since": "2026-10-02T18:03:30Z",
+      "metric": {
+        "namespace": "AWS/Lambda",
+        "name": "Throttles",
+        "dimensions": {},
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 1.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-10-02T18:03:30Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-10-02T18:03:37+00:00",
+    "provider": "runbook",
+    "model": "scripted",
+    "turn": 6,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-10-02T18:03:37+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "throttles"
+        },
+        "call_id": "baseline-6f8a4e25",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-throttles\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [6.0 (02/10/26 18:02:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-02T18:03:30Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Throttles\",\"dimensions\":{},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-02T18:03:30Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-throttles\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [6.0 (02/10/26 18:02:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-02T18:03:30Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"T...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 2,
+        "at": "2026-10-02T18:03:37+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "minutes": 30
+        },
+        "call_id": "baseline-da7e9310",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 3,
+        "turn": 3,
+        "at": "2026-10-02T18:03:38+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "namespace": "AWS/Lambda",
+          "metric": "Throttles",
+          "statistic": "Sum",
+          "dimensions": "FunctionName=nightshift-orders",
+          "minutes": 15
+        },
+        "call_id": "baseline-7772868d",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Throttles {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"17:59:00Z\",0.0],[\"18:00:00Z\",0.0],[\"18:01:00Z\",0.0],[\"18:02:00Z\",0.0]],\"summary\":{\"min\":0.0,\"max\":0.0,\"count\":4}}}",
+        "summary": "{\"metric\":\"AWS/Lambda Throttles {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"17:59:00Z\",0.0],[\"18:00:00Z\",0.0],[\"18:01:00Z\",0.0],[\"18:02:00Z\",0.0]],\"summary\":{\"min\":0.0,\"max\":0.0,\"count\":4}}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 4,
+        "turn": 4,
+        "at": "2026-10-02T18:03:38+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "namespace": "AWS/Lambda",
+          "metric": "Throttles",
+          "statistic": "Sum",
+          "dimensions": "FunctionName=nightshift-cart",
+          "minutes": 15
+        },
+        "call_id": "baseline-1199ce9a",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Throttles {'FunctionName': 'nightshift-cart'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"17:59:00Z\",0.0],[\"18:00:00Z\",0.0],[\"18:01:00Z\",0.0],[\"18:02:00Z\",9.0]],\"summary\":{\"min\":0.0,\"max\":9.0,\"count\":4}}}",
+        "summary": "{\"metric\":\"AWS/Lambda Throttles {'FunctionName': 'nightshift-cart'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"17:59:00Z\",0.0],[\"18:00:00Z\",0.0],[\"18:01:00Z\",0.0],[\"18:02:00Z\",9.0]],\"summary\":{\"min\":0.0,\"max\":9.0,\"count\":4}}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 5,
+        "turn": 5,
+        "at": "2026-10-02T18:03:38+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "namespace": "AWS/Lambda",
+          "metric": "Throttles",
+          "statistic": "Sum",
+          "dimensions": "FunctionName=nightshift-payments",
+          "minutes": 15
+        },
+        "call_id": "baseline-6d0f7e16",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Throttles {'FunctionName': 'nightshift-payments'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"17:59:00Z\",0.0],[\"18:00:00Z\",0.0],[\"18:01:00Z\",0.0],[\"18:02:00Z\",0.0]],\"summary\":{\"min\":0.0,\"max\":0.0,\"count\":4}}}",
+        "summary": "{\"metric\":\"AWS/Lambda Throttles {'FunctionName': 'nightshift-payments'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"17:59:00Z\",0.0],[\"18:00:00Z\",0.0],[\"18:01:00Z\",0.0],[\"18:02:00Z\",0.0]],\"summary\":{\"min\":0.0,\"max\":0.0,\"count\":4}}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 6,
+        "turn": 6,
+        "at": "2026-10-02T18:03:38+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "namespace": "AWS/Lambda",
+          "metric": "Throttles",
+          "statistic": "Sum",
+          "dimensions": "FunctionName=nightshift-fulfillment",
+          "minutes": 15
+        },
+        "call_id": "baseline-3c0e6985",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Throttles {'FunctionName': 'nightshift-fulfillment'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"17:59:00Z\",0.0],[\"18:00:00Z\",0.0],[\"18:01:00Z\",0.0],[\"18:02:00Z\",0.0]],\"summary\":{\"min\":0.0,\"max\":0.0,\"count\":4}}}",
+        "summary": "{\"metric\":\"AWS/Lambda Throttles {'FunctionName': 'nightshift-fulfillment'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"17:59:00Z\",0.0],[\"18:00:00Z\",0.0],[\"18:01:00Z\",0.0],[\"18:02:00Z\",0.0]],\"summary\":{\"min\":0.0,\"max\":0.0,\"count\":4}}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      }
+    ],
+    "calls": [],
+    "hypotheses": [
+      {
+        "status": "likely",
+        "text": "cart is being throttled at its concurrency limit."
+      }
+    ],
+    "hypothesis_changes": [],
+    "log_bytes_scanned": 0,
+    "rejected_calls": 0,
+    "wall_seconds_used": 0.0,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "root_cause_component": "cart",
+      "fault_category": "throttling",
+      "confidence": 70,
+      "summary": "cart is being throttled at its concurrency limit.",
+      "evidence_steps": "1,4",
+      "hypotheses": "likely: cart is being throttled at its concurrency limit.",
+      "actions": "",
+      "proposed_actions": ""
+    }
+  }
+}

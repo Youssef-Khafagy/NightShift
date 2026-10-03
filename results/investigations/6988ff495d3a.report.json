@@ -1,0 +1,26 @@
+{
+  "investigation_id": "6988ff495d3a",
+  "root_cause_component": "payments",
+  "fault_category": "slow_dependency",
+  "confidence": 95,
+  "summary": "The fulfillment service experienced payment failures due to read timeouts when calling the slow external payments service.",
+  "evidence": [
+    2,
+    5,
+    7
+  ],
+  "actions": [
+    "set_operational_flag name=payments_degraded_mode value=true"
+  ],
+  "proposed_actions": [
+    "Investigate why the payments service is experiencing high latency."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_traces",
+    "5": "get_topology",
+    "7": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

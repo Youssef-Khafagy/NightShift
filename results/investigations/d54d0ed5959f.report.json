@@ -1,0 +1,30 @@
+{
+  "investigation_id": "d54d0ed5959f",
+  "root_cause_component": "payments",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The payments service was throttled due to reserved concurrency set to 2, causing 28 throttles and 41 payment failures in fulfillment at 01:08 UTC.",
+  "evidence": [
+    5,
+    8,
+    10,
+    12,
+    13
+  ],
+  "actions": [
+    "rollback_alias service=payments"
+  ],
+  "proposed_actions": [
+    "Increase reserved concurrency for nightshift-payments to at least 10 to handle current load."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "5": "get_metrics",
+    "8": "query_logs",
+    "10": "get_function_config",
+    "12": "get_metrics",
+    "13": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

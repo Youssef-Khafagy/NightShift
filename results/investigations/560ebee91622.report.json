@@ -1,0 +1,26 @@
+{
+  "investigation_id": "560ebee91622",
+  "root_cause_component": "payments",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The payments Lambda function experienced severe concurrency throttling (reaching 22 throttles in a single minute) because its reserved concurrency is set to 2. This caused payment requests from fulfillment to fail, triggering the nightshift-payment-failures alarm.",
+  "evidence": [
+    1,
+    3,
+    7
+  ],
+  "actions": [
+    "set_operational_flag name=payments_degraded_mode value=true"
+  ],
+  "proposed_actions": [
+    "Increase the reserved concurrency for the payments Lambda function or enable payments degraded mode if traffic is high."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "3": "query_logs",
+    "7": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

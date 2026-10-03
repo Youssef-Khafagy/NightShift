@@ -1,0 +1,8 @@
+alarm-only 63fc99b7b8d2
+   1. get_alarm {"name": "payment-failures"}
+   2. finish_investigation {"evidence_steps": "1", "root_cause_component": "none", "proposed_actions": "Investigate fulfillment
+   3. finish_investigation {"proposed_actions": "Investigate fulfillment payment failures service metrics and logs.", "actions"
+stop: finished
+report: none / insufficient_evidence, confidence 50
+tokens: 2655 in + 417 out = 3072 over 2 calls; largest request estimate 2400; log bytes scanned 0; wall 12s
+saved results/investigations/63fc99b7b8d2.json

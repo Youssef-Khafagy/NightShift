@@ -1,0 +1,22 @@
+{
+  "investigation_id": "2d7085912eda",
+  "root_cause_component": "payments",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The payments Lambda function was throttled due to insufficient reserved concurrency (set to 2), causing fulfillment service failures when invoking it. This resulted in a spike in payment failures at 19:41:00.",
+  "evidence": [
+    2,
+    6,
+    7
+  ],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_metrics",
+    "6": "get_metrics",
+    "7": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

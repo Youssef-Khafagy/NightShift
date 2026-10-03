@@ -1,0 +1,16 @@
+investigation 5175bdce0cc7 (mistral ministral-14b-latest)
+   1. get_queue_stats {}
+   2. get_metrics {"namespace": "AWS/SQS", "metric": "ApproximateNumberOfMessagesVisible", "statistic": "Sum", "dimens
+   3. get_metrics {"namespace": "AWS/SQS", "metric": "ApproximateNumberOfMessagesVisible", "statistic": "Sum", "dimens
+   4. note_hypotheses {"hypotheses": "likely: retry_storm in nightshift-fulfillment processing messages from nightshift-pl
+   5. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, correlation_id | filter @tim
+   6. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, correlation_id | filter @tim
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, correlation_id | filter leve
+   8. get_queue_stats {}
+   9. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, correlation_id, error | filt
+  10. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "retry_storm", "confidence": 95, "summary"
+stop: finished
+report: fulfillment / retry_storm, confidence 95
+tokens: 27751 in + 1266 out = 29017 over 7 calls; largest request estimate 4067; log bytes scanned 435,080; wall 21s
+proposed (graded, never approved): pause_queue_consumer
+saved results/investigations/5175bdce0cc7.json

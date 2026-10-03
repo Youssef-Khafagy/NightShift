@@ -1,0 +1,23 @@
+investigation 2eadb15581d7 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. query_logs {"query": "fields @timestamp, @message, level, correlation_id, reason, status | filter level = \"ERR
+   3. list_recent_deployments {"service": "orders", "minutes": 15}
+   4. get_traces {"service": "orders", "minutes": 15}
+   5. get_metrics {"metric": "Errors", "namespace": "AWS/Lambda", "statistic": "Sum", "minutes": 15}
+   6. lookup_recent_changes {"minutes": 15}
+   7. note_hypotheses {"hypotheses": "likely: timeout_regression or slow_dependency causing orders errors\nruled_out: bad_
+   8. get_topology {}
+   9. get_queue_stats {}
+  10. get_metrics {"dimensions": "ServiceName=orders", "minutes": 15, "namespace": "NightShift", "statistic": "Sum", "
+  11. get_metrics {"dimensions": "ServiceName=orders", "minutes": 15, "namespace": "NightShift", "statistic": "Sum", "
+  12. query_logs {"service": "orders", "minutes": 15, "query": "fields @timestamp, @message, level | filter level = \
+  13. get_function_config {"service": "orders"}
+  14. get_traces {"service": "payments", "minutes": 15}
+  15. get_traces {"service": "cart", "minutes": 15}
+  16. query_logs {"service": "payments", "minutes": 15, "query": "fields @timestamp, @message | sort @timestamp desc
+  17. note_hypotheses {"hypotheses": "likely: slow_dependency (payments has a 200s max latency trace causing downstream or
+  18. finish_investigation {"fault_category": "slow_dependency", "hypotheses": "likely: slow_dependency (payments has a 200s ma
+stop: finished
+report: payments / slow_dependency, confidence 85
+tokens: 30560 in + 725 out = 31285 over 7 calls; largest request estimate 4647; log bytes scanned 309,846; wall 15s
+saved results/investigations/2eadb15581d7.json

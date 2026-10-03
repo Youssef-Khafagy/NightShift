@@ -1,0 +1,13 @@
+{
+  "entry": 12,
+  "scenario": 4,
+  "run": 3,
+  "attempt": 1,
+  "phase": 1,
+  "status": "done",
+  "started": "2026-10-01T01:57:46.930336+00:00",
+  "run_dir": "results/chaos/04-slow-dependency-20261001T015746Z",
+  "exit_code": 0,
+  "actor_invocations": 0,
+  "finished": "2026-10-01T03:00:42.932002+00:00"
+}

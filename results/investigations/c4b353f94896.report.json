@@ -1,0 +1,22 @@
+{
+  "investigation_id": "c4b353f94896",
+  "root_cause_component": "orders",
+  "fault_category": "insufficient_evidence",
+  "confidence": 65,
+  "summary": "The nightshift-orders Lambda function experienced an increase in errors starting at 00:34 UTC. There were no recent deployments or Lambda throttles, and log queries were inconclusive, leaving insufficient evidence to pinpoint the exact root cause of the function errors.",
+  "evidence": [
+    10,
+    16
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate orders service function logs more closely or check downstream dependencies."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "10": "get_metrics",
+    "16": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,16 @@
+investigation 6924b835ff28 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. query_logs {"minutes": 15, "query": "fields @timestamp, @message, level, reason, status | filter level = \"ERRO
+   3. list_recent_deployments {"minutes": 30, "service": "fulfillment"}
+   4. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, reason, status | filter ser
+   5. get_traces {"service": "fulfillment", "minutes": 10}
+   6. note_hypotheses {"hypotheses": "likely: slow_dependency (payments service is timing out or throttling fulfillment)\n
+   7. get_traces {"service": "payments", "minutes": 10}
+   8. query_logs {"minutes": 10, "query": "fields @timestamp, @message, level | filter level = \"ERROR\" or level = \
+   9. get_function_config {"service": "payments"}
+  10. finish_investigation {"root_cause_component": "payments", "evidence_steps": "2,5,7,9", "confidence": 90, "hypotheses": "l
+  11. finish_investigation {"actions": "", "evidence_steps": "2,5,7,9", "proposed_actions": "Investigate payments service laten
+stop: finished
+report: payments / slow_dependency, confidence 90
+tokens: 19157 in + 646 out = 19803 over 5 calls; largest request estimate 3807; log bytes scanned 797,562; wall 13s
+saved results/investigations/6924b835ff28.json

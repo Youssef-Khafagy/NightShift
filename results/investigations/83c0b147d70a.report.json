@@ -1,0 +1,24 @@
+{
+  "investigation_id": "83c0b147d70a",
+  "root_cause_component": "cart",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The nightshift-cart Lambda function is throttling due to reserved concurrency set to 1, causing requests to be rejected when traffic exceeds this limit.",
+  "evidence": [
+    4,
+    7
+  ],
+  "actions": [
+    "rollback_alias service=cart"
+  ],
+  "proposed_actions": [
+    "Increase reserved concurrency for nightshift-cart to handle expected traffic load."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "4": "get_metrics",
+    "7": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

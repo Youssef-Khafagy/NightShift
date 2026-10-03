@@ -1,0 +1,24 @@
+{
+  "investigation_id": "fa819864a59b",
+  "root_cause_component": "cart",
+  "fault_category": "config_regression",
+  "confidence": 100,
+  "summary": "A recent configuration change to the cart service modified the CART_TABLE_NAME environment variable to a non-existent table name, causing an AccessDeniedException (since the IAM role lacks permissions for the incorrect resource), which triggered the cart errors alarm.",
+  "evidence": [
+    3,
+    7
+  ],
+  "actions": [
+    "rollback_alias service=cart"
+  ],
+  "proposed_actions": [
+    "Rollback the cart service alias to version 18 to restore the correct CART_TABLE_NAME configuration."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "3": "list_recent_deployments",
+    "7": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

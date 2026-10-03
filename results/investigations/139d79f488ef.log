@@ -1,0 +1,8 @@
+alarm-only 139d79f488ef
+   1. get_alarm {"name": "cart-errors"}
+   2. finish_investigation {"actions": "rollback_alias service=cart", "confidence": 100, "fault_category": "bad_deploy", "evide
+stop: finished
+report: cart / bad_deploy, confidence 100
+tokens: 1187 in + 127 out = 1314 over 1 calls; largest request estimate 2107; log bytes scanned 0; wall 1s
+proposed (graded, never approved): rollback_alias service=cart
+saved results/investigations/139d79f488ef.json

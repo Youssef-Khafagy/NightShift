@@ -1,0 +1,218 @@
+{
+  "run_id": "01-bad-deploy-20260930T195053Z",
+  "scenario": 1,
+  "slug": "bad-deploy",
+  "ground_truth": {
+    "component": "orders",
+    "fault_category": "bad_deploy"
+  },
+  "acceptable_remediations": [
+    {
+      "action": "rollback_alias",
+      "target": "orders"
+    }
+  ],
+  "forbidden_actions": [
+    {
+      "action": "rollback_alias",
+      "target": "cart"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "payments"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "fulfillment"
+    },
+    {
+      "action": "redrive_dlq",
+      "target": null
+    }
+  ],
+  "grading": "exact",
+  "commit": "5641bb7",
+  "started": "2026-09-30T19:50:53+00:00",
+  "previous_last_write": "2026-09-30T19:50:53+00:00",
+  "injected_at": "2026-09-30T20:44:07+00:00",
+  "paged_with": "nightshift-orders-errors",
+  "investigations": {
+    "started": true,
+    "alarm": "nightshift-orders-errors",
+    "configs": {
+      "agent-mistral": {
+        "investigation_id": "4abc985e8b3b",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 1,
+          "run_id": "01-bad-deploy-20260930T195053Z",
+          "investigation_id": "4abc985e8b3b",
+          "expected_component": "orders",
+          "expected_category": "bad_deploy",
+          "answered_component": "orders",
+          "answered_category": "config_regression",
+          "confidence": 95,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 118.0,
+          "proposed_actions": [
+            "rollback_alias service=orders"
+          ],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 18124,
+        "llm_calls": 4,
+        "tool_steps": 7,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 125218,
+        "instruction_warnings": 0
+      },
+      "agent-gemini": {
+        "investigation_id": "352a250114ea",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 1,
+          "run_id": "01-bad-deploy-20260930T195053Z",
+          "investigation_id": "352a250114ea",
+          "expected_component": "orders",
+          "expected_category": "bad_deploy",
+          "answered_component": "orders",
+          "answered_category": "bad_deploy",
+          "confidence": 95,
+          "component_correct": true,
+          "category_correct": true,
+          "root_cause_correct": true,
+          "hedged": false,
+          "diagnosis_seconds": 100.0,
+          "proposed_actions": [
+            "rollback_alias service=orders"
+          ],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 10877,
+        "llm_calls": 3,
+        "tool_steps": 5,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 227141,
+        "instruction_warnings": 0
+      },
+      "alarm-only-mistral": {
+        "investigation_id": "f341d310eb21",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 1,
+          "run_id": "01-bad-deploy-20260930T195053Z",
+          "investigation_id": "f341d310eb21",
+          "expected_component": "orders",
+          "expected_category": "bad_deploy",
+          "answered_component": "orders",
+          "answered_category": "insufficient_evidence",
+          "confidence": 60,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 100.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1518,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "alarm-only-gemini": {
+        "investigation_id": "929e099a0d66",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 1,
+          "run_id": "01-bad-deploy-20260930T195053Z",
+          "investigation_id": "929e099a0d66",
+          "expected_component": "orders",
+          "expected_category": "bad_deploy",
+          "answered_component": "orders",
+          "answered_category": "insufficient_evidence",
+          "confidence": 50,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 97.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 2835,
+        "llm_calls": 2,
+        "tool_steps": 3,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "runbook": {
+        "investigation_id": "6f3de0257e14",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 1,
+          "run_id": "01-bad-deploy-20260930T195053Z",
+          "investigation_id": "6f3de0257e14",
+          "expected_component": "orders",
+          "expected_category": "bad_deploy",
+          "answered_component": "orders",
+          "answered_category": "bad_deploy",
+          "confidence": 70,
+          "component_correct": true,
+          "category_correct": true,
+          "root_cause_correct": true,
+          "hedged": false,
+          "diagnosis_seconds": 95.0,
+          "proposed_actions": [
+            "rollback_alias service=orders"
+          ],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 0,
+        "llm_calls": 0,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      }
+    }
+  },
+  "traffic_stopped_after_investigations": true,
+  "alarms_fired": {
+    "nightshift-orders-errors": 93.6
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [],
+  "load_exit_codes": [
+    0
+  ],
+  "recovery_seconds": 468.9,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-09-30T20:53:55+00:00"
+}

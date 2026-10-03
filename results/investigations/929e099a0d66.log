@@ -1,0 +1,8 @@
+alarm-only 929e099a0d66
+   1. get_alarm {"name": "orders-errors"}
+   2. finish_investigation {"proposed_actions": "Investigate CloudWatch logs and deployment history for the nightshift-orders L
+   3. finish_investigation {"root_cause_component": "orders", "summary": "The nightshift-orders Lambda function alarm fired due
+stop: finished
+report: orders / insufficient_evidence, confidence 50
+tokens: 2555 in + 280 out = 2835 over 2 calls; largest request estimate 2299; log bytes scanned 0; wall 2s
+saved results/investigations/929e099a0d66.json

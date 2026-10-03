@@ -1,0 +1,14 @@
+{
+  "investigation_id": "b4e8b98b0a8b",
+  "root_cause_component": "none",
+  "fault_category": "insufficient_evidence",
+  "confidence": 0,
+  "summary": "No runbook rule explains queue-age without a recent deploy.",
+  "evidence": [],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {},
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

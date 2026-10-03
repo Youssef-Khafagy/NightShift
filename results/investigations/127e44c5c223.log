@@ -1,0 +1,18 @@
+investigation 127e44c5c223 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   4. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   5. list_recent_deployments {"service": "fulfillment", "minutes": 30}
+   6. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, reason | filter level = \"E
+   7. note_hypotheses {"hypotheses": "likely: slow_dependency (payments service timeout or throttling)\npossible: timeout_
+   8. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=ni
+   9. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+  10. get_function_config {"service": "fulfillment"}
+  11. finish_investigation {"root_cause_component": "payments", "fault_category": "slow_dependency", "confidence": 95, "summary
+  12. finish_investigation {"root_cause_component": "payments", "fault_category": "slow_dependency", "confidence": 95, "summary
+stop: finished
+report: payments / slow_dependency, confidence 95
+tokens: 24299 in + 1591 out = 25890 over 6 calls; largest request estimate 4451; log bytes scanned 442,735; wall 27s
+proposed (graded, never approved): pause_queue_consumer
+saved results/investigations/127e44c5c223.json

@@ -1,0 +1,25 @@
+{
+  "investigation_id": "917cc1390f4a",
+  "root_cause_component": "cart",
+  "fault_category": "iam_regression",
+  "confidence": 99,
+  "summary": "The nightshift-cart Lambda function began receiving AccessDeniedException errors after a deployment changed the CART_TABLE_NAME environment variable. The IAM role for nightshift-cart lacks the dynamodb:PutItem permission for the new table or its ARN, causing all write operations to fail.",
+  "evidence": [
+    2,
+    3,
+    4
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "1. Verify the IAM role attached to nightshift-cart and update its DynamoDB permissions to include the new table's ARN for dynamodb:PutItem.",
+    "2. Confirm the new CART_TABLE_NAME points to the correct DynamoDB table."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_metrics",
+    "3": "list_recent_deployments",
+    "4": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,24 @@
+{
+  "investigation_id": "ca668ce08b6e",
+  "root_cause_component": "orders",
+  "fault_category": "hot_row_contention",
+  "confidence": 95,
+  "summary": "The orders service experienced a spike in database serialization conflicts (SQLSTATE 40001) due to concurrent transactions updating shared inventory or product rows, triggering the nightshift-serialization-retries alarm.",
+  "evidence": [
+    1,
+    5,
+    7
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "none"
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "5": "get_metrics",
+    "7": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

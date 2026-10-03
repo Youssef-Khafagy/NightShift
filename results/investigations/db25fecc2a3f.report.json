@@ -1,0 +1,28 @@
+{
+  "investigation_id": "db25fecc2a3f",
+  "root_cause_component": "fulfillment",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The fulfillment service is throttled due to a reserved concurrency limit of 2, causing 67 messages to be in flight and 17 waiting in the placed-orders queue. Downstream throttling in the payments service (5 throttles at 22:58) exacerbates the issue, leading to payment failures.",
+  "evidence": [
+    4,
+    7,
+    10,
+    11
+  ],
+  "actions": [
+    "pause_queue_consumer"
+  ],
+  "proposed_actions": [
+    "Increase reserved concurrency for fulfillment service to handle the backlog. Investigate and address throttling in the payments service."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "4": "get_metrics",
+    "7": "query_logs",
+    "10": "get_queue_stats",
+    "11": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

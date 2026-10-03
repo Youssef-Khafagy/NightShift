@@ -1,0 +1,21 @@
+investigation 939a0a4e8aaf (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   4. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   5. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   6. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, order_id, reason | filter le
+   8. query_logs {"service": "payments", "query": "fields @timestamp, level, message, order_id, reason | filter level
+   9. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, order_id, reason | filter (l
+  10. list_recent_deployments {"service": "fulfillment", "minutes": 30}
+  11. get_traces {"service": "fulfillment", "minutes": 2}
+  12. query_logs {"service": "fulfillment", "query": "fields @timestamp, message, order_id, correlation_id | filter c
+  13. get_function_config {"service": "fulfillment"}
+  14. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "timeout_regression", "confidence": 95, "s
+  15. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "timeout_regression", "confidence": 95, "s
+stop: finished
+report: fulfillment / timeout_regression, confidence 95
+tokens: 53122 in + 3629 out = 56751 over 11 calls; largest request estimate 6272; log bytes scanned 429,914; wall 47s
+WARNING: 56751 tokens is above the 50,000 the owner asked to hear about
+saved results/investigations/939a0a4e8aaf.json

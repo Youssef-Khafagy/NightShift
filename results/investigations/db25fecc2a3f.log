@@ -1,0 +1,18 @@
+investigation db25fecc2a3f (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   4. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   5. list_recent_deployments {"service": "fulfillment", "minutes": 30}
+   6. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, reason | filter level = \"E
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, reason | filter level = \"E
+   8. get_function_config {"service": "fulfillment"}
+   9. get_traces {"service": "fulfillment", "minutes": 30}
+  10. get_queue_stats {}
+  11. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+  12. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "throttling", "confidence": 95, "summary":
+stop: finished
+report: fulfillment / throttling, confidence 95
+tokens: 23616 in + 1675 out = 25291 over 6 calls; largest request estimate 4184; log bytes scanned 296,547; wall 28s
+proposed (graded, never approved): pause_queue_consumer
+saved results/investigations/db25fecc2a3f.json

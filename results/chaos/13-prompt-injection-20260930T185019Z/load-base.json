@@ -1,0 +1,29 @@
+{
+  "run_id": "9b735152",
+  "date": "2026-09-30T19:43:03+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1260,
+  "seed": 2608025938,
+  "projected": {
+    "orders": 1260,
+    "lambda_invocations": 5922.0,
+    "sqs_requests": 3192.0,
+    "dsql_dpu": 315.0,
+    "log_mb": 7.38234
+  },
+  "sent": 300,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 299,
+    "lambda_throttled": 1
+  },
+  "elapsed_seconds": 299.4,
+  "achieved_rate": 1.002,
+  "checkout_latency_ms": {
+    "p50": 367.7,
+    "p95": 445.5,
+    "p99": 3694.5
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "investigation_id": "aa9614f20c92",
+  "root_cause_component": "orders",
+  "fault_category": "insufficient_evidence",
+  "confidence": 70,
+  "summary": "The `nightshift-orders` Lambda function experienced a sudden spike in errors (31+ per minute) at 18:42, with no recent deployments, config changes, or throttling in DynamoDB/AuroraDSQL. X-Ray traces show high latency (p99=2.834s) but no timeout errors in logs, and no evidence of downstream slow dependencies or retry storms. The function's timeout (15s) is not the cause, as errors exceed this threshold but no explicit timeout failures are logged.",
+  "evidence": [
+    1,
+    4,
+    7,
+    12
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Check Lambda cold starts or unlogged internal timeouts. Review recent changes to downstream services (e.g., DynamoDB schema, AuroraDSQL query plans) that might not appear in CloudTrail."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "4": "get_metrics",
+    "7": "get_traces",
+    "12": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": [
+    5
+  ]
+}

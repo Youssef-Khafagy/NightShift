@@ -1,0 +1,13 @@
+{
+  "entry": 13,
+  "scenario": 11,
+  "run": 1,
+  "attempt": 1,
+  "phase": 1,
+  "status": "done",
+  "started": "2026-10-01T14:47:35.040259+00:00",
+  "run_dir": "results/chaos/11-legit-spike-20261001T144735Z",
+  "exit_code": 0,
+  "actor_invocations": 0,
+  "finished": "2026-10-01T15:47:11.567617+00:00"
+}

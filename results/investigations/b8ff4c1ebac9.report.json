@@ -1,0 +1,24 @@
+{
+  "investigation_id": "b8ff4c1ebac9",
+  "root_cause_component": "none",
+  "fault_category": "insufficient_evidence",
+  "confidence": 95,
+  "summary": "The alarm indicates Lambda throttling events, but without additional context about which Lambda function is affected, the specific component (e.g., orders, cart, payments) or the root cause (e.g., traffic spike, misconfiguration, or throttling limit) cannot be determined.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "1. Identify the Lambda function(s) associated with the 'nightshift-throttles' alarm.",
+    "2. Check CloudWatch Logs for the Lambda function to determine the cause of throttling (e.g., traffic patterns, errors, or retries).",
+    "3. Verify if any recent deployments or configuration changes occurred.",
+    "4. Review Lambda concurrency settings and auto-scaling configurations.",
+    "5. Check for any retry storms or poison messages in the Lambda execution logs."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

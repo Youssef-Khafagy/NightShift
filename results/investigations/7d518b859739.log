@@ -1,0 +1,7 @@
+alarm-only 7d518b859739
+   1. get_alarm {"name": "cart-errors"}
+   2. finish_investigation {"root_cause_component": "cart", "fault_category": "insufficient_evidence", "confidence": 50, "summa
+stop: finished
+report: cart / insufficient_evidence, confidence 50
+tokens: 1190 in + 306 out = 1496 over 1 calls; largest request estimate 2107; log bytes scanned 0; wall 3s
+saved results/investigations/7d518b859739.json

@@ -1,0 +1,453 @@
+{
+  "config": {
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "max_tokens_per_investigation": 100000,
+    "max_steps": 15,
+    "max_wall_seconds": 840,
+    "input_token_cap": 24000,
+    "max_output_tokens": 1500,
+    "full_results_kept": 3,
+    "max_tool_output_chars": 2500,
+    "log_scan_cap_bytes": 20971520,
+    "max_log_query_minutes": 30
+  },
+  "state": {
+    "investigation_id": "ae793b942101",
+    "trigger": {
+      "name": "nightshift-orders-errors",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [35.0 (02/10/26 02:06:00)] was greater than or equal to the threshold (1.0).",
+      "since": "2026-10-02T02:07:55Z",
+      "metric": {
+        "namespace": "AWS/Lambda",
+        "name": "Errors",
+        "dimensions": {
+          "FunctionName": "nightshift-orders"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 1.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-10-02T02:07:55Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-10-02T02:08:06+00:00",
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "turn": 5,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-10-02T02:08:07+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "nightshift-orders-errors"
+        },
+        "call_id": "call_209590",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [35.0 (02/10/26 02:06:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-02T02:07:55Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-02T02:07:55Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [35.0 (02/10/26 02:06:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-02T02:07:55Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"nam...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TPrOO/+6K/V3zd96oYeh4aNU3kp1yrF3liVQ4JJaWk+F02BqHh263hDXFyK6JBertZ6LQKVyTkVAgclPsbIduk9rY6mmGbp3AaLdi0b5QQCHGKEfa/GYoaew="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 1,
+        "at": "2026-10-02T02:08:07+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "service": "orders"
+        },
+        "call_id": "call_209591",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 3,
+        "turn": 1,
+        "at": "2026-10-02T02:08:09+00:00",
+        "tool": "query_logs",
+        "args": {
+          "service": "orders",
+          "query": "fields @timestamp, level, message, correlation_id | filter level = \"ERROR\" | sort @timestamp desc",
+          "minutes": 10
+        },
+        "call_id": "call_209592",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":40302,\"scan_budget_left_bytes\":20931218}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":40302,\"scan_budget_left_bytes\":20931218}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 4,
+        "turn": 2,
+        "at": "2026-10-02T02:08:11+00:00",
+        "tool": "get_traces",
+        "args": {
+          "minutes": 10,
+          "service": "orders"
+        },
+        "call_id": "call_8321",
+        "result": "{\"tool\":\"get_traces\",\"truncated\":false,\"untrusted_data\":{\"service\":\"nightshift-orders\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":329,\"with_error\":98,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.362,\"p99\":2.111,\"max\":4.593},\"slowest\":[{\"id\":\"1-6abf10ad-55fc31cd1558753909b4c11d\",\"seconds\":4.593},{\"id\":\"1-6abf10ad-5f6b455832deec363b5fb2c2\",\"seconds\":4.273},{\"id\":\"1-6abf10ae-23ad58f566dd08ba52815074\",\"seconds\":3.313},{\"id\":\"1-6abf10af-66865220576d45ff43876ead\",\"seconds\":2.43},{\"id\":\"1-6abf10b0-588910fb3ce8f28f16bd1ecc\",\"seconds\":2.111}]}}",
+        "summary": "{\"service\":\"nightshift-orders\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":329,\"with_error\":98,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.362,\"p99\":2.111,\"max\":4.593},\"slowest\"...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TTxJb96ji4EjU0bhEynslwqAr/fL1ImjvFd9ZlkW7T/6zyoG1kXEI60Lz07Qr01uR+mwGwFTI8wPBnQS6T0/Nu/Ck5wxHuwnl8IFApMUOYbrDGm9BoA25KAY="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 5,
+        "turn": 2,
+        "at": "2026-10-02T02:08:11+00:00",
+        "tool": "get_function_config",
+        "args": {
+          "service": "orders"
+        },
+        "call_id": "call_8322",
+        "result": "{\"tool\":\"get_function_config\",\"truncated\":false,\"untrusted_data\":{\"function\":\"nightshift-orders\",\"live_alias_version\":\"26\",\"last_modified\":\"more than 30 minutes ago\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":15,\"reserved_concurrency\":5,\"state\":\"Active\",\"code_sha256\":\"dHKMnCv0VyC1WVE+qXpbrDc5c4PAxuR3qiNOdMv+a8s=\",\"environment\":{\"CART_FUNCTION_NAME\":\"nightshift-cart\",\"CART_TIMEOUT_SECONDS\":\"2.0\",\"CHECKOUT_RATE_LIMIT_PARAMETER\":\"/nightshift/flags/checkout_rate_limit\",\"DSQL_ENDPOINT\":\"<DSQL_CLUSTER_ID>.dsql.ca-central-1.on.aws\",\"DSQL_ROLE\":\"orders_service\",\"PLACED_ORDERS_QUEUE_URL\":\"https://sqs.ca-central-1.amazonaws.com/<ACCOUNT_ID>/nightshift-placed-orders\",\"POWERTOOLS_LOG_LEVEL\":\"INFO\",\"POWERTOOLS_SERVICE_NAME\":\"orders\"}}}",
+        "summary": "{\"function\":\"nightshift-orders\",\"live_alias_version\":\"26\",\"last_modified\":\"more than 30 minutes ago\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":15,\"reserved_concurrency\":5,\"state\":\"Active\",\"code_sha256\":\"dHKMnCv0VyC1WVE+qXpbrD...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 6,
+        "turn": 2,
+        "at": "2026-10-02T02:08:12+00:00",
+        "tool": "lookup_recent_changes",
+        "args": {
+          "minutes": 15
+        },
+        "call_id": "call_8323",
+        "result": "{\"tool\":\"lookup_recent_changes\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":15,\"note\":\"CloudTrail delivers events about 5 minutes after they happen\",\"changes\":[{\"at\":\"2026-10-02T02:02:41Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-payments\",\"resources\":[\"/aws/lambda/nightshift-payments\"]},{\"at\":\"2026-10-02T02:02:39Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-fulfillment\",\"resources\":[\"/aws/lambda/nightshift-fulfillment\"]},{\"at\":\"2026-10-02T02:02:37Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-payments\",\"resources\":[\"/aws/lambda/nightshift-payments\"]},{\"at\":\"2026-10-02T02:02:34Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-fulfillment\",\"resources\":[\"/aws/lambda/nightshift-fulfillment\"]},{\"at\":\"2026-10-02T02:02:33Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":\"2026-10-02T02:02:28Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":\"2026-10-02T02:02:27Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-cart\",\"resources\":[\"/aws/lambda/nightshift-cart\"]},{\"at\":\"2026-10-02T02:02:24Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-cart\",\"resources\":[\"/aws/lambda/nightshift-cart\"]},{\"at\":\"2026-10-02T02:02:24Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":\"2026-10-02T02:02:24Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":\"2026-10-02T02:02:24Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":\"2026-10-02T02:02:23Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-cart\",\"resources\":[\"/aws/lambda/nightshift-cart\"]},{\"at\":\"2026-10-02T02:02:22Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-cart\",\"resources\":[\"/aws/lambda/nightshift-cart\"]}]}}",
+        "summary": "{\"window_minutes\":15,\"note\":\"CloudTrail delivers events about 5 minutes after they happen\",\"changes\":[{\"at\":\"2026-10-02T02:02:41Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-payments\",\"resources\":[\"/aws/lambda/nightshift-payments\"]},{\"...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 7,
+        "turn": 3,
+        "at": "2026-10-02T02:08:13+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "ruled_out: bad_deploy (no recent deployments)\nruled_out: config_regression (no recent config changes found in CloudTrail except log stream creation)\nlikely: slow_dependency or dsql / timeout_regression or throttling (errors and high duration seen in X-Ray traces)"
+        },
+        "call_id": "call_198314",
+        "result": "{\"ok\": \"3 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"3 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0Tc1KcaCMCwIUvgggRQGuqqksccYFcYGbS74qP3ZMX53PHA56pZBNtsBajRshQGpmzr7xfb4aBrgCKC4EsI3dsd32Oi5S8JVFlWXI2SqPzAmp6c009OF96lU4="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 8,
+        "turn": 3,
+        "at": "2026-10-02T02:08:15+00:00",
+        "tool": "query_logs",
+        "args": {
+          "minutes": 10,
+          "service": "orders",
+          "query": "fields @timestamp, @message | sort @timestamp desc | limit 20"
+        },
+        "call_id": "call_198315",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-02 02:08:10.087\",\"@message\":\"{\\\"time\\\":\\\"2026-10-02T02:08:10.087Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"05e2c27a-6402-4293-a6f3-c6b2e08cf88e\\\",\\\"functionArn\\\":\\\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-orders:live\\\",\\\"version\\\":\\\"26\\\",\\\"tracing\\\":{\\\"spanId\\\":\\\"74b5bd0913353e47\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Roo...[96 chars cut]\"},{\"@timestamp\":\"2026-10-02 02:08:09.441\",\"@message\":\"{\\\"time\\\":\\\"2026-10-02T02:08:09.441Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"ae4ab5c0-6521-41ca-98d5-6fcfbc87ba41\\\",\\\"metrics\\\":{\\\"durationMs\\\":388.458,\\\"billedDurationMs\\\":389,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":110},\\\"tracing\\\":{\\\"spanId\\\":\\\"cd47fc2b078a9d44\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6a...[109 chars cut]\"},{\"@timestamp\":\"2026-10-02 02:08:09.421\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-02T02:08:09Z\\\", \\\"log_level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDenied) when calling the SendMessage operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-orders-exec/nightshift-orders is not authorized to perform: sqs:sendmessage on resource: arn:a...[1150 chars cut]\"},{\"@timestamp\":\"2026-10-02 02:08:09.052\",\"@message\":\"{\\\"time\\\":\\\"2026-10-02T02:08:09.052Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"ae4ab5c0-6521-41ca-98d5-6fcfbc87ba41\\\",\\\"functionArn\\\":\\\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-orders:live\\\",\\\"version\\\":\\\"26\\\",\\\"tracing\\\":{\\\"spanId\\\":\\\"cd47fc2b078a9d44\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Roo...[96 chars cut]\"},{\"@timestamp\":\"2026-10-02 02:08:08.421\",\"@message\":\"{\\\"time\\\":\\\"2026-10-02T02:08:08.421Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"a254ff7e-556b-485f-945f-7325a575effd\\\",\\\"metrics\\\":{\\\"durationMs\\\":395.603,\\\"billedDurationMs\\\":396,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":110},\\\"tracing\\\":{\\\"spanId\\\":\\\"e73ecc059acf363b\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6a...[109 chars cut]\"},\"...[15 more items cut]\"],\"bytes_scanned\":595865,\"scan_budget_left_bytes\":20335353}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-02 02:08:10.087\",\"@message\":\"{\\\"time\\\":\\\"2026-10-02T02:08:10.087Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"05e2c27a-6402-4293-a6f3-c6b2e08cf88e\\\",\\\"functionArn\\\":\\\"arn:aws...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 9,
+        "turn": 3,
+        "at": "2026-10-02T02:08:15+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "namespace": "AWS/Lambda",
+          "statistic": "Sum",
+          "period": 60,
+          "metric": "Errors",
+          "minutes": 15
+        },
+        "call_id": "call_198316",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Errors {} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"02:02:00Z\",0.0],[\"02:03:00Z\",0.0],[\"02:04:00Z\",0.0],[\"02:05:00Z\",0.0],[\"02:06:00Z\",35.0],[\"02:07:00Z\",43.0]],\"summary\":{\"min\":0.0,\"max\":43.0,\"count\":6}}}",
+        "summary": "{\"metric\":\"AWS/Lambda Errors {} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"02:02:00Z\",0.0],[\"02:03:00Z\",0.0],[\"02:04:00Z\",0.0],[\"02:05:00Z\",0.0],[\"02:06:00Z\",35.0],[\"02:07:00Z\",43.0]],\"summary\":{\"min\":0.0,\"max\":43.0,\"count\":6}}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 10,
+        "turn": 4,
+        "at": "2026-10-02T02:08:17+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "ruled_out: bad_deploy\nruled_out: config_regression\nruled_out: slow_dependency\nruled_out: timeout_regression\nruled_out: throttling\nlikely: iam_regression (AccessDenied when calling sqs:sendmessage due to permission changes)"
+        },
+        "call_id": "call_12671",
+        "result": "{\"ok\": \"6 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"6 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TZjKOmeWASG/u4SJtznhUwIKfHfN3kj7N1p2PoPzaVUSIbfdF+PvGYa8klYqB6qxJaL4AoZ+pXbn2IbGqepnBQhmte63zVEIsRQor7/QvWOYwoMaFHXTIJN0="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 11,
+        "turn": 5,
+        "at": "2026-10-02T02:08:18+00:00",
+        "tool": "finish_investigation",
+        "args": {
+          "fault_category": "iam_regression",
+          "evidence_steps": "8,9",
+          "hypotheses": "ruled_out: bad_deploy\nruled_out: config_regression\nruled_out: slow_dependency\nruled_out: timeout_regression\nruled_out: throttling\nlikely: iam_regression",
+          "confidence": 100,
+          "actions": "",
+          "summary": "The nightshift-orders Lambda function is failing with AccessDenied errors when trying to call the SQS SendMessage operation because the execution role lacks the required sqs:sendmessage permission.",
+          "root_cause_component": "orders",
+          "proposed_actions": "Restore the missing sqs:sendmessage permission for the nightshift-orders execution role."
+        },
+        "call_id": "call_13196",
+        "result": "{\"ok\": \"investigation closed\"}",
+        "summary": "\"{\\\"ok\\\": \\\"investigation closed\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0T/jOxRWlgkeIDgdZw9wb0caCftGQHEn1D4gtSEXbcdZQwEwZDL7rCDyAhTSgj345alA/C1zHSqmVg60ChXbjYidGSWWjj2hr6zDwSu/K03e1TB3o04Da5xmA="
+        },
+        "in_trigger": false
+      }
+    ],
+    "calls": [
+      {
+        "turn": 1,
+        "at": "2026-10-02T02:08:07+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2716,
+        "output_tokens": 89,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2505,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 2,
+        "at": "2026-10-02T02:08:10+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3129,
+        "output_tokens": 56,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2812,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 3,
+        "at": "2026-10-02T02:08:13+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4383,
+        "output_tokens": 162,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3665,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 4,
+        "at": "2026-10-02T02:08:17+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4776,
+        "output_tokens": 77,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3921,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 5,
+        "at": "2026-10-02T02:08:18+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4883,
+        "output_tokens": 169,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3998,
+        "rate_limit_headers": {}
+      }
+    ],
+    "hypotheses": [
+      {
+        "status": "ruled_out",
+        "text": "bad_deploy"
+      },
+      {
+        "status": "ruled_out",
+        "text": "config_regression"
+      },
+      {
+        "status": "ruled_out",
+        "text": "slow_dependency"
+      },
+      {
+        "status": "ruled_out",
+        "text": "timeout_regression"
+      },
+      {
+        "status": "ruled_out",
+        "text": "throttling"
+      },
+      {
+        "status": "likely",
+        "text": "iam_regression"
+      }
+    ],
+    "hypothesis_changes": [
+      {
+        "step": 7,
+        "before": [],
+        "after": [
+          {
+            "status": "ruled_out",
+            "text": "bad_deploy (no recent deployments)"
+          },
+          {
+            "status": "ruled_out",
+            "text": "config_regression (no recent config changes found in CloudTrail except log stream creation)"
+          },
+          {
+            "status": "likely",
+            "text": "slow_dependency or dsql / timeout_regression or throttling (errors and high duration seen in X-Ray traces)"
+          }
+        ]
+      },
+      {
+        "step": 10,
+        "before": [
+          {
+            "status": "ruled_out",
+            "text": "bad_deploy (no recent deployments)"
+          },
+          {
+            "status": "ruled_out",
+            "text": "config_regression (no recent config changes found in CloudTrail except log stream creation)"
+          },
+          {
+            "status": "likely",
+            "text": "slow_dependency or dsql / timeout_regression or throttling (errors and high duration seen in X-Ray traces)"
+          }
+        ],
+        "after": [
+          {
+            "status": "ruled_out",
+            "text": "bad_deploy"
+          },
+          {
+            "status": "ruled_out",
+            "text": "config_regression"
+          },
+          {
+            "status": "ruled_out",
+            "text": "slow_dependency"
+          },
+          {
+            "status": "ruled_out",
+            "text": "timeout_regression"
+          },
+          {
+            "status": "ruled_out",
+            "text": "throttling"
+          },
+          {
+            "status": "likely",
+            "text": "iam_regression (AccessDenied when calling sqs:sendmessage due to permission changes)"
+          }
+        ]
+      },
+      {
+        "step": 11,
+        "before": [
+          {
+            "status": "ruled_out",
+            "text": "bad_deploy"
+          },
+          {
+            "status": "ruled_out",
+            "text": "config_regression"
+          },
+          {
+            "status": "ruled_out",
+            "text": "slow_dependency"
+          },
+          {
+            "status": "ruled_out",
+            "text": "timeout_regression"
+          },
+          {
+            "status": "ruled_out",
+            "text": "throttling"
+          },
+          {
+            "status": "likely",
+            "text": "iam_regression (AccessDenied when calling sqs:sendmessage due to permission changes)"
+          }
+        ],
+        "after": [
+          {
+            "status": "ruled_out",
+            "text": "bad_deploy"
+          },
+          {
+            "status": "ruled_out",
+            "text": "config_regression"
+          },
+          {
+            "status": "ruled_out",
+            "text": "slow_dependency"
+          },
+          {
+            "status": "ruled_out",
+            "text": "timeout_regression"
+          },
+          {
+            "status": "ruled_out",
+            "text": "throttling"
+          },
+          {
+            "status": "likely",
+            "text": "iam_regression"
+          }
+        ]
+      }
+    ],
+    "log_bytes_scanned": 636167,
+    "rejected_calls": 0,
+    "wall_seconds_used": 11.641338611007086,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "fault_category": "iam_regression",
+      "evidence_steps": "8,9",
+      "hypotheses": "ruled_out: bad_deploy\nruled_out: config_regression\nruled_out: slow_dependency\nruled_out: timeout_regression\nruled_out: throttling\nlikely: iam_regression",
+      "confidence": 100,
+      "actions": "",
+      "summary": "The nightshift-orders Lambda function is failing with AccessDenied errors when trying to call the SQS SendMessage operation because the execution role lacks the required sqs:sendmessage permission.",
+      "root_cause_component": "orders",
+      "proposed_actions": "Restore the missing sqs:sendmessage permission for the nightshift-orders execution role."
+    }
+  }
+}

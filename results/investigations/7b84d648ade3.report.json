@@ -1,0 +1,20 @@
+{
+  "investigation_id": "7b84d648ade3",
+  "root_cause_component": "payments",
+  "fault_category": "slow_dependency",
+  "confidence": 70,
+  "summary": "The payment provider is failing. Defer payments until it recovers.",
+  "evidence": [
+    1
+  ],
+  "actions": [
+    "set_operational_flag name=payments_degraded_mode value=true"
+  ],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

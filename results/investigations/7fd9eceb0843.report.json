@@ -1,0 +1,23 @@
+{
+  "investigation_id": "7fd9eceb0843",
+  "root_cause_component": "placed-orders",
+  "fault_category": "slow_dependency",
+  "confidence": 85,
+  "summary": "The SQS queue 'nightshift-placed-orders' has messages that are being processed slowly, causing the approximate age of the oldest message to exceed the threshold of 300 seconds. This suggests that the component responsible for processing this queue (likely the 'placed-orders' service) is experiencing performance degradation or is overwhelmed.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "1. Investigate the placed-orders service logs for errors or slow processing.",
+    "2. Check CloudWatch metrics for the placed-orders service for CPU, memory, or throttling issues.",
+    "3. Verify if there is a spike in traffic or unusual workload.",
+    "4. Monitor the SQS queue for further delays or errors."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

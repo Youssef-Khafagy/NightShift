@@ -1,0 +1,22 @@
+investigation 37c75037eb5d (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. query_logs {"minutes": 15, "service": "orders", "query": "fields @timestamp, @message, level, reason | filter l
+   3. list_recent_deployments {"service": "orders"}
+   4. note_hypotheses {"hypotheses": "likely: orders function has errors due to transient issues or upstream failures\nrul
+   5. query_logs {"query": "fields @timestamp, @message | sort @timestamp desc | limit 20", "service": "orders", "min
+   6. get_traces {"service": "orders", "minutes": 15}
+   7. get_function_config {"service": "orders"}
+   8. get_metrics {"statistic": "Sum", "namespace": "AWS/Lambda", "metric": "Errors", "minutes": 15}
+   9. query_logs {"service": "orders", "minutes": 15, "query": "fields @timestamp, @message | filter @message like /T
+  10. get_traces {"service": "cart", "minutes": 15}
+  11. get_topology {}
+  12. get_metrics {"dimensions": "FunctionName=nightshift-orders", "metric": "Throttles", "minutes": 15, "statistic":
+  13. get_metrics {"metric": "Invocations", "namespace": "AWS/Lambda", "dimensions": "FunctionName=nightshift-orders",
+  14. query_logs {"minutes": 15, "service": "orders", "query": "fields @timestamp, @message | sort @timestamp desc |
+  15. finish_investigation {"actions": [], "root_cause_component": "orders", "confidence": 70, "proposed_actions": "Investigate
+  16. finish_investigation {"fault_category": "insufficient_evidence", "summary": "The nightshift-orders Lambda function experi
+stop: finished
+report: orders / insufficient_evidence, confidence 70
+tokens: 67035 in + 860 out = 67895 over 16 calls; largest request estimate 4716; log bytes scanned 884,703; wall 62s
+WARNING: 67895 tokens is above the 50,000 the owner asked to hear about
+saved results/investigations/37c75037eb5d.json

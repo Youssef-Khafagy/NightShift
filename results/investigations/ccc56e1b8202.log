@@ -1,0 +1,19 @@
+investigation ccc56e1b8202 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-dlq-depth"}
+   2. get_queue_stats {}
+   3. list_recent_deployments {"service": "orders", "minutes": 30}
+   4. list_recent_deployments {"service": "fulfillment", "minutes": 30}
+   5. get_traces {"service": "fulfillment", "minutes": 15}
+   6. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, correlation_id, order_id | f
+   7. get_function_config {"service": "fulfillment"}
+   8. lookup_recent_changes {"minutes": 15}
+   9. get_queue_stats {"queue_name": "nightshift-placed-orders"}
+  10. get_metrics {"namespace": "AWS/SQS", "metric": "ApproximateReceiveCount", "statistic": "Sum", "dimensions": "Que
+  11. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message | filter \"SetQueueAttributes\" ||
+  12. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message | filter message like /SetQueueAttr
+  13. finish_investigation {"root_cause_component": "placed-orders", "fault_category": "config_regression", "confidence": 95, "
+stop: finished
+report: placed-orders / config_regression, confidence 95
+tokens: 30547 in + 2289 out = 32836 over 7 calls; largest request estimate 4660; log bytes scanned 219,929; wall 37s
+proposed (graded, never approved): redrive_dlq
+saved results/investigations/ccc56e1b8202.json

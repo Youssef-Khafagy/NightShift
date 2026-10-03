@@ -1,0 +1,20 @@
+investigation 920639a55a3d (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. list_recent_deployments {"service": "payments"}
+   3. list_recent_deployments {"service": "fulfillment"}
+   4. get_traces {"service": "payments", "minutes": 15}
+   5. query_logs {"query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp desc", "service"
+   6. get_flag_values {}
+   7. get_metrics {"metric": "PaymentFailures", "statistic": "Sum", "namespace": "NightShift", "minutes": 15, "period"
+   8. query_logs {"service": "fulfillment", "minutes": 15, "query": "fields @timestamp, @message | filter level = \"E
+   9. get_traces {"service": "fulfillment", "minutes": 15}
+  10. get_metrics {"metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=nightshift-payments", "minute
+  11. get_metrics {"dimensions": "FunctionName=nightshift-payments", "period": 60, "namespace": "AWS/Lambda", "minutes
+  12. get_metrics {"statistic": "Sum", "metric": "Throttles", "dimensions": "FunctionName=nightshift-payments", "minut
+  13. note_hypotheses {"hypotheses": "likely: slow_dependency (payments is experiencing extreme latency and throttling, ca
+  14. finish_investigation {"summary": "The payments service is experiencing severe latency (p99 over 60 seconds) and Lambda th
+  15. finish_investigation {"hypotheses": "likely: slow_dependency (payments is experiencing extreme latency and throttling, ca
+stop: finished
+report: payments / slow_dependency, confidence 90
+tokens: 27653 in + 878 out = 28531 over 7 calls; largest request estimate 4027; log bytes scanned 296,333; wall 13s
+saved results/investigations/920639a55a3d.json

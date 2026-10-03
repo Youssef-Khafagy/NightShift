@@ -1,0 +1,28 @@
+{
+  "investigation_id": "57d9ba43eed5",
+  "root_cause_component": "cart",
+  "fault_category": "config_regression",
+  "confidence": 95,
+  "summary": "The `cart` Lambda function's `CART_TABLE_NAME` environment variable was updated to `nightshift-carts`, but the IAM role lacks permissions for the new table name suffix (`nightshift-carts-2026-10-02`). This caused `AccessDeniedException` errors on DynamoDB operations, triggering the alarm.",
+  "evidence": [
+    1,
+    4,
+    5,
+    7,
+    8
+  ],
+  "actions": [
+    "rollback_alias service=cart"
+  ],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "4": "get_metrics",
+    "5": "list_recent_deployments",
+    "7": "query_logs",
+    "8": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

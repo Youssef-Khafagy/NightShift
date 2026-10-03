@@ -1,0 +1,22 @@
+{
+  "investigation_id": "8bcb68b5d19e",
+  "root_cause_component": "payments",
+  "fault_category": "bad_deploy",
+  "confidence": 50,
+  "summary": "An alarm for payment failures in the fulfillment service fired, indicating a potential bad deploy or configuration issue related to payments.",
+  "evidence": [
+    1
+  ],
+  "actions": [
+    "rollback_alias service=payments"
+  ],
+  "proposed_actions": [
+    "Investigate payments service deployment and logs."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

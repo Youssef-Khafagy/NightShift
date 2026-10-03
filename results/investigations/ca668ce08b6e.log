@@ -1,0 +1,13 @@
+investigation ca668ce08b6e (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-serialization-retries"}
+   2. list_recent_deployments {"minutes": 15, "service": "orders"}
+   3. query_logs {"minutes": 15, "service": "orders", "query": "fields @timestamp, @message | filter level = \"ERROR\
+   4. note_hypotheses {"hypotheses": "likely: hot row contention causing database serialization retries in the orders serv
+   5. get_metrics {"minutes": 15, "statistic": "Sum", "dimensions": "service=orders", "namespace": "NightShift", "metr
+   6. query_logs {"query": "fields @timestamp, @message | sort @timestamp desc", "service": "orders", "minutes": 15}
+   7. query_logs {"query": "fields @timestamp, @message | filter level = \"WARN\" or level = \"ERROR\" or @message li
+   8. finish_investigation {"summary": "The orders service experienced a spike in database serialization conflicts (SQLSTATE 40
+stop: finished
+report: orders / hot_row_contention, confidence 95
+tokens: 15706 in + 436 out = 16142 over 4 calls; largest request estimate 4286; log bytes scanned 3,026,181; wall 8s
+saved results/investigations/ca668ce08b6e.json

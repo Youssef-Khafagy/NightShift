@@ -1,0 +1,372 @@
+{
+  "config": {
+    "provider": "mistral",
+    "model": "ministral-14b-latest",
+    "max_tokens_per_investigation": 100000,
+    "max_steps": 15,
+    "max_wall_seconds": 840,
+    "input_token_cap": 24000,
+    "max_output_tokens": 1500,
+    "full_results_kept": 3,
+    "max_tool_output_chars": 2500,
+    "log_scan_cap_bytes": 20971520,
+    "max_log_query_minutes": 30
+  },
+  "state": {
+    "investigation_id": "dcc12b7f561c",
+    "trigger": {
+      "name": "nightshift-orders-errors",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [12.0 (01/10/26 12:24:00)] was greater than or equal to the threshold (1.0).",
+      "since": "2026-10-01T12:25:31Z",
+      "metric": {
+        "namespace": "AWS/Lambda",
+        "name": "Errors",
+        "dimensions": {
+          "FunctionName": "nightshift-orders"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 1.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-10-01T12:25:31Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-10-01T12:25:46+00:00",
+    "provider": "mistral",
+    "model": "ministral-14b-latest",
+    "turn": 4,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-10-01T12:25:49+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "nightshift-orders-errors"
+        },
+        "call_id": "4xBMOsLQ4",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [12.0 (01/10/26 12:24:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T12:25:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T12:25:31Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [12.0 (01/10/26 12:24:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T12:25:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"nam...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 1,
+        "at": "2026-10-01T12:25:49+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "namespace": "AWS/Lambda",
+          "metric": "Errors",
+          "statistic": "Sum",
+          "dimensions": "FunctionName=nightshift-orders",
+          "minutes": 60,
+          "period": 60
+        },
+        "call_id": "aNRe0iexv",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"error\":\"invalid arguments\",\"problems\":[\"'minutes' must be at most 30\"]}}",
+        "summary": "{\"error\":\"invalid arguments\",\"problems\":[\"'minutes' must be at most 30\"]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 3,
+        "turn": 1,
+        "at": "2026-10-01T12:25:49+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "service": "orders",
+          "minutes": 60
+        },
+        "call_id": "rAS96LbFQ",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"error\":\"invalid arguments\",\"problems\":[\"'minutes' must be at most 30\"]}}",
+        "summary": "{\"error\":\"invalid arguments\",\"problems\":[\"'minutes' must be at most 30\"]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 4,
+        "turn": 2,
+        "at": "2026-10-01T12:25:58+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "namespace": "AWS/Lambda",
+          "metric": "Errors",
+          "statistic": "Sum",
+          "dimensions": "FunctionName=nightshift-orders",
+          "minutes": 30,
+          "period": 60
+        },
+        "call_id": "GiS4WoZcI",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Errors {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"12:21:00Z\",0.0],[\"12:22:00Z\",0.0],[\"12:23:00Z\",0.0],[\"12:24:00Z\",16.0]],\"summary\":{\"min\":0.0,\"max\":16.0,\"count\":4}}}",
+        "summary": "{\"metric\":\"AWS/Lambda Errors {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"12:21:00Z\",0.0],[\"12:22:00Z\",0.0],[\"12:23:00Z\",0.0],[\"12:24:00Z\",16.0]],\"summary\":{\"min\":0.0,\"max\":16.0,\"count\":4}}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 5,
+        "turn": 2,
+        "at": "2026-10-01T12:25:58+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "service": "orders",
+          "minutes": 30
+        },
+        "call_id": "LHohFJg7x",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T12:24:43.842+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 29\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T12:24:43.842+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 29\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 6,
+        "turn": 2,
+        "at": "2026-10-01T12:26:00+00:00",
+        "tool": "query_logs",
+        "args": {
+          "service": "orders",
+          "query": "fields @timestamp, @message, level, correlation_id | filter level = \"ERROR\" | sort @timestamp desc",
+          "minutes": 30,
+          "limit": 50
+        },
+        "call_id": "bQ6B6UCta",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 12:25:57.926\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T12:25:57Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-10-01 12:25:56.945\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T12:25:56Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-10-01 12:25:55.965\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T12:25:55Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\",\"level\":\"ERROR\"},\"...[47 more items cut]\"],\"bytes_scanned\":174477,\"scan_budget_left_bytes\":20797043}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 12:25:57.926\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T12:25:57Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microsec...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 7,
+        "turn": 3,
+        "at": "2026-10-01T12:26:21+00:00",
+        "tool": "get_traces",
+        "args": {
+          "service": "orders",
+          "minutes": 15
+        },
+        "call_id": "jGW4epZA6",
+        "result": "{\"tool\":\"get_traces\",\"truncated\":false,\"untrusted_data\":{\"service\":\"nightshift-orders\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":261,\"with_error\":87,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.326,\"p99\":3.957,\"max\":5.183},\"slowest\":[{\"id\":\"1-6abe5058-39f68a3817e671e958b20939\",\"seconds\":5.183},{\"id\":\"1-6abe5059-156965cc3045dfdc0feccc5b\",\"seconds\":4.367},{\"id\":\"1-6abe5058-2190c7550306d9f10e780e83\",\"seconds\":4.132},{\"id\":\"1-6abe510d-5df99c5d3aaa9f181c44d57a\",\"seconds\":3.957},{\"id\":\"1-6abe510e-15c99e5331722ab45b523e00\",\"seconds\":3.733}]}}",
+        "summary": "{\"service\":\"nightshift-orders\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":261,\"with_error\":87,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.326,\"p99\":3.957,\"max\":5.183},\"slowest\"...(older result, shortened)",
+        "reasoning": "The alarm **nightshift-orders-errors** fired at 2026-10-01 12:24:00, with **16 errors in the last minute** (Step 4). The errors began immediately after a **deploy of orders version 29 (SHA 5641bb7) at 12:24:43** (Step 5), which changed only the code (no settings). The logs show **repeated errors about \"Invalid metric unit 'Counts'\"**, which suggests a **configuration or code regression** in the new version (Step 6).\n\n### Hypotheses\n- **likely: bad_deploy**: The new code in version 29 introduced an error in metric handling, causing repeated failures.\n- **possible: config_regression**: If the error references a misconfigured metric unit, it could be a setting issue, but the deploy only changed code.\n- **ruled_out: timeout_regression, slow_dependency, poison_message, iam_regression, hot_row_contention, missing_index, throttling, retry_storm, no_fault**: No evidence of timeouts, dependency slowness, permission issues, or database contention. The errors are consistent with a code bug.\n\n### ",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 8,
+        "turn": 4,
+        "at": "2026-10-01T12:26:50+00:00",
+        "tool": "finish_investigation",
+        "args": {
+          "root_cause_component": "orders",
+          "fault_category": "bad_deploy",
+          "confidence": 95,
+          "summary": "A deploy of orders version 29 (SHA 5641bb7) introduced a bug causing repeated errors due to an invalid metric unit ('Counts'). The errors began immediately after the deploy and are confirmed by logs and traces.",
+          "evidence_steps": "4,5,6,7",
+          "hypotheses": "likely: bad_deploy\nruled_out: config_regression\nruled_out: timeout_regression\nruled_out: slow_dependency\nruled_out: poison_message\nruled_out: iam_regression\nruled_out: hot_row_contention\nruled_out: missing_index\nruled_out: throttling\nruled_out: retry_storm\nruled_out: no_fault",
+          "actions": "rollback_alias service=orders",
+          "proposed_actions": "Investigate the metric emission logic in the new orders code to identify and fix the invalid unit issue."
+        },
+        "call_id": "0aehbazhz",
+        "result": "{\"ok\": \"investigation closed\"}",
+        "summary": "\"{\\\"ok\\\": \\\"investigation closed\\\"}\"",
+        "reasoning": "### Evidence Summary\n1. **Errors began immediately after a deploy** (Step 5), with **16 errors in the last minute** (Step 4).\n2. **Logs show repeated \"Invalid metric unit 'Counts'\" errors** (Step 6), indicating a code regression.\n3. **Traces confirm 87 errors out of 261 samples** (Step 7), with no throttling or faults, but high latency (p99 = 3.957s).\n4. **No recent configuration changes** (Step 5), so the issue is likely in the new code.\n\n### Root Cause\nThe **new deploy of `orders` (version 29) introduced a bug** where the service attempts to emit a metric with an invalid unit (`Counts`), causing repeated failures. This is a **bad_deploy** with a **config_regression-like symptom** (invalid metric unit), but the root cause is the code change.\n\n### Proposed Actions\n- **Rollback the `orders` service** to version 26 to restore functionality.\n- **Investigate the metric emission logic** in the new code to identify and fix the invalid unit issue.\n\n### Hypotheses\n- **likely: bad_deploy**: New",
+        "provider_data": {},
+        "in_trigger": false
+      }
+    ],
+    "calls": [
+      {
+        "turn": 1,
+        "at": "2026-10-01T12:25:49+00:00",
+        "provider": "mistral",
+        "model": "ministral-14b-latest",
+        "input_tokens": 2915,
+        "output_tokens": 91,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2505,
+        "rate_limit_headers": {
+          "x-ratelimit-limit-tokens-minute": "937500",
+          "x-ratelimit-remaining-tokens-minute": "934494",
+          "x-ratelimit-tokens-query-cost": "3006",
+          "x-ratelimit-limit-req-minute": "30",
+          "x-ratelimit-remaining-req-minute": "29"
+        }
+      },
+      {
+        "turn": 2,
+        "at": "2026-10-01T12:25:57+00:00",
+        "provider": "mistral",
+        "model": "ministral-14b-latest",
+        "input_tokens": 3309,
+        "output_tokens": 128,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2824,
+        "rate_limit_headers": {
+          "x-ratelimit-limit-tokens-minute": "937500",
+          "x-ratelimit-remaining-tokens-minute": "931057",
+          "x-ratelimit-tokens-query-cost": "3437",
+          "x-ratelimit-limit-req-minute": "30",
+          "x-ratelimit-remaining-req-minute": "27"
+        }
+      },
+      {
+        "turn": 3,
+        "at": "2026-10-01T12:26:21+00:00",
+        "provider": "mistral",
+        "model": "ministral-14b-latest",
+        "input_tokens": 4098,
+        "output_tokens": 316,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3380,
+        "rate_limit_headers": {
+          "x-ratelimit-limit-tokens-minute": "937500",
+          "x-ratelimit-remaining-tokens-minute": "926732",
+          "x-ratelimit-tokens-query-cost": "4414",
+          "x-ratelimit-limit-req-minute": "30",
+          "x-ratelimit-remaining-req-minute": "29"
+        }
+      },
+      {
+        "turn": 4,
+        "at": "2026-10-01T12:26:50+00:00",
+        "provider": "mistral",
+        "model": "ministral-14b-latest",
+        "input_tokens": 4692,
+        "output_tokens": 555,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3838,
+        "rate_limit_headers": {
+          "x-ratelimit-limit-tokens-minute": "937500",
+          "x-ratelimit-remaining-tokens-minute": "922317",
+          "x-ratelimit-tokens-query-cost": "5247",
+          "x-ratelimit-limit-req-minute": "30",
+          "x-ratelimit-remaining-req-minute": "28"
+        }
+      }
+    ],
+    "hypotheses": [
+      {
+        "status": "likely",
+        "text": "bad_deploy"
+      },
+      {
+        "status": "ruled_out",
+        "text": "config_regression"
+      },
+      {
+        "status": "ruled_out",
+        "text": "timeout_regression"
+      },
+      {
+        "status": "ruled_out",
+        "text": "slow_dependency"
+      },
+      {
+        "status": "ruled_out",
+        "text": "poison_message"
+      },
+      {
+        "status": "ruled_out",
+        "text": "iam_regression"
+      },
+      {
+        "status": "ruled_out",
+        "text": "hot_row_contention"
+      },
+      {
+        "status": "ruled_out",
+        "text": "missing_index"
+      },
+      {
+        "status": "ruled_out",
+        "text": "throttling"
+      },
+      {
+        "status": "ruled_out",
+        "text": "retry_storm"
+      },
+      {
+        "status": "ruled_out",
+        "text": "no_fault"
+      }
+    ],
+    "hypothesis_changes": [
+      {
+        "step": 8,
+        "before": [],
+        "after": [
+          {
+            "status": "likely",
+            "text": "bad_deploy"
+          },
+          {
+            "status": "ruled_out",
+            "text": "config_regression"
+          },
+          {
+            "status": "ruled_out",
+            "text": "timeout_regression"
+          },
+          {
+            "status": "ruled_out",
+            "text": "slow_dependency"
+          },
+          {
+            "status": "ruled_out",
+            "text": "poison_message"
+          },
+          {
+            "status": "ruled_out",
+            "text": "iam_regression"
+          },
+          {
+            "status": "ruled_out",
+            "text": "hot_row_contention"
+          },
+          {
+            "status": "ruled_out",
+            "text": "missing_index"
+          },
+          {
+            "status": "ruled_out",
+            "text": "throttling"
+          },
+          {
+            "status": "ruled_out",
+            "text": "retry_storm"
+          },
+          {
+            "status": "ruled_out",
+            "text": "no_fault"
+          }
+        ]
+      }
+    ],
+    "log_bytes_scanned": 174477,
+    "rejected_calls": 0,
+    "wall_seconds_used": 63.51703146100044,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "root_cause_component": "orders",
+      "fault_category": "bad_deploy",
+      "confidence": 95,
+      "summary": "A deploy of orders version 29 (SHA 5641bb7) introduced a bug causing repeated errors due to an invalid metric unit ('Counts'). The errors began immediately after the deploy and are confirmed by logs and traces.",
+      "evidence_steps": "4,5,6,7",
+      "hypotheses": "likely: bad_deploy\nruled_out: config_regression\nruled_out: timeout_regression\nruled_out: slow_dependency\nruled_out: poison_message\nruled_out: iam_regression\nruled_out: hot_row_contention\nruled_out: missing_index\nruled_out: throttling\nruled_out: retry_storm\nruled_out: no_fault",
+      "actions": "rollback_alias service=orders",
+      "proposed_actions": "Investigate the metric emission logic in the new orders code to identify and fix the invalid unit issue."
+    }
+  }
+}

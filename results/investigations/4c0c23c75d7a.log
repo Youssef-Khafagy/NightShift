@@ -1,0 +1,9 @@
+alarm-only 4c0c23c75d7a
+   1. get_alarm {"name": "throttles"}
+   2. finish_investigation {"hypotheses": "likely: throttling\nruled_out: bad_deploy\nruled_out: slow_dependency\nruled_out: ti
+   3. finish_investigation {"root_cause_component": "orders", "hypotheses": "likely: throttling\nruled_out: bad_deploy\nruled_o
+   4. finish_investigation {"evidence_steps": "1", "summary": "The 'nightshift-throttles' alarm fired because Lambda throttles
+stop: answer_rejected
+report: none / insufficient_evidence, confidence 0
+tokens: 4209 in + 474 out = 4683 over 3 calls; largest request estimate 2553; log bytes scanned 0; wall 4s
+saved results/investigations/4c0c23c75d7a.json

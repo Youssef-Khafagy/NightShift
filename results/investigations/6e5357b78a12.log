@@ -1,0 +1,16 @@
+investigation 6e5357b78a12 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. get_topology {}
+   3. get_function_config {"service": "orders"}
+   4. get_metrics {"metric": "Throttles", "namespace": "AWS/Lambda", "minutes": 15, "period": 60, "statistic": "Sum"}
+   5. note_hypotheses {"hypotheses": "likely: Lambda concurrency limit (reserved concurrency) reached causing Throttles on
+   6. get_function_config {"service": "fulfillment"}
+   7. get_function_config {"service": "cart"}
+   8. get_metrics {"namespace": "AWS/Lambda", "minutes": 15, "period": 60, "statistic": "Sum", "metric": "Invocations"
+   9. note_hypotheses {"hypotheses": "likely: Lambda reserved concurrency limit reached, causing request throttling when i
+  10. finish_investigation {"actions": "[]", "hypotheses": "likely: Lambda reserved concurrency limit reached, causing request
+  11. finish_investigation {"hypotheses": "likely: Lambda reserved concurrency limit reached, causing request throttling when i
+stop: finished
+report: orders / throttling, confidence 95
+tokens: 39280 in + 540 out = 39820 over 11 calls; largest request estimate 3567; log bytes scanned 0; wall 11s
+saved results/investigations/6e5357b78a12.json

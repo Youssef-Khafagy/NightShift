@@ -1,0 +1,30 @@
+{
+  "investigation_id": "73ab23232d19",
+  "root_cause_component": "fulfillment",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The fulfillment Lambda was throttled due to hitting its reserved concurrency limit of 2, causing a spike in payment failures. Recent changes to the payments service increased load, overwhelming the fulfillment service's capacity.",
+  "evidence": [
+    5,
+    6,
+    8,
+    12,
+    13
+  ],
+  "actions": [
+    "rollback_alias service=fulfillment"
+  ],
+  "proposed_actions": [
+    "Increase reserved concurrency for fulfillment Lambda to handle higher load."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "5": "get_metrics",
+    "6": "get_metrics",
+    "8": "query_logs",
+    "12": "get_metrics",
+    "13": "lookup_recent_changes"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

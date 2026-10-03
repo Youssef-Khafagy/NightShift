@@ -1,0 +1,38 @@
+Run 9410cdc1: 1.0/s for 1800s, seed 2484129217
+  orders                   1,800
+  Lambda invocations       8,460   month to date     30,657   cap 500,000
+  SQS requests             4,560
+  DSQL DPU                 450.0   month to date    1,560.4   cap 50,000
+  log volume                10.5 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "9410cdc1",
+  "date": "2026-10-01T21:00:16+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1800,
+  "seed": 2484129217,
+  "projected": {
+    "orders": 1800,
+    "lambda_invocations": 8460.0,
+    "sqs_requests": 4560.0,
+    "dsql_dpu": 450.0,
+    "log_mb": 10.5462
+  },
+  "sent": 869,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 868,
+    "lambda_throttled": 1
+  },
+  "elapsed_seconds": 868.5,
+  "achieved_rate": 1.001,
+  "checkout_latency_ms": {
+    "p50": 424.9,
+    "p95": 559.5,
+    "p99": 746.0
+  }
+}

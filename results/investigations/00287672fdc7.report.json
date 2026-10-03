@@ -1,0 +1,26 @@
+{
+  "investigation_id": "00287672fdc7",
+  "root_cause_component": "orders",
+  "fault_category": "bad_deploy",
+  "confidence": 95,
+  "summary": "A recent deployment of `nightshift-orders` introduced code or configuration changes that caused the function to exceed its 15-second timeout, resulting in 95 errors out of 270 traces. The downstream `CART_TIMEOUT_SECONDS=2.0` setting is likely contributing to the issue.",
+  "evidence": [
+    11,
+    12,
+    13
+  ],
+  "actions": [
+    "rollback_alias service=orders"
+  ],
+  "proposed_actions": [
+    "Review the new code for performance regressions and adjust downstream timeouts if needed."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "11": "lookup_recent_changes",
+    "12": "get_traces",
+    "13": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

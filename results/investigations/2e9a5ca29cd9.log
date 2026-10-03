@@ -1,0 +1,18 @@
+investigation 2e9a5ca29cd9 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   4. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   5. list_recent_deployments {"service": "fulfillment", "minutes": 30}
+   6. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, reason, status | filter lev
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, reason, status | filter lev
+   8. note_hypotheses {"hypotheses": "likely: timeout_regression: PAYMENT_TIMEOUT_SECONDS was lowered, causing fulfillment
+   9. get_function_config {"service": "fulfillment"}
+  10. get_traces {"service": "fulfillment", "minutes": 30}
+  11. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=ni
+  12. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "config_regression", "confidence": 95, "su
+  13. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "config_regression", "confidence": 95, "su
+stop: finished
+report: fulfillment / config_regression, confidence 95
+tokens: 29062 in + 1583 out = 30645 over 7 calls; largest request estimate 4580; log bytes scanned 1,093,298; wall 32s
+saved results/investigations/2e9a5ca29cd9.json

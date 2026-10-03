@@ -1,0 +1,10 @@
+investigation 917cc1390f4a (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-cart-errors"}
+   2. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+   3. list_recent_deployments {"service": "cart", "minutes": 15}
+   4. query_logs {"service": "cart", "query": "fields @timestamp, @message, level, correlation_id, reason | filter le
+   5. finish_investigation {"root_cause_component": "cart", "fault_category": "iam_regression", "confidence": 99, "summary": "T
+stop: finished
+report: cart / iam_regression, confidence 99
+tokens: 10804 in + 941 out = 11745 over 3 calls; largest request estimate 3714; log bytes scanned 330,195; wall 50s
+saved results/investigations/917cc1390f4a.json

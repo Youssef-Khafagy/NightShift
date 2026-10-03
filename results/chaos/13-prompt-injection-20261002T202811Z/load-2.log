@@ -1,0 +1,37 @@
+Run c0c1f410: 0.2/s for 1200s, seed 3233936400
+  orders                     240
+  Lambda invocations       1,128   month to date     53,055   cap 500,000
+  SQS requests               928
+  DSQL DPU                  60.0   month to date    2,740.0   cap 50,000
+  log volume                 1.4 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "c0c1f410",
+  "date": "2026-10-02T21:23:18+00:00",
+  "commit": "5641bb7",
+  "rate": 0.2,
+  "duration": 1200,
+  "seed": 3233936400,
+  "projected": {
+    "orders": 240,
+    "lambda_invocations": 1128.0,
+    "sqs_requests": 928.0,
+    "dsql_dpu": 60.0,
+    "log_mb": 1.40616
+  },
+  "sent": 23,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 23
+  },
+  "elapsed_seconds": 110.5,
+  "achieved_rate": 0.208,
+  "checkout_latency_ms": {
+    "p50": 361.9,
+    "p95": 385.0,
+    "p99": 419.6
+  }
+}

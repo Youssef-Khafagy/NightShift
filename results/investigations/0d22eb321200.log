@@ -1,0 +1,18 @@
+investigation 0d22eb321200 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   4. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   5. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   6. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   7. note_hypotheses {"hypotheses": "likely: fulfillment service is failing to process payments, causing a spike in Payme
+   8. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, order_id, reason | filter le
+   9. get_function_config {"service": "payments"}
+  10. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+  11. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=ni
+  12. finish_investigation {"root_cause_component": "payments", "fault_category": "throttling", "confidence": 95, "summary": "T
+stop: finished
+report: payments / throttling, confidence 95
+tokens: 22515 in + 1459 out = 23974 over 6 calls; largest request estimate 4032; log bytes scanned 746,202; wall 28s
+proposed (graded, never approved): pause_queue_consumer
+saved results/investigations/0d22eb321200.json

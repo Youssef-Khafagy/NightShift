@@ -1,0 +1,8 @@
+alarm-only 0032050f3b3d
+   1. get_alarm {"name": "dlq-depth"}
+   2. finish_investigation {"summary": "The nightshift-placed-orders-dlq has messages visible (ApproximateNumberOfMessagesVisib
+stop: finished
+report: placed-orders / poison_message, confidence 100
+tokens: 1200 in + 232 out = 1432 over 1 calls; largest request estimate 2118; log bytes scanned 0; wall 1s
+proposed (graded, never approved): redrive_dlq
+saved results/investigations/0032050f3b3d.json

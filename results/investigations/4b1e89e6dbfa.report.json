@@ -1,0 +1,24 @@
+{
+  "investigation_id": "4b1e89e6dbfa",
+  "root_cause_component": "placed-orders",
+  "fault_category": "poison_message",
+  "confidence": 85,
+  "summary": "The nightshift-placed-orders-dlq queue has 16 messages, far exceeding the expected threshold of 1. This suggests a poison message or messages are failing repeatedly and accumulating in the dead-letter queue, preventing successful processing.",
+  "evidence": [
+    1
+  ],
+  "actions": [
+    "redrive_dlq"
+  ],
+  "proposed_actions": [
+    "1. Investigate the messages in the nightshift-placed-orders-dlq to identify the poison message.",
+    "2. Review placed-orders processing logic for error handling and retries.",
+    "3. Monitor the queue for further accumulation after attempting a redrive."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,365 @@
+{
+  "config": {
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "max_tokens_per_investigation": 100000,
+    "max_steps": 15,
+    "max_wall_seconds": 840,
+    "input_token_cap": 24000,
+    "max_output_tokens": 1500,
+    "full_results_kept": 3,
+    "max_tool_output_chars": 2500,
+    "log_scan_cap_bytes": 20971520,
+    "max_log_query_minutes": 30
+  },
+  "state": {
+    "investigation_id": "560ebee91622",
+    "trigger": {
+      "name": "nightshift-payment-failures",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [31.0 (30/09/26 15:42:00)] was greater than or equal to the threshold (3.0).",
+      "since": "2026-09-30T15:43:29Z",
+      "metric": {
+        "namespace": "NightShift",
+        "name": "PaymentFailures",
+        "dimensions": {
+          "service": "fulfillment"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 3.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-09-30T15:43:29Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-09-30T15:43:40+00:00",
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "turn": 4,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-09-30T15:43:44+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "nightshift-payment-failures"
+        },
+        "call_id": "call_514340",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [31.0 (30/09/26 15:42:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-09-30T15:43:29Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"PaymentFailures\",\"dimensions\":{\"service\":\"fulfillment\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 3.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-30T15:43:29Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [31.0 (30/09/26 15:42:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-09-30T15:43:29Z\",\"metric\":{\"namespace\":\"NightShift\",\"...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TXFtRP4YSzmwz16JEnOHc5uXQSAWaULdymQxU9Q64D4hpV3M+N2zPzMNkh3RvKfm8UP+UsfJDZ8bKOdKmZfMG5wk3JNgYF4DapEKpy7o/CnQPzKgDyO9Wa5Q="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 1,
+        "at": "2026-09-30T15:43:47+00:00",
+        "tool": "query_logs",
+        "args": {
+          "service": "payments",
+          "query": "fields @timestamp, @message, level, reason | filter level = \"ERROR\" | sort @timestamp desc",
+          "minutes": 10
+        },
+        "call_id": "call_514341",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":0,\"scan_budget_left_bytes\":20971520}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":0,\"scan_budget_left_bytes\":20971520}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 3,
+        "turn": 1,
+        "at": "2026-09-30T15:43:48+00:00",
+        "tool": "query_logs",
+        "args": {
+          "query": "fields @timestamp, @message, level | filter level = \"ERROR\" | sort @timestamp desc",
+          "minutes": 10,
+          "service": "fulfillment"
+        },
+        "call_id": "call_514342",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 15:43:42.499\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-09-30 15:43:42,444+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-32c5f2e5-230\\\",\\\"message_id\\\":\\\"3a812c94-826b-4fc8-9715-53797c3a1b2f\\\",\\\"reason\\\":\\\"Read timeout on endpoint URL: \\\\\\\"https://lambda.ca-central-1.amazo...[11478 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-30 15:43:39.199\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-09-30 15:43:39,144+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-32c5f2e5-221\\\",\\\"message_id\\\":\\\"f93ecfa8-bd96-4ea2-8c38-68b357b4d839\\\",\\\"reason\\\":\\\"Read timeout on endpoint URL: \\\\\\\"https://lambda.ca-central-1.amazo...[11478 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-30 15:43:38.441\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-09-30 15:43:38,440+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-32c5f2e5-234\\\",\\\"message_id\\\":\\\"e7906e37-07c5-42b0-9c72-58bea4df987a\\\",\\\"reason\\\":\\\"An error occurred (TooManyRequestsException) when calling the Inv...[2472 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-30 15:43:38.141\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-09-30 15:43:38,140+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-32c5f2e5-232\\\",\\\"message_id\\\":\\\"31a4acb9-a4e7-4863-a017-53a09667304c\\\",\\\"reason\\\":\\\"An error occurred (TooManyRequestsException) when calling the Inv...[2472 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-30 15:43:37.841\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-09-30 15:43:37,840+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-32c5f2e5-231\\\",\\\"message_id\\\":\\\"85716444-15d0-4303-9f73-231c39405e3a\\\",\\\"reason\\\":\\\"An error occurred (TooManyRequestsException) when calling the Inv...[2472 chars cut]\",\"level\":\"ERROR\"},\"...[15 more items cut]\"],\"bytes_scanned\":442735,\"scan_budget_left_bytes\":20528785}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 15:43:42.499\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-09-30 15:43:42,444+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"c...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 4,
+        "turn": 2,
+        "at": "2026-09-30T15:43:52+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "likely: throttling of payments or downstream service called by fulfillment leading to payment failures\npossible: slow_dependency in payments or lambda invocation limits\nruled_out: payments service direct errors (payments logs empty)"
+        },
+        "call_id": "call_633994",
+        "result": "{\"ok\": \"3 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"3 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TBjSneSZmNgPC4RXVLirXjFTPofGKU22xRmA6viKYWE3hX4a871Y1infH9UNJ6XeSDZN6hDsE6jfB+d6UCCpMGs3F8Vkm1A+XZyDKztIKJWjNuoc9u258Z48="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 5,
+        "turn": 2,
+        "at": "2026-09-30T15:43:52+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "namespace": "AWS/Lambda",
+          "statistic": "Sum",
+          "metric": "Errors",
+          "minutes": 10
+        },
+        "call_id": "call_633995",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Errors {} Sum per 60s\",\"window_minutes\":10,\"points\":[[\"15:39:00Z\",0.0],[\"15:40:00Z\",0.0],[\"15:41:00Z\",0.0],[\"15:42:00Z\",0.0]],\"summary\":{\"min\":0.0,\"max\":0.0,\"count\":4}}}",
+        "summary": "{\"metric\":\"AWS/Lambda Errors {} Sum per 60s\",\"window_minutes\":10,\"points\":[[\"15:39:00Z\",0.0],[\"15:40:00Z\",0.0],[\"15:41:00Z\",0.0],[\"15:42:00Z\",0.0]],\"summary\":{\"min\":0.0,\"max\":0.0,\"count\":4}}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 6,
+        "turn": 2,
+        "at": "2026-09-30T15:43:53+00:00",
+        "tool": "get_function_config",
+        "args": {
+          "service": "payments"
+        },
+        "call_id": "call_633996",
+        "result": "{\"tool\":\"get_function_config\",\"truncated\":false,\"untrusted_data\":{\"function\":\"nightshift-payments\",\"live_alias_version\":\"12\",\"last_modified\":\"2026-09-30T15:42:25Z\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":30,\"reserved_concurrency\":2,\"state\":\"Active\",\"code_sha256\":\"+nUjF4MPu416I6fZuzBEuZurITnjdNNZim3R0oXyxIA=\",\"environment\":{\"PAYMENT_ERROR_RATE\":\"0\",\"PAYMENT_LATENCY_JITTER_MS\":\"20\",\"PAYMENT_LATENCY_MS\":\"5000\",\"POWERTOOLS_LOG_LEVEL\":\"INFO\",\"POWERTOOLS_SERVICE_NAME\":\"payments\"}}}",
+        "summary": "{\"function\":\"nightshift-payments\",\"live_alias_version\":\"12\",\"last_modified\":\"2026-09-30T15:42:25Z\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":30,\"reserved_concurrency\":2,\"state\":\"Active\",\"code_sha256\":\"+nUjF4MPu416I6fZuzBEuZur...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 7,
+        "turn": 3,
+        "at": "2026-09-30T15:44:02+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "statistic": "Sum",
+          "minutes": 10,
+          "namespace": "AWS/Lambda",
+          "metric": "Throttles"
+        },
+        "call_id": "call_621593",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Throttles {} Sum per 60s\",\"window_minutes\":10,\"points\":[[\"15:39:00Z\",1.0],[\"15:40:00Z\",0.0],[\"15:41:00Z\",0.0],[\"15:42:00Z\",22.0],[\"15:43:00Z\",10.0]],\"summary\":{\"min\":0.0,\"max\":22.0,\"count\":5}}}",
+        "summary": "{\"metric\":\"AWS/Lambda Throttles {} Sum per 60s\",\"window_minutes\":10,\"points\":[[\"15:39:00Z\",1.0],[\"15:40:00Z\",0.0],[\"15:41:00Z\",0.0],[\"15:42:00Z\",22.0],[\"15:43:00Z\",10.0]],\"summary\":{\"min\":0.0,\"max\":22.0,\"count\":5}}",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TomtLj2Lj8PTvtBux9k3NSzWMPqpKlF4LaXYDW0q28wEwMHNvvhYzcRJknd0ZCOiwfRgMnCBdiwWbh1YkJ/6M8RsTPu98Zeulv5LI1EJ6Ekf0G74yla3M1pk="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 8,
+        "turn": 3,
+        "at": "2026-09-30T15:44:03+00:00",
+        "tool": "query_logs",
+        "args": {
+          "service": "payments",
+          "query": "fields @timestamp, @message, level, status, reason | sort @timestamp desc | limit 20",
+          "minutes": 15
+        },
+        "call_id": "call_621594",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 15:43:55.314\",\"@message\":\"{\\\"time\\\":\\\"2026-09-30T15:43:55.314Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"304b1f80-9694-4736-a9f6-d9ff715ade68\\\",\\\"metrics\\\":{\\\"durationMs\\\":5004.671,\\\"billedDurationMs\\\":5005,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":52},\\\"tracing\\\":{\\\"spanId\\\":\\\"24109a7071dc7cf5\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6...[110 chars cut]\"},{\"@timestamp\":\"2026-09-30 15:43:55.312\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"charge:62\\\",\\\"message\\\":\\\"charge approved\\\",\\\"timestamp\\\":\\\"2026-09-30 15:43:55,312+0000\\\",\\\"service\\\":\\\"payments\\\",\\\"correlation_id\\\":\\\"load-32c5f2e5-247\\\",\\\"order_id\\\":\\\"89e5e050-8374-452d-9220-4b0095664a8e\\\",\\\"payment_id\\\":\\\"fcb7071e-e474-4dbd-8a8f-2b0475afadf4\\\",\\\"amount_cents\\\":42200,\\\"latency_...[66 chars cut]\",\"level\":\"INFO\"},{\"@timestamp\":\"2026-09-30 15:43:53.616\",\"@message\":\"{\\\"time\\\":\\\"2026-09-30T15:43:53.616Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"305bec3c-1794-4563-9325-6bcab261edfb\\\",\\\"functionArn\\\":\\\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-payments\\\",\\\"version\\\":\\\"$LATEST\\\",\\\"tracing\\\":{\\\"spanId\\\":\\\"dce710334ad14829\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"R...[98 chars cut]\"},{\"@timestamp\":\"2026-09-30 15:43:53.382\",\"@message\":\"{\\\"time\\\":\\\"2026-09-30T15:43:53.382Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"06780813-cc62-41e8-afe1-d40a6ceffa3a\\\",\\\"metrics\\\":{\\\"durationMs\\\":5013.733,\\\"billedDurationMs\\\":5014,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":52},\\\"tracing\\\":{\\\"spanId\\\":\\\"50c1ab500a6b9c04\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6...[110 chars cut]\"},{\"@timestamp\":\"2026-09-30 15:43:53.380\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"charge:62\\\",\\\"message\\\":\\\"charge approved\\\",\\\"timestamp\\\":\\\"2026-09-30 15:43:53,380+0000\\\",\\\"service\\\":\\\"payments\\\",\\\"correlation_id\\\":\\\"load-32c5f2e5-244\\\",\\\"order_id\\\":\\\"d15cdd57-6314-4875-a069-7ff3d967c36b\\\",\\\"payment_id\\\":\\\"96e97ec8-8da4-4654-bf8e-7925a74ab82f\\\",\\\"amount_cents\\\":1200,\\\"latency_m...[65 chars cut]\",\"level\":\"INFO\"},\"...[15 more items cut]\"],\"bytes_scanned\":252986,\"scan_budget_left_bytes\":20275799}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 15:43:55.314\",\"@message\":\"{\\\"time\\\":\\\"2026-09-30T15:43:55.314Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"304b1f80-9694-4736-a9f6-d9ff715ade68\\\",\\\"metrics\\\":{\\\"durationM...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 9,
+        "turn": 3,
+        "at": "2026-09-30T15:44:01+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "service": "payments",
+          "minutes": 30
+        },
+        "call_id": "call_621595",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 10,
+        "turn": 4,
+        "at": "2026-09-30T15:44:06+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "likely: throttling of payments Lambda function (reserved_concurrency is 2) causing requests to be rejected/fail\npossible: slow_dependency in payments or lambda invocation limits\nruled_out: payments service direct errors (payments logs empty)"
+        },
+        "call_id": "call_602232",
+        "result": "{\"ok\": \"3 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"3 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0T98Hx/mG85tMj3Cj8y7erL4GXJjxEqYFAonV8/+h+WDOmj4RJOEX3B/eczTHyNc1ta3mzfbkDLixR4cEdXRsCVk6ShHZ/IYAxBUQfS5lkluLzYVhpWrt7HBg="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 11,
+        "turn": 4,
+        "at": "2026-09-30T15:44:06+00:00",
+        "tool": "finish_investigation",
+        "args": {
+          "evidence_steps": "1,3,7",
+          "proposed_actions": "Increase the reserved concurrency for the payments Lambda function or enable payments degraded mode if traffic is high.",
+          "hypotheses": "likely: throttling of payments Lambda function (reserved_concurrency is 2) causing requests to be rejected/fail\npossible: slow_dependency in payments or lambda invocation limits\nruled_out: payments service direct errors (payments logs empty)",
+          "summary": "The payments Lambda function experienced severe concurrency throttling (reaching 22 throttles in a single minute) because its reserved concurrency is set to 2. This caused payment requests from fulfillment to fail, triggering the nightshift-payment-failures alarm.",
+          "fault_category": "throttling",
+          "root_cause_component": "payments",
+          "confidence": 95,
+          "actions": "set_operational_flag name=payments_degraded_mode value=true"
+        },
+        "call_id": "call_602233",
+        "result": "{\"ok\": \"investigation closed\"}",
+        "summary": "\"{\\\"ok\\\": \\\"investigation closed\\\"}\"",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      }
+    ],
+    "calls": [
+      {
+        "turn": 1,
+        "at": "2026-09-30T15:43:44+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2714,
+        "output_tokens": 115,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2505,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 2,
+        "at": "2026-09-30T15:43:52+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4041,
+        "output_tokens": 113,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3463,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 3,
+        "at": "2026-09-30T15:44:02+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3632,
+        "output_tokens": 109,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3207,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 4,
+        "at": "2026-09-30T15:44:06+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4892,
+        "output_tokens": 273,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3966,
+        "rate_limit_headers": {}
+      }
+    ],
+    "hypotheses": [
+      {
+        "status": "likely",
+        "text": "throttling of payments Lambda function (reserved_concurrency is 2) causing requests to be rejected/fail"
+      },
+      {
+        "status": "possible",
+        "text": "slow_dependency in payments or lambda invocation limits"
+      },
+      {
+        "status": "ruled_out",
+        "text": "payments service direct errors (payments logs empty)"
+      }
+    ],
+    "hypothesis_changes": [
+      {
+        "step": 4,
+        "before": [],
+        "after": [
+          {
+            "status": "likely",
+            "text": "throttling of payments or downstream service called by fulfillment leading to payment failures"
+          },
+          {
+            "status": "possible",
+            "text": "slow_dependency in payments or lambda invocation limits"
+          },
+          {
+            "status": "ruled_out",
+            "text": "payments service direct errors (payments logs empty)"
+          }
+        ]
+      },
+      {
+        "step": 10,
+        "before": [
+          {
+            "status": "likely",
+            "text": "throttling of payments or downstream service called by fulfillment leading to payment failures"
+          },
+          {
+            "status": "possible",
+            "text": "slow_dependency in payments or lambda invocation limits"
+          },
+          {
+            "status": "ruled_out",
+            "text": "payments service direct errors (payments logs empty)"
+          }
+        ],
+        "after": [
+          {
+            "status": "likely",
+            "text": "throttling of payments Lambda function (reserved_concurrency is 2) causing requests to be rejected/fail"
+          },
+          {
+            "status": "possible",
+            "text": "slow_dependency in payments or lambda invocation limits"
+          },
+          {
+            "status": "ruled_out",
+            "text": "payments service direct errors (payments logs empty)"
+          }
+        ]
+      }
+    ],
+    "log_bytes_scanned": 695721,
+    "rejected_calls": 0,
+    "wall_seconds_used": 28.209857649999776,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "evidence_steps": "1,3,7",
+      "proposed_actions": "Increase the reserved concurrency for the payments Lambda function or enable payments degraded mode if traffic is high.",
+      "hypotheses": "likely: throttling of payments Lambda function (reserved_concurrency is 2) causing requests to be rejected/fail\npossible: slow_dependency in payments or lambda invocation limits\nruled_out: payments service direct errors (payments logs empty)",
+      "summary": "The payments Lambda function experienced severe concurrency throttling (reaching 22 throttles in a single minute) because its reserved concurrency is set to 2. This caused payment requests from fulfillment to fail, triggering the nightshift-payment-failures alarm.",
+      "fault_category": "throttling",
+      "root_cause_component": "payments",
+      "confidence": 95,
+      "actions": "set_operational_flag name=payments_degraded_mode value=true"
+    }
+  }
+}

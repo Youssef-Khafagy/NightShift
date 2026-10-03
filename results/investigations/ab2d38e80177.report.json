@@ -1,0 +1,20 @@
+{
+  "investigation_id": "ab2d38e80177",
+  "root_cause_component": "cart",
+  "fault_category": "throttling",
+  "confidence": 70,
+  "summary": "cart is being throttled at its concurrency limit.",
+  "evidence": [
+    1,
+    4
+  ],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "4": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

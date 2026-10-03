@@ -1,0 +1,8 @@
+alarm-only 6b8a6e6ebdf6
+   1. get_alarm {"name": "orders-errors"}
+   2. finish_investigation {"fault_category": "insufficient_evidence", "actions": [], "confidence": 50, "root_cause_component":
+   3. finish_investigation {"evidence_steps": "1", "hypotheses": "ruled_out: no_fault\npossible: bad_deploy\npossible: config_r
+stop: finished
+report: orders / insufficient_evidence, confidence 50
+tokens: 2614 in + 398 out = 3012 over 2 calls; largest request estimate 2380; log bytes scanned 0; wall 2s
+saved results/investigations/6b8a6e6ebdf6.json

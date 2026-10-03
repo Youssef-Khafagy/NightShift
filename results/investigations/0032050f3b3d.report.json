@@ -1,0 +1,22 @@
+{
+  "investigation_id": "0032050f3b3d",
+  "root_cause_component": "placed-orders",
+  "fault_category": "poison_message",
+  "confidence": 100,
+  "summary": "The nightshift-placed-orders-dlq has messages visible (ApproximateNumberOfMessagesVisible >= 1), indicating that messages are failing processing and ending up in the dead-letter queue due to a poison message.",
+  "evidence": [
+    1
+  ],
+  "actions": [
+    "redrive_dlq"
+  ],
+  "proposed_actions": [
+    "Inspect messages in the nightshift-placed-orders-dlq to identify the malformed payload, fix the processing logic if needed, and redrive the DLQ."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

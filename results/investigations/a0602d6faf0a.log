@@ -1,0 +1,15 @@
+investigation a0602d6faf0a (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. get_topology {}
+   3. note_hypotheses {"hypotheses": "likely: Lambda functions are experiencing throttling due to reserved concurrency lim
+   4. get_metrics {"metric": "Throttles", "statistic": "Sum", "namespace": "AWS/Lambda", "minutes": 15}
+   5. get_metrics {"minutes": 15, "metric": "Invocations", "namespace": "AWS/Lambda", "statistic": "Sum"}
+   6. lookup_recent_changes {"minutes": 15}
+   7. get_function_config {"service": "orders"}
+   8. get_function_config {"service": "payments"}
+   9. note_hypotheses {"hypotheses": "likely: Lambda functions are experiencing throttling due to concurrency limits reach
+  10. finish_investigation {"confidence": 90, "summary": "The nightshift-throttles alarm fired because Lambda functions experie
+stop: finished
+report: orders / throttling, confidence 90
+tokens: 14553 in + 411 out = 14964 over 4 calls; largest request estimate 3542; log bytes scanned 0; wall 6s
+saved results/investigations/a0602d6faf0a.json

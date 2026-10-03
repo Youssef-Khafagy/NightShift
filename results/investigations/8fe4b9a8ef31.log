@@ -1,0 +1,15 @@
+investigation 8fe4b9a8ef31 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-serialization-retries"}
+   2. get_metrics {"namespace": "NightShift", "metric": "SerializationRetries", "statistic": "Sum", "dimensions": "ser
+   3. get_metrics {"namespace": "NightShift", "metric": "CheckoutsPlaced", "statistic": "Sum", "dimensions": "service=
+   4. get_metrics {"namespace": "NightShift", "metric": "CheckoutsRejected", "statistic": "Sum", "dimensions": "servic
+   5. query_logs {"service": "orders", "query": "fields @timestamp, level, message, correlation_id, order_id | filter
+   6. query_logs {"service": "orders", "query": "fields @timestamp, level, message, correlation_id, order_id | filter
+   7. list_recent_deployments {"service": "orders", "minutes": 15}
+   8. get_metrics {"namespace": "AWS/DynamoDB", "metric": "ThrottledRequests", "statistic": "Sum", "dimensions": "Tabl
+   9. finish_investigation {"root_cause_component": "orders", "fault_category": "hot_row_contention", "confidence": 95, "summar
+  10. finish_investigation {"root_cause_component": "orders", "fault_category": "hot_row_contention", "confidence": 95, "summar
+stop: finished
+report: orders / hot_row_contention, confidence 95
+tokens: 25005 in + 1809 out = 26814 over 6 calls; largest request estimate 4362; log bytes scanned 1,340,046; wall 38s
+saved results/investigations/8fe4b9a8ef31.json

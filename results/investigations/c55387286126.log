@@ -1,0 +1,14 @@
+investigation c55387286126 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. query_logs {"service": "fulfillment", "minutes": 15, "query": "fields @timestamp, @message, level | filter leve
+   3. list_recent_deployments {"service": "fulfillment"}
+   4. note_hypotheses {"hypotheses": "likely: throttling in fulfillment calling another service (Lambda TooManyRequestsExc
+   5. get_traces {"service": "fulfillment", "minutes": 15}
+   6. query_logs {"service": "fulfillment", "minutes": 5, "query": "fields @timestamp, @message | filter level = \"ER
+   7. get_function_config {"service": "fulfillment"}
+   8. note_hypotheses {"hypotheses": "likely: throttling (TooManyRequestsException when fulfillment invokes another AWS se
+   9. finish_investigation {"proposed_actions": "Check concurrency limits or invoke rates for the downstream service called by
+stop: finished
+report: fulfillment / throttling, confidence 90
+tokens: 11226 in + 408 out = 11634 over 3 calls; largest request estimate 3758; log bytes scanned 818,987; wall 7s
+saved results/investigations/c55387286126.json

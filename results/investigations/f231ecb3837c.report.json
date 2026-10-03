@@ -1,0 +1,29 @@
+{
+  "investigation_id": "f231ecb3837c",
+  "root_cause_component": "orders",
+  "fault_category": "retry_storm",
+  "confidence": 95,
+  "summary": "A retry storm in the orders service caused serialization failures during a traffic surge. The SerializationRetries metric spiked alongside increased checkouts, with no evidence of external failures, poison messages, or throttling. High p99 latency in traces confirms serialization bottlenecks under load.",
+  "evidence": [
+    1,
+    2,
+    7,
+    9
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Review DynamoDB query patterns for potential hot rows or missing indexes."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_metrics",
+    "2": "get_metrics",
+    "7": "get_traces",
+    "9": "get_queue_stats"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": [
+    6,
+    10
+  ]
+}

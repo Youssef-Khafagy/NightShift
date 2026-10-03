@@ -1,0 +1,89 @@
+{
+  "config": {
+    "kind": "runbook"
+  },
+  "state": {
+    "investigation_id": "85c0411ace61",
+    "trigger": {
+      "name": "nightshift-queue-age",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).",
+      "since": "2026-10-01T13:34:58Z",
+      "metric": {
+        "namespace": "AWS/SQS",
+        "name": "ApproximateAgeOfOldestMessage",
+        "dimensions": {
+          "QueueName": "nightshift-placed-orders"
+        },
+        "statistic": "Maximum",
+        "period_seconds": 300
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 300.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-10-01T13:34:58Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-10-01T13:35:09+00:00",
+    "provider": "runbook",
+    "model": "scripted",
+    "turn": 2,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-10-01T13:35:09+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "queue-age"
+        },
+        "call_id": "baseline-71959c32",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-queue-age\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).\",\"since\":\"2026-10-01T13:34:58Z\",\"metric\":{\"namespace\":\"AWS/SQS\",\"name\":\"ApproximateAgeOfOldestMessage\",\"dimensions\":{\"QueueName\":\"nightshift-placed-orders\"},\"statistic\":\"Maximum\",\"period_seconds\":300},\"fires_when\":\"GreaterThanOrEqualToThreshold 300.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T13:34:58Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-queue-age\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).\",\"since\":\"2026-10-01T13:34:58Z\",\"metric\":{\"namespace\":\"AWS/SQS\",\"name\":\"...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 2,
+        "at": "2026-10-01T13:35:09+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "minutes": 30
+        },
+        "call_id": "baseline-0d445285",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      }
+    ],
+    "calls": [],
+    "hypotheses": [
+      {
+        "status": "possible",
+        "text": "No runbook rule explains queue-age without a recent deploy."
+      }
+    ],
+    "hypothesis_changes": [],
+    "log_bytes_scanned": 0,
+    "rejected_calls": 0,
+    "wall_seconds_used": 0.0,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "root_cause_component": "none",
+      "fault_category": "insufficient_evidence",
+      "confidence": 0,
+      "summary": "No runbook rule explains queue-age without a recent deploy.",
+      "evidence_steps": "",
+      "hypotheses": "possible: No runbook rule explains queue-age without a recent deploy.",
+      "actions": "",
+      "proposed_actions": ""
+    }
+  }
+}

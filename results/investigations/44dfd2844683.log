@@ -1,0 +1,15 @@
+investigation 44dfd2844683 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-throttles"}
+   2. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+   3. list_recent_deployments {"service": "orders", "minutes": 15}
+   4. query_logs {"service": "orders", "query": "fields @timestamp, level, message, correlation_id | filter @timestam
+   5. get_function_config {"service": "orders"}
+   6. get_traces {"service": "orders", "minutes": 3}
+   7. get_metrics {"namespace": "AWS/Lambda", "metric": "Invocations", "statistic": "Sum", "dimensions": "FunctionName
+   8. finish_investigation {"root_cause_component": "orders", "fault_category": "throttling", "confidence": 95, "summary": "The
+   9. finish_investigation {"root_cause_component": "orders", "fault_category": "throttling", "confidence": 95, "summary": "The
+  10. finish_investigation {"root_cause_component": "orders", "fault_category": "throttling", "confidence": 95, "summary": "The
+stop: finished
+report: orders / throttling, confidence 95
+tokens: 29613 in + 1723 out = 31336 over 7 calls; largest request estimate 4689; log bytes scanned 144,808; wall 52s
+saved results/investigations/44dfd2844683.json

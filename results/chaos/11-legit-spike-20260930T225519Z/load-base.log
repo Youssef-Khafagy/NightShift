@@ -1,0 +1,38 @@
+Run 61f604ad: 1.0/s for 1320s, seed 1643513005
+  orders                   1,320
+  Lambda invocations       6,204   month to date    139,706   cap 500,000
+  SQS requests             3,344
+  DSQL DPU                 330.0   month to date    8,914.3   cap 50,000
+  log volume                 7.7 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "61f604ad",
+  "date": "2026-09-30T23:54:43+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1320,
+  "seed": 1643513005,
+  "projected": {
+    "orders": 1320,
+    "lambda_invocations": 6204.0,
+    "sqs_requests": 3344.0000000000005,
+    "dsql_dpu": 330.0,
+    "log_mb": 7.73388
+  },
+  "sent": 544,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 543,
+    "lambda_throttled": 1
+  },
+  "elapsed_seconds": 543.4,
+  "achieved_rate": 1.001,
+  "checkout_latency_ms": {
+    "p50": 377.7,
+    "p95": 454.3,
+    "p99": 970.0
+  }
+}

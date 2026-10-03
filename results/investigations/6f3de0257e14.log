@@ -1,0 +1,8 @@
+runbook 6f3de0257e14
+   1. get_alarm {"name": "orders-errors"}
+   2. list_recent_deployments {"minutes": 30, "service": "orders"}
+stop: finished
+report: orders / bad_deploy, confidence 70
+tokens: 0 in + 0 out = 0 over 0 calls; largest request estimate 0; log bytes scanned 0; wall 0s
+proposed (graded, never approved): rollback_alias service=orders
+saved results/investigations/6f3de0257e14.json

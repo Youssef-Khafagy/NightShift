@@ -1,0 +1,28 @@
+{
+  "investigation_id": "5175bdce0cc7",
+  "root_cause_component": "fulfillment",
+  "fault_category": "retry_storm",
+  "confidence": 95,
+  "summary": "A single message in the nightshift-placed-orders queue is repeatedly failing in nightshift-fulfillment, causing a retry storm and blocking queue progress. The message is not being sent to the dead-letter queue, indicating a persistent processing error.",
+  "evidence": [
+    1,
+    7,
+    8,
+    9
+  ],
+  "actions": [
+    "pause_queue_consumer"
+  ],
+  "proposed_actions": [
+    "Investigate the root cause of the failure in nightshift-fulfillment for the message with correlation_id e3e1b203-111d-4766-9118-0e540742784c."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_queue_stats",
+    "7": "query_logs",
+    "8": "get_queue_stats",
+    "9": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

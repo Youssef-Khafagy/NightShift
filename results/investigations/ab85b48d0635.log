@@ -1,0 +1,14 @@
+investigation ab85b48d0635 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. list_recent_deployments {"minutes": 30, "service": "fulfillment"}
+   3. query_logs {"query": "fields @timestamp, @message, level | filter level = \"ERROR\" | sort @timestamp desc", "s
+   4. note_hypotheses {"hypotheses": "likely: throttling of payments or downstream dependency causing payment failures dur
+   5. query_logs {"minutes": 5, "service": "fulfillment", "query": "fields @timestamp, reason | filter service = \"fu
+   6. get_function_config {"service": "payments"}
+   7. note_hypotheses {"hypotheses": "likely: throttling (TooManyRequestsException) due to low reserved concurrency on pay
+   8. finish_investigation {"evidence_steps": "5,6", "confidence": 95, "root_cause_component": "payments", "fault_category": "t
+   9. finish_investigation {"actions": "", "summary": "Fulfillment experienced payment failures because calls to the payments s
+stop: finished
+report: payments / throttling, confidence 95
+tokens: 17733 in + 508 out = 18241 over 5 calls; largest request estimate 3516; log bytes scanned 1,134,214; wall 8s
+saved results/investigations/ab85b48d0635.json

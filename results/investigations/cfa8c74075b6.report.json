@@ -1,0 +1,28 @@
+{
+  "investigation_id": "cfa8c74075b6",
+  "root_cause_component": "payments",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The payments service was updated with a reserved concurrency limit of 2, which caused Lambda throttling when fulfillment attempted to process payments. This resulted in payment failures and triggered the nightshift-payment-failures alarm.",
+  "evidence": [
+    4,
+    6,
+    7,
+    9
+  ],
+  "actions": [
+    "rollback_alias service=payments"
+  ],
+  "proposed_actions": [
+    "Roll back the payments service alias or increase its reserved concurrency."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "4": "query_logs",
+    "6": "get_function_config",
+    "7": "get_metrics",
+    "9": "lookup_recent_changes"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

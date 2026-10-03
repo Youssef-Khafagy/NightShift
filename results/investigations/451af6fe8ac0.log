@@ -1,0 +1,19 @@
+investigation 451af6fe8ac0 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+   3. list_recent_deployments {"service": "orders", "minutes": 60}
+   4. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+   5. list_recent_deployments {"service": "orders", "minutes": 30}
+   6. query_logs {"service": "orders", "query": "fields @timestamp, @message, level | filter level = \"ERROR\" | sort
+   7. get_traces {"service": "orders", "minutes": 10}
+   8. lookup_recent_changes {"minutes": 30}
+   9. query_logs {"service": "orders", "query": "fields @timestamp, @message, level, correlation_id, duration_ms, dow
+  10. query_logs {"service": "orders", "query": "fields @timestamp, @message, level, correlation_id, duration_ms, dow
+  11. get_function_config {"service": "orders"}
+  12. get_metrics {"namespace": "AWS/AuroraDSQL", "metric": "CPUUtilization", "statistic": "Average", "dimensions": "D
+  13. get_metrics {"namespace": "AWS/AuroraDSQL", "metric": "DatabaseConnections", "statistic": "Average", "dimensions
+  14. finish_investigation {"root_cause_component": "dsql", "fault_category": "slow_dependency", "confidence": 85, "summary": "
+stop: finished
+report: dsql / slow_dependency, confidence 85
+tokens: 35462 in + 1685 out = 37147 over 8 calls; largest request estimate 4843; log bytes scanned 158,981; wall 30s
+saved results/investigations/451af6fe8ac0.json

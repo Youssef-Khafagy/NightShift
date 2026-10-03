@@ -1,0 +1,28 @@
+{
+  "investigation_id": "fa1a726db0a1",
+  "root_cause_component": "cart",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The nightshift-throttles alarm triggered due to the nightshift-cart Lambda function hitting its reserved concurrency limit (reserved concurrency of 1), resulting in 41 throttles as overall invocations spiked.",
+  "evidence": [
+    4,
+    7,
+    8,
+    12
+  ],
+  "actions": [
+    "set_operational_flag name=checkout_rate_limit value=10"
+  ],
+  "proposed_actions": [
+    "Increase reserved concurrency or adjust rate limits."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "4": "get_function_config",
+    "7": "get_metrics",
+    "8": "get_metrics",
+    "12": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

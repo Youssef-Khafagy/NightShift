@@ -1,0 +1,38 @@
+Run e54dcb9a: 1.0/s for 1260s, seed 3847080858
+  orders                   1,260
+  Lambda invocations       5,922   month to date    136,366   cap 500,000
+  SQS requests             3,192
+  DSQL DPU                 315.0   month to date    8,749.1   cap 50,000
+  log volume                 7.4 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "e54dcb9a",
+  "date": "2026-09-30T21:49:17+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1260,
+  "seed": 3847080858,
+  "projected": {
+    "orders": 1260,
+    "lambda_invocations": 5922.0,
+    "sqs_requests": 3192.0,
+    "dsql_dpu": 315.0,
+    "log_mb": 7.38234
+  },
+  "sent": 306,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 305,
+    "lambda_throttled": 1
+  },
+  "elapsed_seconds": 305.5,
+  "achieved_rate": 1.002,
+  "checkout_latency_ms": {
+    "p50": 339.6,
+    "p95": 401.3,
+    "p99": 3078.3
+  }
+}

@@ -1,0 +1,21 @@
+[
+  {
+    "kind": "logging",
+    "service": "orders",
+    "original": {
+      "LogFormat": "JSON",
+      "ApplicationLogLevel": "INFO",
+      "SystemLogLevel": "INFO",
+      "LogGroup": "/aws/lambda/nightshift-orders"
+    },
+    "restored": true
+  },
+  {
+    "kind": "code",
+    "service": "orders",
+    "recorded": false,
+    "previous": "26",
+    "new": "31",
+    "restored": true
+  }
+]

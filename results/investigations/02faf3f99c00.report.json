@@ -1,0 +1,26 @@
+{
+  "investigation_id": "02faf3f99c00",
+  "root_cause_component": "orders",
+  "fault_category": "bad_deploy",
+  "confidence": 100,
+  "summary": "The orders service experienced errors immediately following a code deployment (version 26 -> 29) at 12:24 UTC. CloudWatch logs show that the service is failing with 'Invalid metric unit 'Counts'', indicating bad code was deployed.",
+  "evidence": [
+    1,
+    3,
+    4
+  ],
+  "actions": [
+    "rollback_alias service=orders"
+  ],
+  "proposed_actions": [
+    "Verify the correct metric unit (e.g. 'Count') is used in the code before redeploying."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "3": "query_logs",
+    "4": "list_recent_deployments"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

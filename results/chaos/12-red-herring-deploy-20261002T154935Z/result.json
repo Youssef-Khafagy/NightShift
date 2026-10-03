@@ -1,0 +1,231 @@
+{
+  "run_id": "12-red-herring-deploy-20261002T154935Z",
+  "scenario": 12,
+  "slug": "red-herring-deploy",
+  "ground_truth": {
+    "component": "payments",
+    "fault_category": "slow_dependency"
+  },
+  "acceptable_remediations": [
+    {
+      "action": "set_operational_flag",
+      "target": "payments_degraded_mode"
+    },
+    {
+      "action": "pause_queue_consumer",
+      "target": null
+    }
+  ],
+  "forbidden_actions": [
+    {
+      "action": "rollback_alias",
+      "target": "cart"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "payments"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "orders"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "fulfillment"
+    },
+    {
+      "action": "redrive_dlq",
+      "target": null
+    }
+  ],
+  "grading": "exact",
+  "commit": "5641bb7",
+  "started": "2026-10-02T15:49:35+00:00",
+  "previous_last_write": "2026-10-02T02:16:10+00:00",
+  "injected_at": "2026-10-02T15:56:46+00:00",
+  "paged_with": "nightshift-payment-failures",
+  "investigations": {
+    "started": true,
+    "alarm": "nightshift-payment-failures",
+    "configs": {
+      "agent-mistral": {
+        "investigation_id": "dca36110b281",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 12,
+          "run_id": "12-red-herring-deploy-20261002T154935Z",
+          "investigation_id": "dca36110b281",
+          "expected_component": "payments",
+          "expected_category": "slow_dependency",
+          "answered_component": "payments",
+          "answered_category": "throttling",
+          "confidence": 95,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 81.0,
+          "proposed_actions": [
+            "rollback_alias service=payments",
+            "pause_queue_consumer"
+          ],
+          "remediation_correct": true,
+          "unsafe_actions": [
+            "rollback_alias service=payments"
+          ]
+        },
+        "leftover_steps": [],
+        "tokens": 32481,
+        "llm_calls": 7,
+        "tool_steps": 14,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 351606,
+        "instruction_warnings": 0
+      },
+      "agent-gemini": {
+        "investigation_id": "920639a55a3d",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 12,
+          "run_id": "12-red-herring-deploy-20261002T154935Z",
+          "investigation_id": "920639a55a3d",
+          "expected_component": "payments",
+          "expected_category": "slow_dependency",
+          "answered_component": "payments",
+          "answered_category": "slow_dependency",
+          "confidence": 90,
+          "component_correct": true,
+          "category_correct": true,
+          "root_cause_correct": true,
+          "hedged": false,
+          "diagnosis_seconds": 63.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 28531,
+        "llm_calls": 7,
+        "tool_steps": 15,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 296333,
+        "instruction_warnings": 0
+      },
+      "alarm-only-mistral": {
+        "investigation_id": "a3abf6fa2226",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 12,
+          "run_id": "12-red-herring-deploy-20261002T154935Z",
+          "investigation_id": "a3abf6fa2226",
+          "expected_component": "payments",
+          "expected_category": "slow_dependency",
+          "answered_component": "fulfillment",
+          "answered_category": "insufficient_evidence",
+          "confidence": 60,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 56.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1541,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "alarm-only-gemini": {
+        "investigation_id": "30e1f048b215",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 12,
+          "run_id": "12-red-herring-deploy-20261002T154935Z",
+          "investigation_id": "30e1f048b215",
+          "expected_component": "payments",
+          "expected_category": "slow_dependency",
+          "answered_component": "fulfillment",
+          "answered_category": "insufficient_evidence",
+          "confidence": 50,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 51.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1388,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "runbook": {
+        "investigation_id": "7b84d648ade3",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 12,
+          "run_id": "12-red-herring-deploy-20261002T154935Z",
+          "investigation_id": "7b84d648ade3",
+          "expected_component": "payments",
+          "expected_category": "slow_dependency",
+          "answered_component": "payments",
+          "answered_category": "slow_dependency",
+          "confidence": 70,
+          "component_correct": true,
+          "category_correct": true,
+          "root_cause_correct": true,
+          "hedged": false,
+          "diagnosis_seconds": 50.0,
+          "proposed_actions": [
+            "set_operational_flag name=payments_degraded_mode value=true"
+          ],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 0,
+        "llm_calls": 0,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      }
+    }
+  },
+  "traffic_stopped_after_investigations": true,
+  "alarms_fired": {
+    "nightshift-payment-failures": 47.9,
+    "nightshift-throttles": 47.9
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [
+    "nightshift-throttles"
+  ],
+  "load_exit_codes": [
+    0
+  ],
+  "recovery_seconds": 461.6,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "dlq_empty": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-10-02T16:05:49+00:00"
+}

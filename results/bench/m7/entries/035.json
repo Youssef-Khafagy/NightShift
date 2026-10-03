@@ -1,0 +1,13 @@
+{
+  "entry": 35,
+  "scenario": 3,
+  "run": 3,
+  "attempt": 1,
+  "phase": 2,
+  "status": "done",
+  "started": "2026-10-02T22:39:11.840007+00:00",
+  "run_dir": "results/chaos/03-timeout-regression-20261002T223911Z",
+  "exit_code": 0,
+  "actor_invocations": 0,
+  "finished": "2026-10-02T23:40:44.646611+00:00"
+}

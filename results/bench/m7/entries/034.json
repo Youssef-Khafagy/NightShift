@@ -1,0 +1,13 @@
+{
+  "entry": 34,
+  "scenario": 2,
+  "run": 3,
+  "attempt": 1,
+  "phase": 2,
+  "status": "done",
+  "started": "2026-10-02T21:30:51.223814+00:00",
+  "run_dir": "results/chaos/02-config-regression-20261002T213051Z",
+  "exit_code": 0,
+  "actor_invocations": 0,
+  "finished": "2026-10-02T22:39:11.791108+00:00"
+}

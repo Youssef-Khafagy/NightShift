@@ -1,0 +1,29 @@
+{
+  "run_id": "f106a2ac",
+  "date": "2026-10-01T15:46:59+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1320,
+  "seed": 4043743916,
+  "projected": {
+    "orders": 1320,
+    "lambda_invocations": 6204.0,
+    "sqs_requests": 3344.0000000000005,
+    "dsql_dpu": 330.0,
+    "log_mb": 7.73388
+  },
+  "sent": 544,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 543,
+    "lambda_throttled": 1
+  },
+  "elapsed_seconds": 543.6,
+  "achieved_rate": 1.001,
+  "checkout_latency_ms": {
+    "p50": 415.5,
+    "p95": 513.4,
+    "p99": 966.8
+  }
+}

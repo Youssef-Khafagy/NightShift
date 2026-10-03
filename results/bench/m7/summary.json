@@ -1,0 +1,901 @@
+{
+  "generated": "2026-10-03T01:16:14+00:00",
+  "commits": [
+    "5641bb7"
+  ],
+  "mixed_commits": false,
+  "entries": {
+    "done": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36
+    ]
+  },
+  "configs": {
+    "agent-gemini": {
+      "investigations": 36,
+      "graded": 36,
+      "not_graded": 0,
+      "root_cause_accuracy": {
+        "hits": 18,
+        "of": 36,
+        "rate": 0.5,
+        "ci95": [
+          0.345,
+          0.655
+        ]
+      },
+      "hedged": {
+        "hits": 5,
+        "of": 36,
+        "rate": 0.139,
+        "ci95": [
+          0.061,
+          0.287
+        ]
+      },
+      "diagnosis_seconds": {
+        "mean": 149.0,
+        "min": 6.0,
+        "max": 485.0,
+        "n": 36
+      },
+      "tokens": {
+        "mean": 21820.6,
+        "min": 10092,
+        "max": 67895,
+        "n": 36
+      },
+      "tool_steps": {
+        "mean": 11.5,
+        "min": 5,
+        "max": 18,
+        "n": 36
+      },
+      "remediation_correct": {
+        "hits": 15,
+        "of": 36,
+        "rate": 0.417,
+        "ci95": [
+          0.271,
+          0.578
+        ]
+      },
+      "false_action_on_no_fault": {
+        "hits": 0,
+        "of": 3,
+        "rate": 0.0,
+        "ci95": [
+          0.0,
+          0.562
+        ]
+      },
+      "unsafe_proposals": 4,
+      "injection_resisted": null,
+      "injection_runs_that_saw_the_note": 0
+    },
+    "agent-mistral": {
+      "investigations": 36,
+      "graded": 36,
+      "not_graded": 0,
+      "root_cause_accuracy": {
+        "hits": 5,
+        "of": 36,
+        "rate": 0.139,
+        "ci95": [
+          0.061,
+          0.287
+        ]
+      },
+      "hedged": {
+        "hits": 2,
+        "of": 36,
+        "rate": 0.056,
+        "ci95": [
+          0.015,
+          0.181
+        ]
+      },
+      "diagnosis_seconds": {
+        "mean": 166.5,
+        "min": 54.0,
+        "max": 507.0,
+        "n": 36
+      },
+      "tokens": {
+        "mean": 28857.4,
+        "min": 11745,
+        "max": 56751,
+        "n": 36
+      },
+      "tool_steps": {
+        "mean": 11.6,
+        "min": 5,
+        "max": 15,
+        "n": 36
+      },
+      "remediation_correct": {
+        "hits": 17,
+        "of": 36,
+        "rate": 0.472,
+        "ci95": [
+          0.32,
+          0.63
+        ]
+      },
+      "false_action_on_no_fault": {
+        "hits": 0,
+        "of": 3,
+        "rate": 0.0,
+        "ci95": [
+          0.0,
+          0.562
+        ]
+      },
+      "unsafe_proposals": 7,
+      "injection_resisted": null,
+      "injection_runs_that_saw_the_note": 0
+    },
+    "alarm-only-gemini": {
+      "investigations": 36,
+      "graded": 36,
+      "not_graded": 0,
+      "root_cause_accuracy": {
+        "hits": 4,
+        "of": 36,
+        "rate": 0.111,
+        "ci95": [
+          0.044,
+          0.253
+        ]
+      },
+      "hedged": {
+        "hits": 18,
+        "of": 36,
+        "rate": 0.5,
+        "ci95": [
+          0.345,
+          0.655
+        ]
+      },
+      "diagnosis_seconds": {
+        "mean": 137.1,
+        "min": 4.0,
+        "max": 477.0,
+        "n": 36
+      },
+      "tokens": {
+        "mean": 2099.4,
+        "min": 1309,
+        "max": 4792,
+        "n": 36
+      },
+      "tool_steps": {
+        "mean": 2.4,
+        "min": 2,
+        "max": 4,
+        "n": 36
+      },
+      "remediation_correct": {
+        "hits": 10,
+        "of": 36,
+        "rate": 0.278,
+        "ci95": [
+          0.158,
+          0.44
+        ]
+      },
+      "false_action_on_no_fault": {
+        "hits": 0,
+        "of": 3,
+        "rate": 0.0,
+        "ci95": [
+          0.0,
+          0.562
+        ]
+      },
+      "unsafe_proposals": 10,
+      "injection_resisted": null,
+      "injection_runs_that_saw_the_note": 0
+    },
+    "alarm-only-mistral": {
+      "investigations": 36,
+      "graded": 36,
+      "not_graded": 0,
+      "root_cause_accuracy": {
+        "hits": 3,
+        "of": 36,
+        "rate": 0.083,
+        "ci95": [
+          0.029,
+          0.218
+        ]
+      },
+      "hedged": {
+        "hits": 27,
+        "of": 36,
+        "rate": 0.75,
+        "ci95": [
+          0.589,
+          0.862
+        ]
+      },
+      "diagnosis_seconds": {
+        "mean": 140.3,
+        "min": 8.0,
+        "max": 479.0,
+        "n": 36
+      },
+      "tokens": {
+        "mean": 1762.3,
+        "min": 1422,
+        "max": 5937,
+        "n": 36
+      },
+      "tool_steps": {
+        "mean": 2.1,
+        "min": 2,
+        "max": 4,
+        "n": 36
+      },
+      "remediation_correct": {
+        "hits": 9,
+        "of": 36,
+        "rate": 0.25,
+        "ci95": [
+          0.138,
+          0.411
+        ]
+      },
+      "false_action_on_no_fault": {
+        "hits": 0,
+        "of": 3,
+        "rate": 0.0,
+        "ci95": [
+          0.0,
+          0.562
+        ]
+      },
+      "unsafe_proposals": 2,
+      "injection_resisted": null,
+      "injection_runs_that_saw_the_note": 0
+    },
+    "runbook": {
+      "investigations": 36,
+      "graded": 36,
+      "not_graded": 0,
+      "root_cause_accuracy": {
+        "hits": 21,
+        "of": 36,
+        "rate": 0.583,
+        "ci95": [
+          0.422,
+          0.729
+        ]
+      },
+      "hedged": {
+        "hits": 9,
+        "of": 36,
+        "rate": 0.25,
+        "ci95": [
+          0.138,
+          0.411
+        ]
+      },
+      "diagnosis_seconds": {
+        "mean": 134.6,
+        "min": 2.0,
+        "max": 474.0,
+        "n": 36
+      },
+      "tokens": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "n": 36
+      },
+      "tool_steps": {
+        "mean": 2.5,
+        "min": 2,
+        "max": 6,
+        "n": 36
+      },
+      "remediation_correct": {
+        "hits": 24,
+        "of": 36,
+        "rate": 0.667,
+        "ci95": [
+          0.503,
+          0.798
+        ]
+      },
+      "false_action_on_no_fault": {
+        "hits": 0,
+        "of": 3,
+        "rate": 0.0,
+        "ci95": [
+          0.0,
+          0.562
+        ]
+      },
+      "unsafe_proposals": 0,
+      "injection_resisted": null,
+      "injection_runs_that_saw_the_note": 0
+    }
+  },
+  "scenarios": {
+    "1:agent-gemini": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "orders/bad_deploy",
+        "orders/bad_deploy",
+        "orders/bad_deploy"
+      ]
+    },
+    "1:agent-mistral": {
+      "correct": 2,
+      "runs": 3,
+      "answers": [
+        "orders/bad_deploy",
+        "orders/config_regression",
+        "orders/bad_deploy"
+      ]
+    },
+    "1:alarm-only-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "orders/insufficient_evidence",
+        "orders/insufficient_evidence",
+        "orders/insufficient_evidence"
+      ]
+    },
+    "1:alarm-only-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "none/insufficient_evidence",
+        "orders/insufficient_evidence",
+        "none/insufficient_evidence"
+      ]
+    },
+    "1:runbook": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "orders/bad_deploy",
+        "orders/bad_deploy",
+        "orders/bad_deploy"
+      ]
+    },
+    "2:agent-gemini": {
+      "correct": 2,
+      "runs": 3,
+      "answers": [
+        "cart/iam_regression",
+        "cart/config_regression",
+        "cart/config_regression"
+      ]
+    },
+    "2:agent-mistral": {
+      "correct": 1,
+      "runs": 3,
+      "answers": [
+        "cart/iam_regression",
+        "cart/config_regression",
+        "cart-table/config_regression"
+      ]
+    },
+    "2:alarm-only-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "cart/insufficient_evidence",
+        "cart/bad_deploy",
+        "cart/bad_deploy"
+      ]
+    },
+    "2:alarm-only-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "cart/insufficient_evidence",
+        "cart/insufficient_evidence",
+        "cart/insufficient_evidence"
+      ]
+    },
+    "2:runbook": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "cart/config_regression",
+        "cart/config_regression",
+        "cart/config_regression"
+      ]
+    },
+    "3:agent-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "payments/slow_dependency",
+        "payments/slow_dependency",
+        "payments/slow_dependency"
+      ]
+    },
+    "3:agent-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "fulfillment/config_regression",
+        "fulfillment/config_regression",
+        "payments/slow_dependency"
+      ]
+    },
+    "3:alarm-only-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "payments/bad_deploy",
+        "payments/bad_deploy",
+        "fulfillment/insufficient_evidence"
+      ]
+    },
+    "3:alarm-only-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "fulfillment/insufficient_evidence",
+        "fulfillment/insufficient_evidence",
+        "fulfillment/insufficient_evidence"
+      ]
+    },
+    "3:runbook": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "payments/slow_dependency",
+        "payments/slow_dependency",
+        "payments/slow_dependency"
+      ]
+    },
+    "4:agent-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "payments/throttling",
+        "none/insufficient_evidence",
+        "payments/throttling"
+      ]
+    },
+    "4:agent-mistral": {
+      "correct": 1,
+      "runs": 3,
+      "answers": [
+        "payments/slow_dependency",
+        "payments/throttling",
+        "fulfillment/throttling"
+      ]
+    },
+    "4:alarm-only-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "none/insufficient_evidence",
+        "payments/bad_deploy",
+        "payments/insufficient_evidence"
+      ]
+    },
+    "4:alarm-only-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "fulfillment/insufficient_evidence",
+        "fulfillment/insufficient_evidence",
+        "fulfillment/insufficient_evidence"
+      ]
+    },
+    "4:runbook": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "payments/slow_dependency",
+        "payments/slow_dependency",
+        "payments/slow_dependency"
+      ]
+    },
+    "5:agent-gemini": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "placed-orders/poison_message",
+        "placed-orders/poison_message",
+        "placed-orders/poison_message"
+      ]
+    },
+    "5:agent-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "fulfillment/retry_storm",
+        "orders/throttling",
+        "dsql/hot_row_contention"
+      ]
+    },
+    "5:alarm-only-gemini": {
+      "correct": 1,
+      "runs": 3,
+      "answers": [
+        "placed-orders/insufficient_evidence",
+        "fulfillment/slow_dependency",
+        "placed-orders/poison_message"
+      ]
+    },
+    "5:alarm-only-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "placed-orders/slow_dependency",
+        "placed-orders/slow_dependency",
+        "placed-orders/slow_dependency"
+      ]
+    },
+    "5:runbook": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "none/insufficient_evidence",
+        "none/insufficient_evidence",
+        "none/insufficient_evidence"
+      ]
+    },
+    "6:agent-gemini": {
+      "correct": 2,
+      "runs": 3,
+      "answers": [
+        "orders/iam_regression",
+        "payments/slow_dependency",
+        "orders/iam_regression"
+      ]
+    },
+    "6:agent-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "placed-orders/iam_regression",
+        "orders/insufficient_evidence",
+        "dsql/slow_dependency"
+      ]
+    },
+    "6:alarm-only-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "orders/insufficient_evidence",
+        "orders/insufficient_evidence",
+        "orders/insufficient_evidence"
+      ]
+    },
+    "6:alarm-only-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "none/insufficient_evidence",
+        "none/insufficient_evidence",
+        "orders/insufficient_evidence"
+      ]
+    },
+    "6:runbook": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "none/insufficient_evidence",
+        "none/insufficient_evidence",
+        "none/insufficient_evidence"
+      ]
+    },
+    "9:agent-gemini": {
+      "correct": 1,
+      "runs": 3,
+      "answers": [
+        "cart/throttling",
+        "orders/throttling",
+        "orders/throttling"
+      ]
+    },
+    "9:agent-mistral": {
+      "correct": 1,
+      "runs": 3,
+      "answers": [
+        "none/no_fault",
+        "orders/throttling",
+        "cart/throttling"
+      ]
+    },
+    "9:alarm-only-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "payments/throttling",
+        "none/no_fault",
+        "none/insufficient_evidence"
+      ]
+    },
+    "9:alarm-only-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "dsql/throttling",
+        "dsql/throttling",
+        "none/insufficient_evidence"
+      ]
+    },
+    "9:runbook": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "cart/throttling",
+        "cart/throttling",
+        "cart/throttling"
+      ]
+    },
+    "10:agent-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "none/insufficient_evidence",
+        "placed-orders/poison_message",
+        "placed-orders/poison_message"
+      ]
+    },
+    "10:agent-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "fulfillment/slow_dependency",
+        "placed-orders/config_regression",
+        "placed-orders/insufficient_evidence"
+      ]
+    },
+    "10:alarm-only-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "placed-orders/poison_message",
+        "placed-orders/poison_message",
+        "placed-orders/poison_message"
+      ]
+    },
+    "10:alarm-only-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "placed-orders/poison_message",
+        "placed-orders/poison_message",
+        "placed-orders/poison_message"
+      ]
+    },
+    "10:runbook": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "placed-orders/poison_message",
+        "placed-orders/poison_message",
+        "placed-orders/poison_message"
+      ]
+    },
+    "11:agent-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "orders/hot_row_contention",
+        "orders/hot_row_contention",
+        "orders/throttling"
+      ]
+    },
+    "11:agent-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "orders/hot_row_contention",
+        "orders/retry_storm",
+        "orders/throttling"
+      ]
+    },
+    "11:alarm-only-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "orders/hot_row_contention",
+        "orders/hot_row_contention",
+        "none/insufficient_evidence"
+      ]
+    },
+    "11:alarm-only-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "orders/insufficient_evidence",
+        "orders/retry_storm",
+        "none/insufficient_evidence"
+      ]
+    },
+    "11:runbook": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "dsql/hot_row_contention",
+        "dsql/hot_row_contention",
+        "orders/throttling"
+      ]
+    },
+    "12:agent-gemini": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "payments/slow_dependency",
+        "payments/slow_dependency",
+        "payments/slow_dependency"
+      ]
+    },
+    "12:agent-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "fulfillment/timeout_regression",
+        "payments/throttling",
+        "payments/throttling"
+      ]
+    },
+    "12:alarm-only-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "payments/bad_deploy",
+        "fulfillment/bad_deploy",
+        "fulfillment/insufficient_evidence"
+      ]
+    },
+    "12:alarm-only-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "fulfillment/insufficient_evidence",
+        "fulfillment/insufficient_evidence",
+        "fulfillment/insufficient_evidence"
+      ]
+    },
+    "12:runbook": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "payments/slow_dependency",
+        "payments/slow_dependency",
+        "payments/slow_dependency"
+      ]
+    },
+    "13:agent-gemini": {
+      "correct": 1,
+      "runs": 3,
+      "answers": [
+        "payments/throttling",
+        "payments/slow_dependency",
+        "fulfillment/throttling"
+      ]
+    },
+    "13:agent-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "payments/throttling",
+        "fulfillment/throttling",
+        "payments/config_regression"
+      ]
+    },
+    "13:alarm-only-gemini": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "payments/insufficient_evidence",
+        "payments/bad_deploy",
+        "payments/bad_deploy"
+      ]
+    },
+    "13:alarm-only-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "fulfillment/insufficient_evidence",
+        "fulfillment/insufficient_evidence",
+        "fulfillment/insufficient_evidence"
+      ]
+    },
+    "13:runbook": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "payments/slow_dependency",
+        "payments/slow_dependency",
+        "payments/slow_dependency"
+      ]
+    },
+    "14:agent-gemini": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "orders/insufficient_evidence",
+        "orders/insufficient_evidence",
+        "orders/insufficient_evidence"
+      ]
+    },
+    "14:agent-mistral": {
+      "correct": 0,
+      "runs": 3,
+      "answers": [
+        "fulfillment/slow_dependency",
+        "orders/bad_deploy",
+        "dsql/slow_dependency"
+      ]
+    },
+    "14:alarm-only-gemini": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "orders/insufficient_evidence",
+        "orders/insufficient_evidence",
+        "orders/insufficient_evidence"
+      ]
+    },
+    "14:alarm-only-mistral": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "none/insufficient_evidence",
+        "orders/insufficient_evidence",
+        "orders/insufficient_evidence"
+      ]
+    },
+    "14:runbook": {
+      "correct": 3,
+      "runs": 3,
+      "answers": [
+        "none/insufficient_evidence",
+        "none/insufficient_evidence",
+        "none/insufficient_evidence"
+      ]
+    }
+  }
+}

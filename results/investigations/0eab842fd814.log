@@ -1,0 +1,7 @@
+alarm-only 0eab842fd814
+   1. get_alarm {"name": "dlq-depth"}
+   2. finish_investigation {"root_cause_component": "placed-orders", "fault_category": "poison_message", "confidence": 85, "sum
+stop: finished
+report: placed-orders / poison_message, confidence 85
+tokens: 1205 in + 303 out = 1508 over 1 calls; largest request estimate 2118; log bytes scanned 0; wall 5s
+saved results/investigations/0eab842fd814.json

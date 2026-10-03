@@ -1,0 +1,22 @@
+investigation 55a642acfc84 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. note_hypotheses {"hypotheses": "likely: payments service or fulfillment service payment integration is failing\nposs
+   3. query_logs {"query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp desc", "service"
+   4. query_logs {"query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp desc", "service"
+   5. get_function_config {"service": "payments"}
+   6. get_function_config {"service": "fulfillment"}
+   7. get_traces {"service": "fulfillment", "minutes": 10}
+   8. list_recent_deployments {"service": "payments", "minutes": 30}
+   9. list_recent_deployments {"minutes": 30, "service": "fulfillment"}
+  10. get_flag_values {}
+  11. query_logs {"minutes": 10, "query": "fields @timestamp, @message | filter level = \"ERROR\" or level = \"WARN\"
+  12. get_metrics {"namespace": "NightShift", "statistic": "Sum", "minutes": 10, "metric": "PaymentFailures"}
+  13. get_metrics {"namespace": "NightShift", "statistic": "Sum", "minutes": 10, "metric": "CheckoutsRejected"}
+  14. note_hypotheses {"hypotheses": "ruled_out: payments service or fulfillment service payment integration is failing\nr
+  15. get_alarm {"name": "orders-errors"}
+  16. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message | filter @message like /TooManyRequ
+  17. query_logs {"minutes": 10, "service": "orders", "query": "fields @timestamp, @message | filter @message like /T
+stop: max_steps
+report: none / insufficient_evidence, confidence 0
+tokens: 26800 in + 604 out = 27404 over 7 calls; largest request estimate 4170; log bytes scanned 2,082,093; wall 15s
+saved results/investigations/55a642acfc84.json

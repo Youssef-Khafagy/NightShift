@@ -1,0 +1,8 @@
+alarm-only 38aef6036a09
+   1. get_alarm {"name": "queue-age"}
+   2. finish_investigation {"actions": "pause_queue_consumer", "root_cause_component": "placed-orders", "fault_category": "pois
+stop: finished
+report: placed-orders / poison_message, confidence 85
+tokens: 1203 in + 178 out = 1381 over 1 calls; largest request estimate 2116; log bytes scanned 0; wall 2s
+proposed (graded, never approved): pause_queue_consumer
+saved results/investigations/38aef6036a09.json

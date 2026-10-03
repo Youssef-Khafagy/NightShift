@@ -1,0 +1,32 @@
+{
+  "investigation_id": "f541874e064e",
+  "root_cause_component": "payments",
+  "fault_category": "config_regression",
+  "confidence": 95,
+  "summary": "A configuration change to the `nightshift-payments` Lambda function (likely reducing concurrency or timeout limits) caused throttling and severe latency, leading to 25 payment failures in the `fulfillment` service.",
+  "evidence": [
+    5,
+    6,
+    8,
+    10,
+    11,
+    14
+  ],
+  "actions": [
+    "rollback_alias service=payments"
+  ],
+  "proposed_actions": [
+    "Investigate and adjust concurrency/timeout settings for `nightshift-payments`."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "5": "get_metrics",
+    "6": "get_metrics",
+    "8": "query_logs",
+    "10": "get_metrics",
+    "11": "get_metrics",
+    "14": "lookup_recent_changes"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

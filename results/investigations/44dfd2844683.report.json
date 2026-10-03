@@ -1,0 +1,26 @@
+{
+  "investigation_id": "44dfd2844683",
+  "root_cause_component": "orders",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The nightshift-orders Lambda function was throttled due to reserved concurrency set to 5, which was exceeded by a spike in invocations (4 to 59). No errors or faults were observed in traces or logs.",
+  "evidence": [
+    2,
+    5,
+    6,
+    7
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Increase reserved concurrency for nightshift-orders to accommodate expected traffic load."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_metrics",
+    "5": "get_function_config",
+    "6": "get_traces",
+    "7": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

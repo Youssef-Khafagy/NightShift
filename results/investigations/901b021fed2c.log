@@ -1,0 +1,14 @@
+investigation 901b021fed2c (mistral ministral-14b-latest)
+   1. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "", "minutes":
+   2. get_metrics {"namespace": "AWS/Lambda", "metric": "Invocations", "statistic": "Sum", "dimensions": "", "minutes"
+   3. list_recent_deployments {"service": "orders", "minutes": 15}
+   4. note_hypotheses {"hypotheses": "likely: throttling due to sudden traffic spike\npossible: retry_storm due to transie
+   5. query_logs {"service": "orders", "query": "fields @timestamp, level, message, correlation_id | filter level = \
+   6. get_function_config {"service": "orders"}
+   7. finish_investigation {"root_cause_component": "orders", "fault_category": "throttling", "confidence": 95, "summary": "The
+   8. finish_investigation {"root_cause_component": "orders", "fault_category": "throttling", "confidence": 95, "summary": "The
+stop: finished
+report: orders / throttling, confidence 95
+tokens: 22238 in + 1023 out = 23261 over 6 calls; largest request estimate 3971; log bytes scanned 118,088; wall 17s
+proposed (graded, never approved): rollback_alias service=orders
+saved results/investigations/901b021fed2c.json

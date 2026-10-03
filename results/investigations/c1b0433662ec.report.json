@@ -1,0 +1,22 @@
+{
+  "investigation_id": "c1b0433662ec",
+  "root_cause_component": "payments",
+  "fault_category": "throttling",
+  "confidence": 90,
+  "summary": "The nightshift-throttles alarm fired because AWS Lambda throttles exceeded the threshold (41 throttles recorded). This indicates that concurrency or capacity limits were reached during the event.",
+  "evidence": [
+    1
+  ],
+  "actions": [
+    "set_operational_flag name=payments_degraded_mode value=true"
+  ],
+  "proposed_actions": [
+    "Monitor Lambda concurrency limits and evaluate scaling or setting payments degraded mode if needed."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

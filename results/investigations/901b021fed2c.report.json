@@ -1,0 +1,28 @@
+{
+  "investigation_id": "901b021fed2c",
+  "root_cause_component": "orders",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The orders service hit its reserved concurrency limit of 5 during a sudden traffic spike (446 invocations in one minute), causing throttling. No errors or retry storms were detected.",
+  "evidence": [
+    1,
+    2,
+    6
+  ],
+  "actions": [
+    "rollback_alias service=orders"
+  ],
+  "proposed_actions": [
+    "Increase reserved concurrency for the orders service or investigate the cause of the traffic spike."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_metrics",
+    "2": "get_metrics",
+    "6": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": [
+    5
+  ]
+}

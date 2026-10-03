@@ -1,0 +1,20 @@
+{
+  "investigation_id": "6b8a6e6ebdf6",
+  "root_cause_component": "orders",
+  "fault_category": "insufficient_evidence",
+  "confidence": 50,
+  "summary": "An alarm fired indicating that the nightshift-orders Lambda function experienced errors, but the provided alarm data alone is insufficient to determine the exact fault category or root cause without examining logs or additional metrics.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate CloudWatch logs and metrics for the nightshift-orders Lambda function to determine the root cause of the errors."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

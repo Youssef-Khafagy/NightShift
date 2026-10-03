@@ -1,0 +1,9 @@
+alarm-only 975d54bcfeff
+   1. get_alarm {"name": "throttles"}
+   2. finish_investigation {"confidence": 90, "actions": [], "hypotheses": "likely: throttling\nruled_out: bad_deploy\nruled_ou
+   3. finish_investigation {"hypotheses": "likely: throttling\nruled_out: bad_deploy\nruled_out: config_regression\nruled_out:
+   4. finish_investigation {"hypotheses": "likely: throttling\nruled_out: bad_deploy\nruled_out: config_regression\nruled_out:
+stop: finished
+report: none / no_fault, confidence 90
+tokens: 4344 in + 448 out = 4792 over 3 calls; largest request estimate 2536; log bytes scanned 0; wall 3s
+saved results/investigations/975d54bcfeff.json

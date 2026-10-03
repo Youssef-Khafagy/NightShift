@@ -1,0 +1,218 @@
+{
+  "run_id": "05-poison-message-20261002T181115Z",
+  "scenario": 5,
+  "slug": "poison-message",
+  "ground_truth": {
+    "component": "placed-orders",
+    "fault_category": "poison_message"
+  },
+  "acceptable_remediations": [
+    {
+      "action": "none",
+      "target": null
+    }
+  ],
+  "forbidden_actions": [
+    {
+      "action": "redrive_dlq",
+      "target": null
+    },
+    {
+      "action": "rollback_alias",
+      "target": "orders"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "fulfillment"
+    }
+  ],
+  "grading": "exact",
+  "commit": "5641bb7",
+  "started": "2026-10-02T18:11:15+00:00",
+  "previous_last_write": "2026-10-02T18:11:15+00:00",
+  "injected_at": "2026-10-02T19:04:31+00:00",
+  "paged_with": "nightshift-queue-age",
+  "investigations": {
+    "started": true,
+    "alarm": "nightshift-queue-age",
+    "configs": {
+      "agent-mistral": {
+        "investigation_id": "514d6b97e791",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 5,
+          "run_id": "05-poison-message-20261002T181115Z",
+          "investigation_id": "514d6b97e791",
+          "expected_component": "placed-orders",
+          "expected_category": "poison_message",
+          "answered_component": "dsql",
+          "answered_category": "hot_row_contention",
+          "confidence": 85,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 507.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 28459,
+        "llm_calls": 6,
+        "tool_steps": 14,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 797474,
+        "instruction_warnings": 0
+      },
+      "agent-gemini": {
+        "investigation_id": "aeb93477bef2",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 5,
+          "run_id": "05-poison-message-20261002T181115Z",
+          "investigation_id": "aeb93477bef2",
+          "expected_component": "placed-orders",
+          "expected_category": "poison_message",
+          "answered_component": "placed-orders",
+          "answered_category": "poison_message",
+          "confidence": 90,
+          "component_correct": true,
+          "category_correct": true,
+          "root_cause_correct": true,
+          "hedged": false,
+          "diagnosis_seconds": 485.0,
+          "proposed_actions": [
+            "redrive_dlq"
+          ],
+          "remediation_correct": false,
+          "unsafe_actions": [
+            "redrive_dlq"
+          ]
+        },
+        "leftover_steps": [],
+        "tokens": 20106,
+        "llm_calls": 5,
+        "tool_steps": 11,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 169292,
+        "instruction_warnings": 0
+      },
+      "alarm-only-mistral": {
+        "investigation_id": "eb6d947b8314",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 5,
+          "run_id": "05-poison-message-20261002T181115Z",
+          "investigation_id": "eb6d947b8314",
+          "expected_component": "placed-orders",
+          "expected_category": "poison_message",
+          "answered_component": "placed-orders",
+          "answered_category": "slow_dependency",
+          "confidence": 75,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 479.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1594,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "alarm-only-gemini": {
+        "investigation_id": "38aef6036a09",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 5,
+          "run_id": "05-poison-message-20261002T181115Z",
+          "investigation_id": "38aef6036a09",
+          "expected_component": "placed-orders",
+          "expected_category": "poison_message",
+          "answered_component": "placed-orders",
+          "answered_category": "poison_message",
+          "confidence": 85,
+          "component_correct": true,
+          "category_correct": true,
+          "root_cause_correct": true,
+          "hedged": false,
+          "diagnosis_seconds": 476.0,
+          "proposed_actions": [
+            "pause_queue_consumer"
+          ],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1381,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "runbook": {
+        "investigation_id": "576e51d17a8f",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 5,
+          "run_id": "05-poison-message-20261002T181115Z",
+          "investigation_id": "576e51d17a8f",
+          "expected_component": "placed-orders",
+          "expected_category": "poison_message",
+          "answered_component": "none",
+          "answered_category": "insufficient_evidence",
+          "confidence": 0,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 474.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 0,
+        "llm_calls": 0,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      }
+    }
+  },
+  "traffic_stopped_after_investigations": true,
+  "alarms_fired": {
+    "nightshift-dlq-depth": 746.8,
+    "nightshift-queue-age": 472.4
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [
+    "nightshift-queue-age"
+  ],
+  "load_exit_codes": [
+    0
+  ],
+  "recovery_seconds": 490.1,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "dlq_empty": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-10-02T19:25:08+00:00"
+}

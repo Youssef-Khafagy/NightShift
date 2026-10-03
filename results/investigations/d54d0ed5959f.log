@@ -1,0 +1,21 @@
+investigation d54d0ed5959f (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   4. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   5. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   6. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, order_id, reason | filter le
+   8. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, order_id, reason | filter le
+   9. note_hypotheses {"hypotheses": "likely: throttling in the payments service due to TooManyRequestsException\npossible
+  10. get_function_config {"service": "payments"}
+  11. get_function_config {"service": "fulfillment"}
+  12. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+  13. get_metrics {"namespace": "AWS/Lambda", "metric": "ConcurrentExecutions", "statistic": "Maximum", "dimensions":
+  14. finish_investigation {"root_cause_component": "payments", "fault_category": "throttling", "confidence": 95, "summary": "T
+  15. finish_investigation {"root_cause_component": "payments", "fault_category": "throttling", "confidence": 95, "summary": "T
+stop: finished
+report: payments / throttling, confidence 95
+tokens: 34525 in + 1561 out = 36086 over 8 calls; largest request estimate 4720; log bytes scanned 669,253; wall 23s
+proposed (graded, never approved): rollback_alias service=payments
+saved results/investigations/d54d0ed5959f.json

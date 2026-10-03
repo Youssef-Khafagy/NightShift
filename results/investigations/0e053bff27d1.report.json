@@ -1,0 +1,28 @@
+{
+  "investigation_id": "0e053bff27d1",
+  "root_cause_component": "fulfillment",
+  "fault_category": "config_regression",
+  "confidence": 99,
+  "summary": "The fulfillment service's PAYMENTS_TIMEOUT_SECONDS environment variable was set to 0.05s, causing all calls to the payments service to fail due to timeout. This explains the spike in payment failures at 00:01:00.",
+  "evidence": [
+    5,
+    7,
+    9,
+    10,
+    11
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Revert PAYMENTS_TIMEOUT_SECONDS environment variable in fulfillment to a reasonable value (e.g., 5 seconds)."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "5": "get_metrics",
+    "7": "query_logs",
+    "9": "get_metrics",
+    "10": "get_metrics",
+    "11": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

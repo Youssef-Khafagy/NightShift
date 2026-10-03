@@ -1,0 +1,12 @@
+investigation 02faf3f99c00 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. note_hypotheses {"hypotheses": "possible: orders lambda is experiencing errors due to a bad deploy\npossible: orders
+   3. query_logs {"minutes": 15, "query": "fields @timestamp, @message, level | filter level = \"ERROR\" | sort @time
+   4. list_recent_deployments {"minutes": 30, "service": "orders"}
+   5. note_hypotheses {"hypotheses": "likely: orders lambda is experiencing errors due to a bad deploy\nruled_out: orders
+   6. finish_investigation {"summary": "The orders service experienced errors immediately following a code deployment (version
+stop: finished
+report: orders / bad_deploy, confidence 100
+tokens: 9657 in + 435 out = 10092 over 3 calls; largest request estimate 3531; log bytes scanned 208,397; wall 33s
+proposed (graded, never approved): rollback_alias service=orders
+saved results/investigations/02faf3f99c00.json

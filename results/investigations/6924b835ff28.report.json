@@ -1,0 +1,26 @@
+{
+  "investigation_id": "6924b835ff28",
+  "root_cause_component": "payments",
+  "fault_category": "slow_dependency",
+  "confidence": 90,
+  "summary": "The fulfillment service experienced payment failures due to the slow response times of the payments service (p99 duration over 9 seconds with high latency configuration), causing calls from fulfillment to time out or fail.",
+  "evidence": [
+    2,
+    5,
+    7,
+    9
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate payments service latency (configured with 5000ms latency) and reserved concurrency limits."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "query_logs",
+    "5": "get_traces",
+    "7": "get_traces",
+    "9": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

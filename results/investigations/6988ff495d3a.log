@@ -1,0 +1,16 @@
+investigation 6988ff495d3a (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. get_traces {"service": "payments", "minutes": 10}
+   3. query_logs {"query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp desc", "minutes"
+   4. get_metrics {"statistic": "Sum", "namespace": "NightShift", "metric": "PaymentFailures", "minutes": 15}
+   5. get_topology {}
+   6. list_recent_deployments {"service": "payments"}
+   7. query_logs {"service": "fulfillment", "minutes": 15, "query": "fields @timestamp, @message | filter level = \"E
+   8. note_hypotheses {"hypotheses": "likely: slow_dependency (payments service is slow, causing fulfillment to timeout wh
+   9. get_traces {"service": "fulfillment", "minutes": 10}
+  10. finish_investigation {"confidence": 95, "summary": "The fulfillment service experienced payment failures due to read time
+stop: finished
+report: payments / slow_dependency, confidence 95
+tokens: 13652 in + 405 out = 14057 over 4 calls; largest request estimate 3897; log bytes scanned 776,219; wall 9s
+proposed (graded, never approved): set_operational_flag name=payments_degraded_mode value=true
+saved results/investigations/6988ff495d3a.json

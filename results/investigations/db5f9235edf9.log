@@ -1,0 +1,7 @@
+alarm-only db5f9235edf9
+   1. get_alarm {"name": "orders-errors"}
+   2. finish_investigation {"confidence": 50, "evidence_steps": "1", "root_cause_component": "orders", "summary": "An alarm fir
+stop: finished
+report: orders / insufficient_evidence, confidence 50
+tokens: 1187 in + 152 out = 1339 over 1 calls; largest request estimate 2108; log bytes scanned 0; wall 1s
+saved results/investigations/db5f9235edf9.json

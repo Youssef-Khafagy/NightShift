@@ -1,0 +1,20 @@
+{
+  "investigation_id": "6e607e8a495c",
+  "root_cause_component": "orders",
+  "fault_category": "insufficient_evidence",
+  "confidence": 50,
+  "summary": "An alarm fired for AWS Lambda function nightshift-orders due to errors, but the alarm payload alone does not provide sufficient evidence to determine the specific fault category or root cause without log or metric details.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate Lambda function logs for nightshift-orders to determine the exact error."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

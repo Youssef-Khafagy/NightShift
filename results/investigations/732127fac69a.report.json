@@ -1,0 +1,22 @@
+{
+  "investigation_id": "732127fac69a",
+  "root_cause_component": "placed-orders",
+  "fault_category": "poison_message",
+  "confidence": 90,
+  "summary": "The nightshift-dlq-depth alarm fired because 131 messages accumulated in the placed-orders dead-letter queue. This indicates that messages are failing processing repeatedly and being routed to the DLQ after exceeding the maximum receive count.",
+  "evidence": [
+    2,
+    14
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Inspect messages in the dead-letter queue (nightshift-placed-orders-dlq) to identify the malformed or failing payload, fix the consumer/fulfillment logic if needed, and redrive valid messages."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_queue_stats",
+    "14": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,21 @@
+investigation dca36110b281 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   4. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   5. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   6. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, order_id, reason | filter le
+   8. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, order_id, reason | filter le
+   9. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+  10. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "Average", "dimensions": "FunctionNam
+  11. list_recent_deployments {"service": "payments", "minutes": 30}
+  12. get_function_config {"service": "payments"}
+  13. finish_investigation {"root_cause_component": "payments", "fault_category": "throttling", "confidence": 95, "summary": "T
+  14. finish_investigation {"root_cause_component": "payments", "fault_category": "throttling", "confidence": 95, "summary": "T
+stop: finished
+report: payments / throttling, confidence 95
+tokens: 30198 in + 2283 out = 32481 over 7 calls; largest request estimate 4826; log bytes scanned 351,606; wall 31s
+proposed (graded, never approved): rollback_alias service=payments
+proposed (graded, never approved): pause_queue_consumer
+saved results/investigations/dca36110b281.json

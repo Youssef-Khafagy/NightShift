@@ -1,0 +1,14 @@
+investigation 769c18efdb22 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-cart-errors"}
+   2. query_logs {"service": "cart", "minutes": 5, "query": "fields @timestamp, @message, level | filter level = \"ER
+   3. list_recent_deployments {"service": "cart"}
+   4. note_hypotheses {"hypotheses": "likely: config_regression due to CART_TABLE_NAME environment variable change in rece
+   5. get_function_config {"service": "cart"}
+   6. query_logs {"service": "cart", "query": "fields @timestamp, @message | sort @timestamp desc | limit 20", "minut
+   7. note_hypotheses {"hypotheses": "likely: config_regression due to CART_TABLE_NAME environment variable change in rece
+   8. finish_investigation {"evidence_steps": "3,5,6", "summary": "A recent deployment changed the CART_TABLE_NAME environment
+stop: finished
+report: cart / config_regression, confidence 100
+tokens: 14850 in + 455 out = 15305 over 4 calls; largest request estimate 3764; log bytes scanned 686,441; wall 8s
+proposed (graded, never approved): rollback_alias service=cart
+saved results/investigations/769c18efdb22.json

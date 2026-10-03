@@ -1,0 +1,22 @@
+investigation de6493c537f0 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. get_queue_stats {}
+   3. get_traces {"minutes": 15, "service": "fulfillment"}
+   4. note_hypotheses {"hypotheses": "possible: slow fulfillment consumer processing messages, causing queue age to increa
+   5. query_logs {"query": "fields @timestamp, @message, duration | sort @timestamp desc | limit 20", "minutes": 15,
+   6. get_function_config {"service": "fulfillment"}
+   7. get_metrics {"minutes": 15, "namespace": "AWS/Lambda", "metric": "Invocations", "statistic": "Sum"}
+   8. get_metrics {"statistic": "Sum", "namespace": "AWS/Lambda", "metric": "Errors", "minutes": 15}
+   9. get_metrics {"minutes": 15, "namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99"}
+  10. query_logs {"minutes": 15, "service": "fulfillment", "query": "fields @timestamp, @message | filter level = \"E
+  11. get_metrics {"minutes": 15, "namespace": "AWS/SQS", "metric": "ApproximateNumberOfMessagesVisible", "statistic":
+  12. get_metrics {"namespace": "AWS/SQS", "metric": "ApproximateAgeOfOldestMessage", "minutes": 15, "dimensions": "Qu
+  13. note_hypotheses {"hypotheses": "likely: poison message repeatedly failing and being redelivered while held in flight
+  14. query_logs {"query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp desc | limit 5",
+  15. finish_investigation {"evidence_steps": "2,10,12,14", "summary": "A malformed message lacking an 'order_id' key failed re
+  16. finish_investigation {"confidence": 100, "hypotheses": "likely: poison message repeatedly failing and being redelivered w
+stop: finished
+report: placed-orders / poison_message, confidence 100
+tokens: 38169 in + 990 out = 39159 over 8 calls; largest request estimate 5010; log bytes scanned 822,242; wall 15s
+proposed (graded, never approved): redrive_dlq
+saved results/investigations/de6493c537f0.json

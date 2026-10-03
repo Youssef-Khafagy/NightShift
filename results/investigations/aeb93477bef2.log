@@ -1,0 +1,17 @@
+investigation aeb93477bef2 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. get_queue_stats {}
+   3. note_hypotheses {"hypotheses": "likely: the SQS queue consumer (fulfillment service) is failing or paused, causing m
+   4. query_logs {"query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp desc", "minutes"
+   5. get_traces {"minutes": 15, "service": "fulfillment"}
+   6. list_recent_deployments {"service": "fulfillment", "minutes": 30}
+   7. query_logs {"query": "fields @timestamp, @message | filter exception like /KeyError/ or exception like /order_i
+   8. get_function_config {"service": "fulfillment"}
+   9. note_hypotheses {"hypotheses": "likely: poison message in the queue failing repeatedly with KeyError for order_id, c
+  10. finish_investigation {"fault_category": "poison_message", "summary": "A malformed message lacking an `order_id` field is
+  11. finish_investigation {"fault_category": "poison_message", "confidence": 90, "summary": "A malformed message lacking an or
+stop: finished
+report: placed-orders / poison_message, confidence 90
+tokens: 19327 in + 779 out = 20106 over 5 calls; largest request estimate 4193; log bytes scanned 169,292; wall 11s
+proposed (graded, never approved): redrive_dlq
+saved results/investigations/aeb93477bef2.json

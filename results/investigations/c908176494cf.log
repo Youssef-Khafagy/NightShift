@@ -1,0 +1,8 @@
+alarm-only c908176494cf
+   1. get_alarm {"name": "payment-failures"}
+   2. finish_investigation {"proposed_actions": "Monitor payments service after rollback.", "fault_category": "bad_deploy", "su
+stop: finished
+report: payments / bad_deploy, confidence 90
+tokens: 1185 in + 140 out = 1325 over 1 calls; largest request estimate 2108; log bytes scanned 0; wall 1s
+proposed (graded, never approved): rollback_alias service=payments
+saved results/investigations/c908176494cf.json

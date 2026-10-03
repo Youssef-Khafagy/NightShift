@@ -1,0 +1,22 @@
+{
+  "investigation_id": "c2150d299064",
+  "root_cause_component": "cart",
+  "fault_category": "config_regression",
+  "confidence": 70,
+  "summary": "cart was deployed at 2026-10-02T16:59:09.898+00:00 (settings (env CART_TABLE_NAME) changed) before cart-errors fired. Roll it back.",
+  "evidence": [
+    1,
+    2
+  ],
+  "actions": [
+    "rollback_alias service=cart"
+  ],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "2": "list_recent_deployments"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

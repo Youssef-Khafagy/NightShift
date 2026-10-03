@@ -1,0 +1,20 @@
+{
+  "investigation_id": "30e1f048b215",
+  "root_cause_component": "fulfillment",
+  "fault_category": "insufficient_evidence",
+  "confidence": 50,
+  "summary": "An alarm 'nightshift-payment-failures' fired for the fulfillment service indicating payment failures, but there is insufficient evidence from the single alarm payload to determine the exact root cause category.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate payment failures in fulfillment service metrics and logs."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

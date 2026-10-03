@@ -1,0 +1,22 @@
+{
+  "investigation_id": "f4d34b638706",
+  "root_cause_component": "placed-orders",
+  "fault_category": "poison_message",
+  "confidence": 90,
+  "summary": "The nightshift-dlq-depth alarm triggered due to messages piling up in the dead-letter queue (nightshift-placed-orders-dlq). This indicates that consumer processing of placed orders is failing repeatedly and sending messages to the DLQ as poison messages.",
+  "evidence": [
+    2
+  ],
+  "actions": [
+    "redrive_dlq"
+  ],
+  "proposed_actions": [
+    "Investigate the messages landing in the dead-letter queue to fix the consumer error handling or data format."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_queue_stats"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

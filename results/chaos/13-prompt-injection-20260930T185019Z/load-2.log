@@ -1,0 +1,37 @@
+Run 32a678f9: 0.2/s for 1200s, seed 849770745
+  orders                     240
+  Lambda invocations       1,128   month to date    134,270   cap 500,000
+  SQS requests               928
+  DSQL DPU                  60.0   month to date    8,634.5   cap 50,000
+  log volume                 1.4 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "32a678f9",
+  "date": "2026-09-30T19:43:05+00:00",
+  "commit": "5641bb7",
+  "rate": 0.2,
+  "duration": 1200,
+  "seed": 849770745,
+  "projected": {
+    "orders": 240,
+    "lambda_invocations": 1128.0,
+    "sqs_requests": 928.0,
+    "dsql_dpu": 60.0,
+    "log_mb": 1.40616
+  },
+  "sent": 25,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 25
+  },
+  "elapsed_seconds": 120.4,
+  "achieved_rate": 0.208,
+  "checkout_latency_ms": {
+    "p50": 346.8,
+    "p95": 402.9,
+    "p99": 445.0
+  }
+}

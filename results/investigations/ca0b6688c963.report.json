@@ -1,0 +1,20 @@
+{
+  "investigation_id": "ca0b6688c963",
+  "root_cause_component": "none",
+  "fault_category": "insufficient_evidence",
+  "confidence": 50,
+  "summary": "An alarm named nightshift-throttles fired because AWS/Lambda throttles crossed the threshold, but there is insufficient context to determine which specific service or component caused the throttling.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Check Lambda concurrency limits and account quotas across services."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

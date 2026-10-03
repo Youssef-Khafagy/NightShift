@@ -1,0 +1,26 @@
+{
+  "investigation_id": "dbc6863d549d",
+  "root_cause_component": "none",
+  "fault_category": "no_fault",
+  "confidence": 95,
+  "summary": "The 'nightshift-throttles' alarm fired due to a false positive: no throttling events were recorded for the `nightshift-orders` Lambda function during or after the alarm. Metrics, traces, and configuration confirm normal operation with no evidence of throttling or concurrency issues.",
+  "evidence": [
+    2,
+    4,
+    5,
+    6
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Review CloudWatch alarm sensitivity or metric collection for potential false positives."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_metrics",
+    "4": "get_function_config",
+    "5": "lookup_recent_changes",
+    "6": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

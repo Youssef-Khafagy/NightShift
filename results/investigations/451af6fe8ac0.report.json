@@ -1,0 +1,22 @@
+{
+  "investigation_id": "451af6fe8ac0",
+  "root_cause_component": "dsql",
+  "fault_category": "slow_dependency",
+  "confidence": 85,
+  "summary": "The `nightshift-orders` Lambda experienced a spike in errors due to a slow dependency, likely AuroraDSQL (dsql). While direct evidence of slow queries is missing, the error spike aligns with no deployments, no config changes, and no throttling, pointing to a downstream performance issue.",
+  "evidence": [
+    7,
+    11
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Check AuroraDSQL slow query logs for timeouts or long-running queries during 02:05\u201302:07 UTC."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "7": "get_traces",
+    "11": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

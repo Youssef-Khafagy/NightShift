@@ -1,0 +1,7 @@
+alarm-only eb6d947b8314
+   1. get_alarm {"name": "queue-age"}
+   2. finish_investigation {"root_cause_component": "placed-orders", "fault_category": "slow_dependency", "confidence": 75, "su
+stop: finished
+report: placed-orders / slow_dependency, confidence 75
+tokens: 1207 in + 387 out = 1594 over 1 calls; largest request estimate 2116; log bytes scanned 0; wall 4s
+saved results/investigations/eb6d947b8314.json

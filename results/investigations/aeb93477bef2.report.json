@@ -1,0 +1,26 @@
+{
+  "investigation_id": "aeb93477bef2",
+  "root_cause_component": "placed-orders",
+  "fault_category": "poison_message",
+  "confidence": 90,
+  "summary": "A malformed message lacking an order_id field is repeatedly picked up by the fulfillment service consumer and failing with a KeyError. Because it fails and becomes visible again after the visibility timeout, it remains in flight and ages the queue.",
+  "evidence": [
+    1,
+    2,
+    7
+  ],
+  "actions": [
+    "redrive_dlq"
+  ],
+  "proposed_actions": [
+    "Check the DLQ and message attributes."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "2": "get_queue_stats",
+    "7": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

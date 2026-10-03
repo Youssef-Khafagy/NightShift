@@ -1,0 +1,24 @@
+{
+  "investigation_id": "8fbcb0ecd463",
+  "root_cause_component": "placed-orders",
+  "fault_category": "poison_message",
+  "confidence": 95,
+  "summary": "A malformed message lacking 'order_id' is repeatedly failing processing in the fulfillment Lambda function. Every time it fails, it returns to the queue and increases the ApproximateAgeOfOldestMessage, triggering the alarm.",
+  "evidence": [
+    2,
+    8
+  ],
+  "actions": [
+    "pause_queue_consumer"
+  ],
+  "proposed_actions": [
+    "Inspect the malformed message in the queue or check dead-letter queue settings."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_queue_stats",
+    "8": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

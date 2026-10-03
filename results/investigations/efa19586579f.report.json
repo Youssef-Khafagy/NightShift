@@ -1,0 +1,22 @@
+{
+  "investigation_id": "efa19586579f",
+  "root_cause_component": "placed-orders",
+  "fault_category": "poison_message",
+  "confidence": 90,
+  "summary": "An alarm fired for the nightshift placed-orders dead-letter queue (nightshift-dlq-depth) because messages are landing in the DLQ, indicating a poison message that fails processing repeatedly.",
+  "evidence": [
+    1
+  ],
+  "actions": [
+    "redrive_dlq"
+  ],
+  "proposed_actions": [
+    "Inspect the messages in the dead-letter queue to identify the malformed message payload and fix the message consumer or producer."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}
