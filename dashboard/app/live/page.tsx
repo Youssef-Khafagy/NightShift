@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 
 import { LiveView } from "@/components/LiveView";
 import { authOptions } from "@/lib/live/auth";
+import { liveConfigured } from "@/lib/live/guard";
 import { isOwner } from "@/lib/live/owner";
 import { INVESTIGATION } from "@/lib/live/validate";
 
@@ -20,6 +21,17 @@ export const metadata: Metadata = {
 type Props = { searchParams: Promise<{ investigation?: string }> };
 
 export default async function LivePage({ searchParams }: Props) {
+  if (!liveConfigured()) {
+    return (
+      <>
+        <h1>Live</h1>
+        <p className="lead">
+          The live view is not configured on this deployment. Everything
+          public is under Results and Incidents, replayed from recorded runs.
+        </p>
+      </>
+    );
+  }
   const session = await getServerSession(authOptions);
   if (!session || !isOwner(session.githubId)) {
     return (

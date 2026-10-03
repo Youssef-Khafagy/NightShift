@@ -17,8 +17,18 @@ export function json(body: unknown, status = 200): Response {
   });
 }
 
+// A deployment without the sign-in secrets (every preview, and production
+// until the owner sets them) has no live pages at all. Said plainly, instead
+// of next-auth failing with a 500 on every request.
+export function liveConfigured(): boolean {
+  return Boolean(
+    process.env.NEXTAUTH_SECRET && process.env.GITHUB_ID && process.env.GITHUB_SECRET,
+  );
+}
+
 // The owner's identity, or the response that refuses the request.
 export async function requireOwner(): Promise<Owner | Response> {
+  if (!liveConfigured()) return json({ error: "live pages are not configured here" }, 503);
   const session = await getServerSession(authOptions);
   if (!session) return json({ error: "sign in first" }, 401);
   if (!isOwner(session.githubId)) return json({ error: "not allowed" }, 403);

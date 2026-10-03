@@ -35,6 +35,23 @@ function post(route: string, body: unknown, origin = SITE): Request {
 beforeEach(() => {
   session.mockReset();
   clients.mockReset();
+  vi.stubEnv("NEXTAUTH_SECRET", "test-secret");
+  vi.stubEnv("GITHUB_ID", "test-id");
+  vi.stubEnv("GITHUB_SECRET", "test-secret");
+});
+
+describe("on a deployment without the sign-in secrets", () => {
+  it("answers 503 from every live route, before reading any session", async () => {
+    vi.stubEnv("NEXTAUTH_SECRET", "");
+    const responses = await Promise.all([
+      statusGET(new Request(`${SITE}/api/live/status`)),
+      approvePOST(post("approve", {})),
+      rejectPOST(post("reject", {})),
+    ]);
+    expect(responses.map((r) => r.status)).toEqual([503, 503, 503]);
+    expect(session).not.toHaveBeenCalled();
+    expect(clients).not.toHaveBeenCalled();
+  });
 });
 
 describe("without the owner's session", () => {
