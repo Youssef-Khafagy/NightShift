@@ -25,6 +25,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/">Results</Link>
               <Link href="/incidents">Incidents</Link>
               <Link href="/method">Method</Link>
+              {/* Owner only. No prefetch: it renders per request, and a
+                  visitor's browser should not run it just by loading a page. */}
+              <Link href="/live" prefetch={false}>
+                Live
+              </Link>
             </nav>
           </div>
         </header>
