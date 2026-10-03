@@ -1,8 +1,11 @@
-# Runs on every pull request. Read-only: it can plan, never apply.
+# Runs on every pull request and every push to main (work has been committed
+# straight to main since 2026-10-03). Read-only: it can plan, never apply.
 name: CI
 
 on:
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
   workflow_dispatch:
 
@@ -230,6 +233,7 @@ jobs:
       # log, where GitHub masks the account ID because it is a secret. A PR
       # comment is not masked, and this repo becomes public later.
       - name: Comment plan summary
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v8
         with:
           script: |
@@ -244,3 +248,12 @@ jobs:
               repo: context.repo.repo,
               body: `**Terraform plan**\n\n\`${line.trim()}\`\n\nFull plan is in the [job log](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).`,
             });
+
+      # Without a pull request to comment on, the counts go on the run's own
+      # summary page instead.
+      - name: Plan summary
+        if: github.event_name != 'pull_request'
+        working-directory: terraform
+        run: |
+          line=$(grep -E '^Plan:|No changes\.' plan.txt | tail -1)
+          printf '**Terraform plan**\n\n`%s`\n' "$line" >> "$GITHUB_STEP_SUMMARY"
