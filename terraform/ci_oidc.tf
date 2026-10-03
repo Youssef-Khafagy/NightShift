@@ -516,14 +516,21 @@ data "aws_iam_policy_document" "ci_apply" {
     resources = ["arn:aws:iam::${local.account_id}:policy/${var.project}-*"]
   }
 
+  # Read, never change (denied below): every apply refreshes each provider
+  # Terraform manages. The Vercel one (dashboard.tf) was missing until the
+  # first apply after it existed failed on this read (M8, 2026-10-03), and
+  # tests/test_ci_reads_oidc_providers.py now checks every provider is here.
   statement {
-    sid    = "ReadOidcProvider"
+    sid    = "ReadOidcProviders"
     effect = "Allow"
     actions = [
       "iam:GetOpenIDConnectProvider",
       "iam:ListOpenIDConnectProviderTags",
     ]
-    resources = [aws_iam_openid_connect_provider.github.arn]
+    resources = [
+      aws_iam_openid_connect_provider.github.arn,
+      aws_iam_openid_connect_provider.vercel.arn,
+    ]
   }
 
   # EventBridge rules named nightshift-*: the alarm-to-agent trigger (M5).
