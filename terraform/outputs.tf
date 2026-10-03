@@ -87,3 +87,8 @@ output "fulfillment_execution_role_arn" {
   description = "Execution role mapped to the fulfillment_service database role."
   value       = module.fulfillment.execution_role_arn
 }
+
+output "dashboard_role_arn" {
+  description = "Role the dashboard's live pages assume through Vercel OIDC. Goes into the Vercel project's AWS_ROLE_ARN environment variable, never into the repo (it holds the account ID)."
+  value       = aws_iam_role.dashboard.arn
+}
