@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-03T00:44:46+00:00",
+  "generated": "2026-10-03T01:16:14+00:00",
   "commits": [
     "5641bb7"
   ],
@@ -52,12 +52,20 @@
       "root_cause_accuracy": {
         "hits": 18,
         "of": 36,
-        "rate": 0.5
+        "rate": 0.5,
+        "ci95": [
+          0.345,
+          0.655
+        ]
       },
       "hedged": {
         "hits": 5,
         "of": 36,
-        "rate": 0.139
+        "rate": 0.139,
+        "ci95": [
+          0.061,
+          0.287
+        ]
       },
       "diagnosis_seconds": {
         "mean": 149.0,
@@ -80,12 +88,20 @@
       "remediation_correct": {
         "hits": 15,
         "of": 36,
-        "rate": 0.417
+        "rate": 0.417,
+        "ci95": [
+          0.271,
+          0.578
+        ]
       },
       "false_action_on_no_fault": {
         "hits": 0,
         "of": 3,
-        "rate": 0.0
+        "rate": 0.0,
+        "ci95": [
+          0.0,
+          0.562
+        ]
       },
       "unsafe_proposals": 4,
       "injection_resisted": null,
@@ -98,12 +114,20 @@
       "root_cause_accuracy": {
         "hits": 5,
         "of": 36,
-        "rate": 0.139
+        "rate": 0.139,
+        "ci95": [
+          0.061,
+          0.287
+        ]
       },
       "hedged": {
         "hits": 2,
         "of": 36,
-        "rate": 0.056
+        "rate": 0.056,
+        "ci95": [
+          0.015,
+          0.181
+        ]
       },
       "diagnosis_seconds": {
         "mean": 166.5,
@@ -126,12 +150,20 @@
       "remediation_correct": {
         "hits": 17,
         "of": 36,
-        "rate": 0.472
+        "rate": 0.472,
+        "ci95": [
+          0.32,
+          0.63
+        ]
       },
       "false_action_on_no_fault": {
         "hits": 0,
         "of": 3,
-        "rate": 0.0
+        "rate": 0.0,
+        "ci95": [
+          0.0,
+          0.562
+        ]
       },
       "unsafe_proposals": 7,
       "injection_resisted": null,
@@ -144,12 +176,20 @@
       "root_cause_accuracy": {
         "hits": 4,
         "of": 36,
-        "rate": 0.111
+        "rate": 0.111,
+        "ci95": [
+          0.044,
+          0.253
+        ]
       },
       "hedged": {
         "hits": 18,
         "of": 36,
-        "rate": 0.5
+        "rate": 0.5,
+        "ci95": [
+          0.345,
+          0.655
+        ]
       },
       "diagnosis_seconds": {
         "mean": 137.1,
@@ -172,12 +212,20 @@
       "remediation_correct": {
         "hits": 10,
         "of": 36,
-        "rate": 0.278
+        "rate": 0.278,
+        "ci95": [
+          0.158,
+          0.44
+        ]
       },
       "false_action_on_no_fault": {
         "hits": 0,
         "of": 3,
-        "rate": 0.0
+        "rate": 0.0,
+        "ci95": [
+          0.0,
+          0.562
+        ]
       },
       "unsafe_proposals": 10,
       "injection_resisted": null,
@@ -190,12 +238,20 @@
       "root_cause_accuracy": {
         "hits": 3,
         "of": 36,
-        "rate": 0.083
+        "rate": 0.083,
+        "ci95": [
+          0.029,
+          0.218
+        ]
       },
       "hedged": {
         "hits": 27,
         "of": 36,
-        "rate": 0.75
+        "rate": 0.75,
+        "ci95": [
+          0.589,
+          0.862
+        ]
       },
       "diagnosis_seconds": {
         "mean": 140.3,
@@ -218,12 +274,20 @@
       "remediation_correct": {
         "hits": 9,
         "of": 36,
-        "rate": 0.25
+        "rate": 0.25,
+        "ci95": [
+          0.138,
+          0.411
+        ]
       },
       "false_action_on_no_fault": {
         "hits": 0,
         "of": 3,
-        "rate": 0.0
+        "rate": 0.0,
+        "ci95": [
+          0.0,
+          0.562
+        ]
       },
       "unsafe_proposals": 2,
       "injection_resisted": null,
@@ -236,12 +300,20 @@
       "root_cause_accuracy": {
         "hits": 21,
         "of": 36,
-        "rate": 0.583
+        "rate": 0.583,
+        "ci95": [
+          0.422,
+          0.729
+        ]
       },
       "hedged": {
         "hits": 9,
         "of": 36,
-        "rate": 0.25
+        "rate": 0.25,
+        "ci95": [
+          0.138,
+          0.411
+        ]
       },
       "diagnosis_seconds": {
         "mean": 134.6,
@@ -264,12 +336,20 @@
       "remediation_correct": {
         "hits": 24,
         "of": 36,
-        "rate": 0.667
+        "rate": 0.667,
+        "ci95": [
+          0.503,
+          0.798
+        ]
       },
       "false_action_on_no_fault": {
         "hits": 0,
         "of": 3,
-        "rate": 0.0
+        "rate": 0.0,
+        "ci95": [
+          0.0,
+          0.562
+        ]
       },
       "unsafe_proposals": 0,
       "injection_resisted": null,

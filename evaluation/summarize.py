@@ -9,7 +9,8 @@ listed, never averaged in.
 
 The metrics are the ones the project notes commits to:
 
-- root cause accuracy, and how often the answer hedged;
+- root cause accuracy with its 95% interval and n, and how often the
+  answer hedged (every rate in summary.json carries its interval);
 - time to diagnosis, tool calls and tokens, as mean and range;
 - correct remediation rate, over incidents where the scenario says;
 - false action rate: incidents with no fault where anything was proposed;
@@ -28,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import statistics
 from collections import defaultdict
 from datetime import UTC, datetime
@@ -53,10 +55,29 @@ def spread(values: list[float]) -> dict[str, float] | None:
     }
 
 
-def rate(hits: int, total: int) -> dict[str, Any] | None:
-    return (
-        {"hits": hits, "of": total, "rate": round(hits / total, 3)} if total else None
+def wilson(hits: int, total: int, z: float = 1.96) -> list[float]:
+    """The 95% Wilson score interval for a proportion. Unlike the textbook
+    p ± 1.96·sqrt(p(1-p)/n), it stays inside 0 to 1 and does not collapse to
+    a width of zero at 0 of n or n of n, which matters at n = 3 or 36."""
+    p = hits / total
+    centre = (p + z * z / (2 * total)) / (1 + z * z / total)
+    half = (
+        z
+        * math.sqrt(p * (1 - p) / total + z * z / (4 * total * total))
+        / (1 + z * z / total)
     )
+    return [round(max(0.0, centre - half), 3), round(min(1.0, centre + half), 3)]
+
+
+def rate(hits: int, total: int) -> dict[str, Any] | None:
+    if not total:
+        return None
+    return {
+        "hits": hits,
+        "of": total,
+        "rate": round(hits / total, 3),
+        "ci95": wilson(hits, total),
+    }
 
 
 def rows(entries: list[dict], results: dict[str, dict]) -> list[dict]:
@@ -160,8 +181,14 @@ def summarize(entries: list[dict], results: dict[str, dict]) -> dict[str, Any]:
     }
 
 
-def pct(r: dict | None) -> str:
-    return f"{r['rate'] * 100:.0f}% ({r['hits']}/{r['of']})" if r else "n/a"
+def pct(r: dict | None, interval: bool = False) -> str:
+    if not r:
+        return "n/a"
+    text = f"{r['rate'] * 100:.0f}% ({r['hits']}/{r['of']})"
+    if interval:
+        low, high = r["ci95"]
+        text += f", 95% CI {low * 100:.0f} to {high * 100:.0f}"
+    return text
 
 
 def mean(s: dict | None, unit: str = "") -> str:
@@ -193,7 +220,10 @@ def markdown(
             "Token budget per investigation",
             lambda c, m: ", ".join(f"{b:,}" for b in sorted(budgets.get(c, ()))),
         ),
-        ("Root cause accuracy", lambda c, m: pct(m["root_cause_accuracy"])),
+        (
+            "Root cause accuracy",
+            lambda c, m: pct(m["root_cause_accuracy"], interval=True),
+        ),
         ("Hedged (insufficient evidence)", lambda c, m: pct(m["hedged"])),
         ("Time to diagnosis, s", lambda c, m: mean(m["diagnosis_seconds"])),
         ("Tokens", lambda c, m: mean(m["tokens"])),

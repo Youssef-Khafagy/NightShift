@@ -1,10 +1,10 @@
-Generated 2026-10-03T00:44:46+00:00; commit(s) 5641bb7.
+Generated 2026-10-03T01:16:14+00:00; commit(s) 5641bb7.
 
 | Metric | agent-gemini | agent-mistral | alarm-only-gemini | alarm-only-mistral | runbook |
 |---|---|---|---|---|---|
 | Model | gemini-3.5-flash-lite | ministral-14b-latest | gemini-3.5-flash-lite | ministral-14b-latest | scripted |
 | Token budget per investigation | 100,000 | 100,000 | 100,000 | 100,000 |  |
-| Root cause accuracy | 50% (18/36) | 14% (5/36) | 11% (4/36) | 8% (3/36) | 58% (21/36) |
+| Root cause accuracy | 50% (18/36), 95% CI 34 to 66 | 14% (5/36), 95% CI 6 to 29 | 11% (4/36), 95% CI 4 to 25 | 8% (3/36), 95% CI 3 to 22 | 58% (21/36), 95% CI 42 to 73 |
 | Hedged (insufficient evidence) | 14% (5/36) | 6% (2/36) | 50% (18/36) | 75% (27/36) | 25% (9/36) |
 | Time to diagnosis, s | 149 (6 to 485) | 166.5 (54 to 507) | 137.1 (4 to 477) | 140.3 (8 to 479) | 134.6 (2 to 474) |
 | Tokens | 21820.6 (10092 to 67895) | 28857.4 (11745 to 56751) | 2099.4 (1309 to 4792) | 1762.3 (1422 to 5937) | 0 (0 to 0) |
