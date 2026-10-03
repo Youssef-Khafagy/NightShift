@@ -1,0 +1,300 @@
+/* Colour roles, defined once. Values are the dataviz reference palette;
+   the heatmap steps were checked with its validator in both modes
+   (ordinal, one hue, monotone lightness, light end above 2:1). */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --muted: #6f6d68;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --accent: #2a78d6;
+  --link: #1c5cab;
+  --good: #0ca30c;
+  --good-text: #006300;
+  --warn: #fab219;
+  --warn-text: #8a5a00;
+  --bad: #d03b3b;
+  --bad-text: #b02a2a;
+  --heat-0: #f0efec;
+  --heat-1: #86b6ef;
+  --heat-2: #3987e5;
+  --heat-3: #184f95;
+  --heat-ink-1: #0b0b0b;
+  --heat-ink-2: #ffffff;
+  --heat-ink-3: #ffffff;
+  --code-bg: #f0efec;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --text: #ffffff;
+    --text-2: #c3c2b7;
+    --muted: #9a988f;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #3987e5;
+    --link: #86b6ef;
+    --good: #0ca30c;
+    --good-text: #3fc23f;
+    --warn: #fab219;
+    --warn-text: #fab219;
+    --bad: #d03b3b;
+    --bad-text: #ef7a7a;
+    /* On a dark surface "more" is the step furthest from the surface. */
+    --heat-0: #262624;
+    --heat-1: #184f95;
+    --heat-2: #2a78d6;
+    --heat-3: #86b6ef;
+    --heat-ink-1: #ffffff;
+    --heat-ink-2: #ffffff;
+    --heat-ink-3: #0b0b0b;
+    --code-bg: #232321;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--page);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+a {
+  color: var(--link);
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+code,
+pre {
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, monospace;
+  font-size: 0.86em;
+}
+
+code {
+  background: var(--code-bg);
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+}
+
+pre {
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 12px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  margin: 0 0 0.5em;
+}
+
+h1 {
+  font-size: 1.75rem;
+}
+
+h2 {
+  font-size: 1.3rem;
+  margin-top: 2.2em;
+}
+
+h3 {
+  font-size: 1.05rem;
+  margin-top: 1.6em;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.lead {
+  color: var(--text-2);
+  font-size: 1.05rem;
+  max-width: 72ch;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.88rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+/* Tables scroll inside their own box, never the page. */
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.92rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--grid);
+  vertical-align: top;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+th {
+  color: var(--text-2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Right, hedged or wrong: always an icon and a word, never colour alone. */
+.outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.outcome::before {
+  display: inline-block;
+  width: 1.1em;
+  text-align: center;
+}
+
+.outcome-right {
+  color: var(--good-text);
+}
+
+.outcome-right::before {
+  content: "✓";
+}
+
+.outcome-hedged {
+  color: var(--warn-text);
+}
+
+.outcome-hedged::before {
+  content: "~";
+}
+
+.outcome-wrong {
+  color: var(--bad-text);
+}
+
+.outcome-wrong::before {
+  content: "✗";
+}
+
+.badge {
+  display: inline-block;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.78rem;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.badge-bad {
+  color: var(--bad-text);
+  border-color: currentColor;
+}
+
+.badge-good {
+  color: var(--good-text);
+  border-color: currentColor;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 1em 0 1.5em;
+}
+
+.fact-label {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.fact-value {
+  font-weight: 600;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+th.wrap-head {
+  white-space: normal;
+  min-width: 96px;
+}
+
+.nowrap {
+  white-space: nowrap;
+}

@@ -1,0 +1,99 @@
+.figure {
+  margin: 0 0 24px;
+}
+
+.caption {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(130px, 200px) 1fr 90px;
+  align-items: center;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.label {
+  font-size: 0.9rem;
+}
+
+.plot {
+  position: relative;
+  height: 22px;
+}
+
+.grid {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--grid);
+}
+
+.page,
+.pageLine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text-2);
+  transform: translateX(-1px);
+}
+
+.pageLine {
+  width: 1px;
+  background: var(--axis);
+}
+
+.dot {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--surface);
+  transform: translate(-50%, -50%);
+}
+
+.right {
+  background: var(--good);
+}
+
+.hedged {
+  background: var(--warn);
+}
+
+.wrong {
+  background: var(--bad);
+}
+
+.value {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.ticks {
+  position: relative;
+  height: 18px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ticks span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: 96px 1fr 64px;
+    gap: 8px;
+  }
+
+  .label {
+    font-size: 0.8rem;
+  }
+}

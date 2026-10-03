@@ -1,0 +1,70 @@
+.figure {
+  margin: 0;
+}
+
+.table th[scope="row"] {
+  white-space: nowrap;
+}
+
+.head {
+  text-align: center;
+  white-space: normal;
+  min-width: 96px;
+}
+
+.truth {
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
+
+.cell {
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  /* The 2px surface gap between touching cells. */
+  border: 2px solid var(--surface);
+  border-radius: 6px;
+}
+
+.heat0 {
+  background: var(--heat-0);
+  color: var(--text-2);
+}
+
+.heat1 {
+  background: var(--heat-1);
+  color: var(--heat-ink-1);
+}
+
+.heat2 {
+  background: var(--heat-2);
+  color: var(--heat-ink-2);
+}
+
+.heat3 {
+  background: var(--heat-3);
+  color: var(--heat-ink-3);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
