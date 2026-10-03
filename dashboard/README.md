@@ -29,3 +29,12 @@ python scripts/build_replay.py --check   # exit 1 if the committed copy differs
 ```
 
 The Python tests fail if the committed files differ from what the results build, or if any file contains something that looks like an account ID, a cluster ID or an email address.
+
+## Deploying on Vercel
+
+One Vercel project on the Hobby plan, connected to this repository, with **Root Directory** set to `dashboard`. Vercel detects Next.js and reads the Node version from `engines`. The public replay needs no environment variables and no secrets.
+
+`vercel.json` sets two things:
+
+- `regions: ["yul1"]`: functions run in Montréal, which Vercel lists as ca-central-1, the store's region. The public pages are static files on the CDN and run no function; this matters for the signed-in pages added later.
+- `ignoreCommand`: skip a build when nothing under `dashboard/` changed since the last deployment. Vercel builds when the command exits 1 and skips when it exits 0. `VERCEL_GIT_PREVIOUS_SHA` is the commit of the last deployment, empty on the first one, so the command builds whenever it is empty, whenever `git diff` finds a change, and whenever that commit is not in Vercel's shallow clone. The first version diffed only `HEAD^`, which would have skipped the very first deployment whenever the newest commit on main was a docs change.
