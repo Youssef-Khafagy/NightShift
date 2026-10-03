@@ -1,0 +1,29 @@
+{
+  "investigation_id": "dca36110b281",
+  "root_cause_component": "payments",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The `nightshift-payments` Lambda was throttled due to hitting its reserved concurrency limit of 2, causing timeouts and failures in the `fulfillment` service. This resulted in a spike in payment failures and a drop in successful orders paid.",
+  "evidence": [
+    8,
+    9,
+    10,
+    12
+  ],
+  "actions": [
+    "rollback_alias service=payments",
+    "pause_queue_consumer"
+  ],
+  "proposed_actions": [
+    "Increase reserved concurrency for the `nightshift-payments` Lambda to handle higher traffic loads."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "8": "query_logs",
+    "9": "get_metrics",
+    "10": "get_metrics",
+    "12": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,14 @@
+{
+  "investigation_id": "0576969ec278",
+  "root_cause_component": "none",
+  "fault_category": "insufficient_evidence",
+  "confidence": 0,
+  "summary": "No runbook rule explains orders-errors without a recent deploy.",
+  "evidence": [],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {},
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

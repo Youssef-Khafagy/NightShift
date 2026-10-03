@@ -1,0 +1,11 @@
+runbook 34c5302813ec
+   1. get_alarm {"name": "throttles"}
+   2. list_recent_deployments {"minutes": 30}
+   3. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+   4. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+   5. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+   6. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+stop: finished
+report: orders / throttling, confidence 70
+tokens: 0 in + 0 out = 0 over 0 calls; largest request estimate 0; log bytes scanned 0; wall 0s
+saved results/investigations/34c5302813ec.json

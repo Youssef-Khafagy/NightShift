@@ -1,0 +1,16 @@
+investigation 48615fcba159 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. query_logs {"minutes": 5, "query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp de
+   3. query_logs {"minutes": 5, "query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp de
+   4. note_hypotheses {"hypotheses": "likely: slow_dependency (payments service is timing out when fulfillment calls it)\n
+   5. get_traces {"service": "payments", "minutes": 5}
+   6. get_function_config {"service": "payments"}
+   7. get_metrics {"namespace": "AWS/Lambda", "minutes": 10, "statistic": "Sum", "metric": "Invocations"}
+   8. get_metrics {"statistic": "Sum", "metric": "Throttles", "namespace": "AWS/Lambda", "minutes": 10}
+   9. get_flag_values {}
+  10. get_traces {"service": "fulfillment", "minutes": 5}
+  11. finish_investigation {"evidence_steps": "3,5", "hypotheses": "likely: slow_dependency (payments service is timing out whe
+stop: finished
+report: payments / slow_dependency, confidence 95
+tokens: 14438 in + 462 out = 14900 over 4 calls; largest request estimate 3436; log bytes scanned 1,093,298; wall 9s
+saved results/investigations/48615fcba159.json

@@ -1,0 +1,20 @@
+{
+  "investigation_id": "149543842baa",
+  "root_cause_component": "fulfillment",
+  "fault_category": "slow_dependency",
+  "confidence": 85,
+  "summary": "The fulfillment service is experiencing intermittent slow responses, as evidenced by one trace taking 42.3 seconds to complete. This slow dependency is likely causing messages to time out and be moved to the DLQ, resulting in the alarm for the nightshift-placed-orders-dlq depth.",
+  "evidence": [
+    7
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate the slow dependency in fulfillment, possibly related to an external service or database call."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "7": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,7 @@
+alarm-only fc976f066952
+   1. get_alarm {"name": "orders-errors"}
+   2. finish_investigation {"actions": "", "fault_category": "insufficient_evidence", "proposed_actions": "Investigate CloudWat
+stop: finished
+report: orders / insufficient_evidence, confidence 50
+tokens: 1187 in + 225 out = 1412 over 1 calls; largest request estimate 2108; log bytes scanned 0; wall 5s
+saved results/investigations/fc976f066952.json

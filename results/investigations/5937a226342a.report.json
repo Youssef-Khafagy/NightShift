@@ -1,0 +1,24 @@
+{
+  "investigation_id": "5937a226342a",
+  "root_cause_component": "cart-table",
+  "fault_category": "config_regression",
+  "confidence": 95,
+  "summary": "A misconfigured CART_TABLE_NAME environment variable was deployed to the cart service at 22:29, causing all Lambda invocations to fail when accessing the wrong DynamoDB table. The 53 errors in one minute confirm this regression.",
+  "evidence": [
+    2,
+    3,
+    5
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Revert the CART_TABLE_NAME environment variable to the correct DynamoDB table name and redeploy the cart service."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_metrics",
+    "3": "list_recent_deployments",
+    "5": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

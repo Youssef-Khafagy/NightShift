@@ -1,0 +1,24 @@
+{
+  "investigation_id": "b9dac886932b",
+  "root_cause_component": "orders",
+  "fault_category": "retry_storm",
+  "confidence": 85,
+  "summary": "The 'orders' service is experiencing a retry storm, as evidenced by a spike in serialization retries. This suggests that messages or transactions are being repeatedly retried, likely due to transient failures or processing issues within the service.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate the orders service logs for repeated failures or errors.",
+    "Check for any messages stuck in dead-letter queues (DLQ).",
+    "Review transaction logs for patterns of retries or deadlocks.",
+    "Consider temporarily scaling down the orders service to reduce load while diagnosing the issue.",
+    "Monitor the serialization retries metric closely to track progress."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

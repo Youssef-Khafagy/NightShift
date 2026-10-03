@@ -1,0 +1,20 @@
+{
+  "investigation_id": "272161e78134",
+  "root_cause_component": "orders",
+  "fault_category": "insufficient_evidence",
+  "confidence": 50,
+  "summary": "The alarm 'nightshift-orders-errors' triggered because the nightshift-orders Lambda function recorded 53 errors in a 1-minute period. However, without access to CloudWatch logs or further tools, there is insufficient evidence to determine the exact fault category or root cause.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate CloudWatch logs for nightshift-orders Lambda function to determine the exact error type and stack trace."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

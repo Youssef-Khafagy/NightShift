@@ -1,0 +1,16 @@
+investigation 149543842baa (mistral ministral-14b-latest)
+   1. get_queue_stats {}
+   2. get_metrics {"namespace": "AWS/SQS", "metric": "ApproximateNumberOfMessagesVisible", "statistic": "Maximum", "di
+   3. get_metrics {"namespace": "AWS/SQS", "metric": "ApproximateAgeOfOldestMessage", "statistic": "Maximum", "dimensi
+   4. note_hypotheses {"hypotheses": "likely: poison_message in nightshift-placed-orders queue\npossible: retry_storm in f
+   5. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, reason | filter level = \"E
+   6. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, reason, order_id, status |
+   7. get_traces {"service": "fulfillment", "minutes": 10}
+   8. list_recent_deployments {"service": "fulfillment", "minutes": 30}
+   9. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, reason, order_id, status |
+  10. query_logs {"service": "orders", "query": "fields @timestamp, @message, level, reason, order_id, status | filte
+  11. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "slow_dependency", "confidence": 85, "summ
+stop: finished
+report: fulfillment / slow_dependency, confidence 85
+tokens: 29249 in + 985 out = 30234 over 7 calls; largest request estimate 3948; log bytes scanned 480,246; wall 27s
+saved results/investigations/149543842baa.json

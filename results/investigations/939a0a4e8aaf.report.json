@@ -1,0 +1,28 @@
+{
+  "investigation_id": "939a0a4e8aaf",
+  "root_cause_component": "fulfillment",
+  "fault_category": "timeout_regression",
+  "confidence": 95,
+  "summary": "The `fulfillment` service's `PAYMENT_TIMEOUT_SECONDS` environment variable is set to 3 seconds, causing payment calls to fail when they exceed this timeout. This aligns with the spike in `PaymentFailures` despite no errors in logs or service-level timeouts.",
+  "evidence": [
+    5,
+    11,
+    13
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Increase the `PAYMENT_TIMEOUT_SECONDS` environment variable for the `fulfillment` service to a higher value (e.g., 10-15 seconds) to prevent timeouts during payment processing."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "5": "get_metrics",
+    "11": "get_traces",
+    "13": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": [
+    7,
+    8,
+    9
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "investigation_id": "3e04f0d8101f",
+  "root_cause_component": "fulfillment",
+  "fault_category": "insufficient_evidence",
+  "confidence": 60,
+  "summary": "The alarm indicates a sudden spike in payment failures within the fulfillment service, but no additional details (e.g., error logs, dependency issues, or configuration changes) are provided to determine the root cause. The spike could be due to a variety of issues, such as a service outage, dependency failure, or internal error in fulfillment.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

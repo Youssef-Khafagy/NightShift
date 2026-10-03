@@ -1,0 +1,7 @@
+alarm-only f298b70520e8
+   1. get_alarm {"name": "queue-age"}
+   2. finish_investigation {"root_cause_component": "placed-orders", "fault_category": "slow_dependency", "confidence": 75, "su
+stop: finished
+report: placed-orders / slow_dependency, confidence 75
+tokens: 1207 in + 409 out = 1616 over 1 calls; largest request estimate 2116; log bytes scanned 0; wall 5s
+saved results/investigations/f298b70520e8.json

@@ -1,0 +1,90 @@
+{
+  "config": {
+    "kind": "runbook"
+  },
+  "state": {
+    "investigation_id": "13f9bb1be605",
+    "trigger": {
+      "name": "nightshift-serialization-retries",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).",
+      "since": "2026-09-30T17:42:02Z",
+      "metric": {
+        "namespace": "NightShift",
+        "name": "SerializationRetries",
+        "dimensions": {
+          "service": "orders"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 10.0 for 2 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-09-30T17:42:02Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-09-30T17:42:10+00:00",
+    "provider": "runbook",
+    "model": "scripted",
+    "turn": 2,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-09-30T17:42:10+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "serialization-retries"
+        },
+        "call_id": "baseline-fe134e0a",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-serialization-retries\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\",\"since\":\"2026-09-30T17:42:02Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"SerializationRetries\",\"dimensions\":{\"service\":\"orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 10.0 for 2 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-30T17:42:02Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-serialization-retries\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\",\"since\":\"2026-09-30T17:42:02Z\",\"m...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 2,
+        "at": "2026-09-30T17:42:10+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "minutes": 30,
+          "service": "orders"
+        },
+        "call_id": "baseline-a36b104e",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      }
+    ],
+    "calls": [],
+    "hypotheses": [
+      {
+        "status": "likely",
+        "text": "Checkout transactions are conflicting on the same rows."
+      }
+    ],
+    "hypothesis_changes": [],
+    "log_bytes_scanned": 0,
+    "rejected_calls": 0,
+    "wall_seconds_used": 0.0,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "root_cause_component": "dsql",
+      "fault_category": "hot_row_contention",
+      "confidence": 70,
+      "summary": "Checkout transactions are conflicting on the same rows.",
+      "evidence_steps": "1",
+      "hypotheses": "likely: Checkout transactions are conflicting on the same rows.",
+      "actions": "",
+      "proposed_actions": ""
+    }
+  }
+}

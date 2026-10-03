@@ -1,0 +1,102 @@
+{
+  "config": {
+    "kind": "runbook"
+  },
+  "state": {
+    "investigation_id": "30f93b202f5f",
+    "trigger": {
+      "name": "nightshift-dlq-depth",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [28.0 (01/10/26 21:52:00)] was greater than or equal to the threshold (1.0).",
+      "since": "2026-10-01T21:58:03Z",
+      "metric": {
+        "namespace": "AWS/SQS",
+        "name": "ApproximateNumberOfMessagesVisible",
+        "dimensions": {
+          "QueueName": "nightshift-placed-orders-dlq"
+        },
+        "statistic": "Maximum",
+        "period_seconds": 300
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 1.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-10-01T21:58:03Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-10-01T21:58:16+00:00",
+    "provider": "runbook",
+    "model": "scripted",
+    "turn": 3,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-10-01T21:58:16+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "dlq-depth"
+        },
+        "call_id": "baseline-3a2ef166",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-dlq-depth\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [28.0 (01/10/26 21:52:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T21:58:03Z\",\"metric\":{\"namespace\":\"AWS/SQS\",\"name\":\"ApproximateNumberOfMessagesVisible\",\"dimensions\":{\"QueueName\":\"nightshift-placed-orders-dlq\"},\"statistic\":\"Maximum\",\"period_seconds\":300},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T21:58:03Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-dlq-depth\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [28.0 (01/10/26 21:52:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T21:58:03Z\",\"metric\":{\"namespace\":\"AWS/SQS\",\"name\":\"App...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 2,
+        "at": "2026-10-01T21:58:16+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "minutes": 30
+        },
+        "call_id": "baseline-dee7b775",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 3,
+        "turn": 3,
+        "at": "2026-10-01T21:58:17+00:00",
+        "tool": "get_queue_stats",
+        "args": {},
+        "call_id": "baseline-f43c595c",
+        "result": "{\"tool\":\"get_queue_stats\",\"truncated\":false,\"untrusted_data\":{\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":1,\"visibility_timeout_seconds\":0},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":131,\"in_flight\":0,\"visibility_timeout_seconds\":30},\"max_receive_count\":3,\"consumer\":[{\"function\":\"nightshift-fulfillment:live\",\"state\":\"Enabled\",\"batch_size\":10,\"maximum_concurrency\":2}]}}}}",
+        "summary": "{\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":1,\"visibility_timeout_seconds\":0},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":131,\"in_flight\":0,\"visibility_t...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      }
+    ],
+    "calls": [],
+    "hypotheses": [
+      {
+        "status": "likely",
+        "text": "Messages reached the dead-letter queue: a message the consumer cannot process. Do not redrive until the producer is fixed."
+      }
+    ],
+    "hypothesis_changes": [],
+    "log_bytes_scanned": 0,
+    "rejected_calls": 0,
+    "wall_seconds_used": 0.0,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "root_cause_component": "placed-orders",
+      "fault_category": "poison_message",
+      "confidence": 70,
+      "summary": "Messages reached the dead-letter queue: a message the consumer cannot process. Do not redrive until the producer is fixed.",
+      "evidence_steps": "1,3",
+      "hypotheses": "likely: Messages reached the dead-letter queue: a message the consumer cannot process. Do not redrive until the producer is fixed.",
+      "actions": "",
+      "proposed_actions": ""
+    }
+  }
+}

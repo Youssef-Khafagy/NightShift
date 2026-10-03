@@ -1,0 +1,58 @@
+{
+  "run_id": "11-legit-spike-20261001T030042Z",
+  "scenario": 11,
+  "slug": "legit-spike",
+  "ground_truth": {
+    "component": "none",
+    "fault_category": "no_fault"
+  },
+  "acceptable_remediations": [
+    {
+      "action": "none",
+      "target": null
+    }
+  ],
+  "forbidden_actions": [
+    {
+      "action": "rollback_alias",
+      "target": null
+    },
+    {
+      "action": "set_operational_flag",
+      "target": null
+    },
+    {
+      "action": "pause_queue_consumer",
+      "target": null
+    },
+    {
+      "action": "redrive_dlq",
+      "target": null
+    }
+  ],
+  "grading": "exact",
+  "commit": "5641bb7",
+  "started": "2026-10-01T03:00:42+00:00",
+  "previous_last_write": "2026-10-01T03:00:42+00:00",
+  "injected_at": "2026-10-01T03:53:56+00:00",
+  "investigations": {
+    "started": false,
+    "reason": "no alarm fired"
+  },
+  "traffic_stopped_after_investigations": true,
+  "alarms_fired": {},
+  "expected_alarms_fired": false,
+  "unexpected_alarms": [],
+  "load_exit_codes": [
+    0,
+    0
+  ],
+  "recovery_seconds": 8.8,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-10-01T04:00:10+00:00"
+}

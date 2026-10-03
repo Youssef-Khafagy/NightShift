@@ -1,0 +1,20 @@
+{
+  "investigation_id": "453c4f47b7b9",
+  "root_cause_component": "payments",
+  "fault_category": "slow_dependency",
+  "confidence": 90,
+  "summary": "The fulfillment service experienced payment failures because the payments service it calls has become extremely slow, with p99 durations over 12 seconds and a maximum of 18 seconds, causing timeouts and payment failures in fulfillment.",
+  "evidence": [
+    3,
+    7
+  ],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "3": "query_logs",
+    "7": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

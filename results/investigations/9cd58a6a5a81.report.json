@@ -1,0 +1,20 @@
+{
+  "investigation_id": "9cd58a6a5a81",
+  "root_cause_component": "payments",
+  "fault_category": "insufficient_evidence",
+  "confidence": 90,
+  "summary": "An alarm for payment failures in the fulfillment service fired due to 43 failures, but insufficient evidence is provided in the alarm payload alone to determine the exact root cause category.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate payment logs and downstream payment gateway connectivity for the fulfillment service."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,20 @@
+investigation 5221155667e9 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   4. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   5. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   6. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, order_id, reason | filter le
+   8. note_hypotheses {"hypotheses": "likely: timeout_regression in fulfillment due to slow_dependency on payments\npossib
+   9. get_function_config {"service": "fulfillment"}
+  10. get_function_config {"service": "payments"}
+  11. get_traces {"service": "fulfillment", "minutes": 10}
+  12. lookup_recent_changes {"minutes": 30}
+  13. get_traces {"service": "payments", "minutes": 10}
+  14. lookup_recent_changes {"minutes": 30}
+  15. finish_investigation {"root_cause_component": "payments", "fault_category": "slow_dependency", "confidence": 95, "summary
+stop: finished
+report: payments / slow_dependency, confidence 95
+tokens: 31749 in + 1634 out = 33383 over 7 calls; largest request estimate 5143; log bytes scanned 776,219; wall 25s
+saved results/investigations/5221155667e9.json

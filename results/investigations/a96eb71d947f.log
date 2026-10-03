@@ -1,0 +1,13 @@
+investigation a96eb71d947f (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-cart-errors"}
+   2. query_logs {"minutes": 5, "query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp de
+   3. list_recent_deployments {"service": "cart"}
+   4. note_hypotheses {"hypotheses": "likely: iam_regression (AccessDeniedException on dynamodb:PutItem)\nruled_out: bad_d
+   5. lookup_recent_changes {"minutes": 15}
+   6. finish_investigation {"proposed_actions": "Check IAM permissions for the cart function regarding the new table name confi
+   7. finish_investigation {"evidence_steps": "1,2,3", "fault_category": "iam_regression", "hypotheses": "likely: iam_regressio
+stop: finished
+report: cart / iam_regression, confidence 95
+tokens: 18510 in + 461 out = 18971 over 5 calls; largest request estimate 3530; log bytes scanned 309,192; wall 59s
+proposed (graded, never approved): rollback_alias service=cart
+saved results/investigations/a96eb71d947f.json

@@ -1,0 +1,7 @@
+alarm-only 02516bc61379
+   1. get_alarm {"name": "cart-errors"}
+   2. finish_investigation {"hypotheses": "ruled_out: bad_deploy\nruled_out: config_regression\nruled_out: slow_dependency\nrul
+stop: finished
+report: cart / insufficient_evidence, confidence 50
+tokens: 1187 in + 170 out = 1357 over 1 calls; largest request estimate 2107; log bytes scanned 0; wall 15s
+saved results/investigations/02516bc61379.json

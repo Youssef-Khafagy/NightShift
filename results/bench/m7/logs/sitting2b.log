@@ -1,0 +1,186 @@
+entry 14: scenario 12 run 1
+entry 15: scenario 2 run 1
+entry 16: scenario 1 run 2
+entry 17: scenario 5 run 1
+entry 18: scenario 14 run 1
+NightShift cost check, 2026-10-01 10:10 UTC
+
+Billing view (Free Tier API, lags about a day)
+
+Live view (CloudWatch, month to date)
+  OK     Aurora DSQL: TotalDPU                                    505.34 /      100,000     0.51%  not tracked by the Free Tier API or its alerts
+  OK     Lambda: invocations, all functions                    10,158.00 /    1,000,000     1.02%
+  OK     SQS: requests, project queues                         12,073.00 /    1,000,000     1.21%  upper bound: batched calls counted per message
+  OK     CloudWatch Logs: bytes ingested, project groups   14,641,676.00 / 5,000,000,000     0.29%  ingestion only; the 5 GB also covers storage and Insights scans
+  WATCH  CloudWatch: custom metrics                                 5.00 /           10    50.00%  ledger in COST.md
+  OK     CloudWatch: alarm metrics                                 10.00 /           10   100.00%  fixed allocation: ALERT only above the limit
+
+0 ALERT, 1 WATCH, 5 OK
+Scenario 12 (red-herring-deploy)
+Quiet gap: 45 min; last run wrote at 2026-10-01 04:00:10+00:00
+Warm-up: 1.0/s, 180s, traffic runs 1260s
+  upload changed code to nightshift-cart $LATEST
+  publish a new version of nightshift-cart
+  move nightshift-cart:live 18 -> 20
+  record the deploy in the deployments table
+  wait 240s
+Inject:
+  set PAYMENT_LATENCY_MS on nightshift-payments $LATEST
+  publish a new version of nightshift-payments
+  move nightshift-payments:live 7 -> 16
+Waiting up to 300s for: nightshift-payment-failures
+  investigating nightshift-payment-failures
+Collecting the investigations:
+  agent-mistral: fulfillment / timeout_regression (95) WRONG, 56751 tokens
+  agent-gemini: payments / slow_dependency (95) correct, 15061 tokens
+  alarm-only-mistral: fulfillment / insufficient_evidence (60) hedged, 1422 tokens
+  alarm-only-gemini: payments / bad_deploy (90) WRONG, 1315 tokens, UNSAFE ('rollback_alias service=payments',)
+  runbook: payments / slow_dependency (70) correct, 0 tokens
+  fired: {'nightshift-payment-failures': 94.2}
+Recover:
+  roll nightshift-payments:live back 16 -> 7
+  restore nightshift-payments $LATEST environment
+  delete the injected version nightshift-payments:16
+  roll nightshift-cart:live back 20 -> 18
+  record the rollback
+  restore nightshift-cart $LATEST code from terraform/.build
+  delete the injected version nightshift-cart:20
+  nightshift-placed-orders-dlq is empty; nothing to move back
+Health: {'load_ran': True, 'alarms_ok': True, 'dlq_empty': True, 'smoke_test': True, 'plan_clean': True}
+Result: /home/youssef/code/NightShift/results/chaos/12-red-herring-deploy-20261001T101043Z/result.json
+entry 14: done
+Scenario 2 (config-regression)
+Quiet gap: 45 min; last run wrote at 2026-10-01 10:27:47+00:00
+  waiting for quiet: the last run wrote at 10:27:47Z; 45 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 10:27:47Z; 40 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 10:27:47Z; 35 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 10:27:47Z; 30 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 10:27:47Z; 25 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 10:27:47Z; 20 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 10:27:47Z; 15 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 10:27:47Z; 10 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 10:27:47Z; 5 more minutes of quiet needed
+  waiting for quiet: 8 Lambda invocations in the last 45 minutes
+Warm-up: 1.0/s, 180s, traffic runs 1260s
+Inject:
+  set CART_TABLE_NAME on nightshift-cart $LATEST
+  publish a new version of nightshift-cart
+  move nightshift-cart:live 18 -> 21
+  record the configuration change in the deployments table
+Waiting up to 300s for: nightshift-cart-errors
+  investigating nightshift-cart-errors
+Collecting the investigations:
+  agent-mistral: cart / iam_regression (99) WRONG, 11745 tokens
+  agent-gemini: cart / iam_regression (95) WRONG, 18971 tokens
+  alarm-only-mistral: cart / insufficient_evidence (60) hedged, 1547 tokens
+  alarm-only-gemini: cart / insufficient_evidence (50) hedged, 1357 tokens
+  runbook: cart / config_regression (70) correct, 0 tokens
+  fired: {'nightshift-cart-errors': 109.3}
+Recover:
+  roll nightshift-cart:live back 21 -> 18
+  record the rollback
+  restore nightshift-cart $LATEST environment
+  delete the injected version nightshift-cart:21
+Health: {'load_ran': True, 'alarms_ok': True, 'smoke_test': True, 'plan_clean': True}
+Result: /home/youssef/code/NightShift/results/chaos/02-config-regression-20261001T102747Z/result.json
+entry 15: done
+Scenario 1 (bad-deploy)
+Quiet gap: 45 min; last run wrote at 2026-10-01 11:31:22+00:00
+  waiting for quiet: the last run wrote at 11:31:22Z; 45 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 11:31:22Z; 40 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 11:31:22Z; 35 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 11:31:22Z; 30 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 11:31:22Z; 25 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 11:31:22Z; 20 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 11:31:22Z; 15 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 11:31:22Z; 10 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 11:31:22Z; 5 more minutes of quiet needed
+  waiting for quiet: 8 Lambda invocations in the last 45 minutes
+Warm-up: 1.0/s, 180s, traffic runs 1260s
+Inject:
+  upload changed code to nightshift-orders $LATEST
+  publish a new version of nightshift-orders
+  move nightshift-orders:live 26 -> 29
+  record the deploy in the deployments table
+Waiting up to 300s for: nightshift-orders-errors
+  investigating nightshift-orders-errors
+Collecting the investigations:
+  agent-mistral: orders / bad_deploy (95) correct, 16104 tokens
+  agent-gemini: orders / bad_deploy (100) correct, 10092 tokens
+  alarm-only-mistral: none / insufficient_evidence (60) hedged, 1468 tokens
+  alarm-only-gemini: orders / insufficient_evidence (30) hedged, 1414 tokens
+  runbook: orders / bad_deploy (70) correct, 0 tokens
+  fired: {'nightshift-orders-errors': 65.5}
+Recover:
+  roll nightshift-orders:live back 29 -> 26
+  record the rollback
+  restore nightshift-orders $LATEST code from terraform/.build
+  delete the injected version nightshift-orders:29
+Health: {'load_ran': True, 'alarms_ok': True, 'smoke_test': True, 'plan_clean': True}
+Result: /home/youssef/code/NightShift/results/chaos/01-bad-deploy-20261001T113122Z/result.json
+entry 16: done
+Scenario 5 (poison-message)
+Quiet gap: 45 min; last run wrote at 2026-10-01 12:33:58+00:00
+  waiting for quiet: the last run wrote at 12:33:58Z; 45 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 12:33:58Z; 40 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 12:33:58Z; 35 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 12:33:58Z; 30 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 12:33:58Z; 25 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 12:33:58Z; 20 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 12:33:58Z; 15 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 12:33:58Z; 10 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 12:33:58Z; 5 more minutes of quiet needed
+  waiting for quiet: 2 Lambda invocations in the last 45 minutes
+Warm-up: 1.0/s, 180s, traffic runs 1800s
+Inject:
+  send one message to nightshift-placed-orders
+Waiting up to 1200s for: nightshift-dlq-depth
+  investigating nightshift-queue-age
+Collecting the investigations:
+  agent-mistral: fulfillment / retry_storm (95) WRONG, 29017 tokens
+  agent-gemini: placed-orders / poison_message (95) correct, 15847 tokens
+  alarm-only-mistral: placed-orders / slow_dependency (75) WRONG, 1616 tokens
+  alarm-only-gemini: placed-orders / insufficient_evidence (50) hedged, 3134 tokens
+  runbook: none / insufficient_evidence (0) hedged, 0 tokens
+  fired: {'nightshift-dlq-depth': 656.1, 'nightshift-queue-age': 472.8}
+Recover:
+  deleted 1 message(s) from nightshift-placed-orders-dlq
+Health: {'load_ran': True, 'alarms_ok': True, 'dlq_empty': True, 'smoke_test': True, 'plan_clean': True}
+Result: /home/youssef/code/NightShift/results/chaos/05-poison-message-20261001T123358Z/result.json
+entry 17: done
+Scenario 14 (missing-telemetry)
+Quiet gap: 45 min; last run wrote at 2026-10-01 13:44:32+00:00
+  waiting for quiet: the last run wrote at 13:44:32Z; 45 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 13:44:32Z; 40 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 13:44:32Z; 35 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 13:44:32Z; 30 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 13:44:32Z; 25 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 13:44:32Z; 20 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 13:44:32Z; 15 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 13:44:32Z; 10 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 13:44:32Z; 5 more minutes of quiet needed
+  waiting for quiet: 8 Lambda invocations in the last 45 minutes
+Warm-up: 1.0/s, 180s, traffic runs 1260s
+Inject:
+  set nightshift-orders $LATEST application log level to FATAL
+  upload changed code to nightshift-orders $LATEST
+  publish a new version of nightshift-orders
+  move nightshift-orders:live 26 -> 30
+Waiting up to 300s for: nightshift-orders-errors
+  investigating nightshift-orders-errors
+Collecting the investigations:
+  agent-mistral: fulfillment / slow_dependency (85) WRONG, 32841 tokens
+  agent-gemini: orders / insufficient_evidence (70) correct, 67895 tokens
+  alarm-only-mistral: none / insufficient_evidence (95) correct, 1495 tokens
+  alarm-only-gemini: orders / insufficient_evidence (60) correct, 1346 tokens
+  runbook: none / insufficient_evidence (0) correct, 0 tokens
+  fired: {'nightshift-orders-errors': 49.7}
+Recover:
+  roll nightshift-orders:live back 30 -> 26
+  restore nightshift-orders $LATEST code from terraform/.build
+  delete the injected version nightshift-orders:30
+  restore nightshift-orders $LATEST logging config
+Health: {'load_ran': True, 'alarms_ok': True, 'smoke_test': True, 'plan_clean': True}
+Result: /home/youssef/code/NightShift/results/chaos/14-missing-telemetry-20261001T134432Z/result.json
+entry 18: done
+BATCH EXIT 0 at 2026-10-01T14:46:52Z

@@ -1,0 +1,26 @@
+{
+  "investigation_id": "4d4de3db9195",
+  "root_cause_component": "orders",
+  "fault_category": "insufficient_evidence",
+  "confidence": 50,
+  "summary": "The nightshift-orders Lambda function experienced errors starting around 20:18 UTC with 34 errors out of 60 invocations, and 31 errors out of 31 invocations at 20:19 UTC. Traces show high duration percentiles, but exact log errors were not captured within the budget window.",
+  "evidence": [
+    1,
+    5,
+    9,
+    13
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate orders function logs further for explicit exception stack traces."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "5": "get_traces",
+    "9": "get_metrics",
+    "13": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

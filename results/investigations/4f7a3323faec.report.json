@@ -1,0 +1,26 @@
+{
+  "investigation_id": "4f7a3323faec",
+  "root_cause_component": "orders",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The alarm `nightshift-throttles` fired because Lambda functions reached their reserved concurrency limits (e.g. orders has 5, cart has 5, payments has 2, fulfillment has 2). There are no bad deploys or configuration regressions; this is standard Lambda throttling due to concurrency limits.",
+  "evidence": [
+    3,
+    4,
+    5,
+    6
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Increase reserved concurrency on Lambda functions if traffic demands it."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "3": "get_function_config",
+    "4": "get_function_config",
+    "5": "get_function_config",
+    "6": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

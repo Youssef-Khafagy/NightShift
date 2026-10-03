@@ -1,0 +1,31 @@
+{
+  "run_id": "caa5656f",
+  "date": "2026-10-01T11:23:59+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1260,
+  "seed": 3399837039,
+  "projected": {
+    "orders": 1260,
+    "lambda_invocations": 5922.0,
+    "sqs_requests": 3192.0,
+    "dsql_dpu": 315.0,
+    "log_mb": 7.38234
+  },
+  "sent": 349,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 178,
+    "502": 1,
+    "cart_500": 169,
+    "lambda_throttled": 1
+  },
+  "elapsed_seconds": 350.6,
+  "achieved_rate": 0.996,
+  "checkout_latency_ms": {
+    "p50": 422.5,
+    "p95": 615.7,
+    "p99": 4644.5
+  }
+}

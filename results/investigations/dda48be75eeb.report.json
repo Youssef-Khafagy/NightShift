@@ -1,0 +1,28 @@
+{
+  "investigation_id": "dda48be75eeb",
+  "root_cause_component": "orders",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The orders service is throttled due to a reserved concurrency limit of 5, causing messages to remain in flight beyond the visibility timeout (180s). No errors or failures are logged, but the queue age alarm triggered because messages are not processed in time.",
+  "evidence": [
+    1,
+    2,
+    3,
+    5,
+    7
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Increase reserved concurrency for the orders service to handle the current load."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_queue_stats",
+    "2": "get_metrics",
+    "3": "get_metrics",
+    "5": "get_traces",
+    "7": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

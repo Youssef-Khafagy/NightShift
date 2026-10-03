@@ -1,0 +1,22 @@
+{
+  "investigation_id": "b573540b6311",
+  "root_cause_component": "payments",
+  "fault_category": "bad_deploy",
+  "confidence": 90,
+  "summary": "The alarm 'nightshift-payment-failures' fired for the fulfillment service due to high payment failures (25 failures vs threshold of 3). This indicates a bad deploy or issue in the payments service.",
+  "evidence": [
+    1
+  ],
+  "actions": [
+    "rollback_alias service=payments"
+  ],
+  "proposed_actions": [
+    "Check payments service deployment logs."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,14 @@
+{
+  "investigation_id": "4c0c23c75d7a",
+  "root_cause_component": "none",
+  "fault_category": "insufficient_evidence",
+  "confidence": 0,
+  "summary": "The investigation stopped before reaching a conclusion (answer_rejected).",
+  "evidence": [],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "answer_rejected",
+  "evidence_tools": {},
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

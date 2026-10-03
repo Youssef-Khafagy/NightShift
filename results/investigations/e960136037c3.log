@@ -1,0 +1,16 @@
+investigation e960136037c3 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. get_metrics {"minutes": 15, "metric": "SerializationRetries", "namespace": "NightShift", "statistic": "Sum"}
+   3. query_logs {"query": "fields @timestamp, @message | filter level = \"ERROR\" or level = \"WARN\" | sort @timest
+   4. get_topology {}
+   5. list_recent_deployments {"service": "orders"}
+   6. get_traces {"service": "orders", "minutes": 15}
+   7. get_metrics {"minutes": 15, "statistic": "Sum", "metric": "SerializationRetries", "namespace": "NightShift"}
+   8. get_metrics {"statistic": "Sum", "metric": "SerializationRetries", "minutes": 15, "namespace": "NightShift", "di
+   9. get_metrics {"dimensions": "service=orders", "minutes": 15, "statistic": "Sum", "namespace": "NightShift", "metr
+  10. note_hypotheses {"hypotheses": "likely: hot_row_contention in orders service / database due to high serialization re
+  11. finish_investigation {"proposed_actions": "Investigate concurrent transactions updating the same rows or inventory/counte
+stop: finished
+report: orders / hot_row_contention, confidence 95
+tokens: 17418 in + 548 out = 17966 over 5 calls; largest request estimate 3399; log bytes scanned 258,487; wall 9s
+saved results/investigations/e960136037c3.json

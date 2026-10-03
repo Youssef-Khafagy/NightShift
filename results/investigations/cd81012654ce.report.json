@@ -1,0 +1,30 @@
+{
+  "investigation_id": "cd81012654ce",
+  "root_cause_component": "fulfillment",
+  "fault_category": "slow_dependency",
+  "confidence": 85,
+  "summary": "The `nightshift-orders` Lambda function is experiencing errors due to slow responses from the `fulfillment` service. While no direct errors or throttling were found in the `fulfillment` logs, the elevated p99 duration in both `orders` and `fulfillment` functions, combined with database connection delays (e.g., `connect_ms: 1014.1`), strongly suggests that the `fulfillment` service is acting as a slow dependency. This is likely causing timeouts or delays in processing messages, which in turn triggers errors in the `orders` function.",
+  "evidence": [
+    1,
+    4,
+    6,
+    8,
+    13
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "1. Investigate database query performance in the `fulfillment` service for slow or contention-heavy queries.",
+    "2. Review the `fulfillment` function's timeout and concurrency settings to ensure they align with downstream dependencies.",
+    "3. Check for missing indexes or inefficient queries in the database layer."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "4": "get_metrics",
+    "6": "get_queue_stats",
+    "8": "get_metrics",
+    "13": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

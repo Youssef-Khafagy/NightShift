@@ -1,0 +1,8 @@
+runbook 2b15b64bb13a
+   1. get_alarm {"name": "dlq-depth"}
+   2. list_recent_deployments {"minutes": 30}
+   3. get_queue_stats {}
+stop: finished
+report: placed-orders / poison_message, confidence 70
+tokens: 0 in + 0 out = 0 over 0 calls; largest request estimate 0; log bytes scanned 0; wall 0s
+saved results/investigations/2b15b64bb13a.json

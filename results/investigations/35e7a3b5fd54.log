@@ -1,0 +1,8 @@
+runbook 35e7a3b5fd54
+   1. get_alarm {"name": "payment-failures"}
+   2. list_recent_deployments {"minutes": 30, "service": "payments"}
+stop: finished
+report: payments / slow_dependency, confidence 70
+tokens: 0 in + 0 out = 0 over 0 calls; largest request estimate 0; log bytes scanned 0; wall 0s
+proposed (graded, never approved): set_operational_flag name=payments_degraded_mode value=true
+saved results/investigations/35e7a3b5fd54.json

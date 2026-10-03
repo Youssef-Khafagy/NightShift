@@ -1,0 +1,13 @@
+{
+  "entry": 26,
+  "scenario": 12,
+  "run": 2,
+  "attempt": 1,
+  "phase": 2,
+  "status": "done",
+  "started": "2026-10-02T00:10:49.314171+00:00",
+  "run_dir": "results/chaos/12-red-herring-deploy-20261002T001049Z",
+  "exit_code": 0,
+  "actor_invocations": 0,
+  "finished": "2026-10-02T01:16:56.265058+00:00"
+}

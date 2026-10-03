@@ -1,0 +1,19 @@
+investigation 514d6b97e791 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-queue-age"}
+   2. get_metrics {"namespace": "AWS/SQS", "metric": "ApproximateNumberOfMessagesVisible", "statistic": "Sum", "dimens
+   3. get_metrics {"namespace": "AWS/SQS", "metric": "ApproximateAgeOfOldestMessage", "statistic": "Maximum", "dimensi
+   4. get_queue_stats {}
+   5. get_queue_stats {}
+   6. list_recent_deployments {"service": "orders", "minutes": 15}
+   7. get_traces {"service": "fulfillment", "minutes": 15}
+   8. get_metrics {"namespace": "AWS/DynamoDB", "metric": "ThrottledRequests", "statistic": "Sum", "dimensions": "Tabl
+   9. get_metrics {"namespace": "AWS/AuroraDSQL", "metric": "DBLoad", "statistic": "Average", "dimensions": "DBInstanc
+  10. query_logs {"service": "fulfillment", "query": "fields @timestamp, duration, sql, order_id | filter duration >=
+  11. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message | filter @message like \"lock wait
+  12. get_metrics {"namespace": "AWS/DynamoDB", "metric": "SuccessfulRequestLatency", "statistic": "p99", "dimensions"
+  13. get_metrics {"namespace": "AWS/AuroraDSQL", "metric": "DatabaseConnections", "statistic": "Average", "dimensions
+  14. finish_investigation {"root_cause_component": "dsql", "fault_category": "hot_row_contention", "confidence": 85, "summary"
+stop: finished
+report: dsql / hot_row_contention, confidence 85
+tokens: 25968 in + 2491 out = 28459 over 6 calls; largest request estimate 4866; log bytes scanned 797,474; wall 33s
+saved results/investigations/514d6b97e791.json

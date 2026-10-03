@@ -1,0 +1,13 @@
+{
+  "entry": 27,
+  "scenario": 6,
+  "run": 3,
+  "attempt": 1,
+  "phase": 2,
+  "status": "done",
+  "started": "2026-10-02T01:16:56.315791+00:00",
+  "run_dir": "results/chaos/06-iam-regression-20261002T011656Z",
+  "exit_code": 0,
+  "actor_invocations": 0,
+  "finished": "2026-10-02T02:16:10.393091+00:00"
+}

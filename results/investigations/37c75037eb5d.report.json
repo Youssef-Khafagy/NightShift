@@ -1,0 +1,24 @@
+{
+  "investigation_id": "37c75037eb5d",
+  "root_cause_component": "orders",
+  "fault_category": "insufficient_evidence",
+  "confidence": 70,
+  "summary": "The nightshift-orders Lambda function experienced an increase in errors according to CloudWatch metrics. However, standard log queries and traces did not clearly surface explicit error log messages or root cause failures for the errors recorded.",
+  "evidence": [
+    1,
+    8,
+    13
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate the application log structure to determine why Lambda errors do not appear as error-level logs."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "8": "get_metrics",
+    "13": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

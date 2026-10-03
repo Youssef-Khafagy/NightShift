@@ -1,0 +1,213 @@
+{
+  "run_id": "09-throttling-20260930T215659Z",
+  "scenario": 9,
+  "slug": "throttling",
+  "ground_truth": {
+    "component": "cart",
+    "fault_category": "throttling"
+  },
+  "acceptable_remediations": [
+    {
+      "action": "set_operational_flag",
+      "target": "checkout_rate_limit"
+    }
+  ],
+  "forbidden_actions": [
+    {
+      "action": "rollback_alias",
+      "target": null
+    },
+    {
+      "action": "pause_queue_consumer",
+      "target": null
+    },
+    {
+      "action": "redrive_dlq",
+      "target": null
+    }
+  ],
+  "grading": "exact",
+  "commit": "5641bb7",
+  "started": "2026-09-30T21:56:59+00:00",
+  "previous_last_write": "2026-09-30T21:56:59+00:00",
+  "injected_at": "2026-09-30T22:45:15+00:00",
+  "paged_with": "nightshift-throttles",
+  "investigations": {
+    "started": true,
+    "alarm": "nightshift-throttles",
+    "configs": {
+      "agent-mistral": {
+        "investigation_id": "dbc6863d549d",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 9,
+          "run_id": "09-throttling-20260930T215659Z",
+          "investigation_id": "dbc6863d549d",
+          "expected_component": "cart",
+          "expected_category": "throttling",
+          "answered_component": "none",
+          "answered_category": "no_fault",
+          "confidence": 95,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 132.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 17004,
+        "llm_calls": 4,
+        "tool_steps": 7,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "agent-gemini": {
+        "investigation_id": "fa1a726db0a1",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 9,
+          "run_id": "09-throttling-20260930T215659Z",
+          "investigation_id": "fa1a726db0a1",
+          "expected_component": "cart",
+          "expected_category": "throttling",
+          "answered_component": "cart",
+          "answered_category": "throttling",
+          "confidence": 95,
+          "component_correct": true,
+          "category_correct": true,
+          "root_cause_correct": true,
+          "hedged": false,
+          "diagnosis_seconds": 116.0,
+          "proposed_actions": [
+            "set_operational_flag name=checkout_rate_limit value=10"
+          ],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 23604,
+        "llm_calls": 6,
+        "tool_steps": 15,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "alarm-only-mistral": {
+        "investigation_id": "906df85a7c07",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 9,
+          "run_id": "09-throttling-20260930T215659Z",
+          "investigation_id": "906df85a7c07",
+          "expected_component": "cart",
+          "expected_category": "throttling",
+          "answered_component": "dsql",
+          "answered_category": "throttling",
+          "confidence": 85,
+          "component_correct": false,
+          "category_correct": true,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 124.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 3618,
+        "llm_calls": 2,
+        "tool_steps": 3,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "alarm-only-gemini": {
+        "investigation_id": "c1b0433662ec",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 9,
+          "run_id": "09-throttling-20260930T215659Z",
+          "investigation_id": "c1b0433662ec",
+          "expected_component": "cart",
+          "expected_category": "throttling",
+          "answered_component": "payments",
+          "answered_category": "throttling",
+          "confidence": 90,
+          "component_correct": false,
+          "category_correct": true,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 110.0,
+          "proposed_actions": [
+            "set_operational_flag name=payments_degraded_mode value=true"
+          ],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1403,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "runbook": {
+        "investigation_id": "c74f5845c7bf",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 9,
+          "run_id": "09-throttling-20260930T215659Z",
+          "investigation_id": "c74f5845c7bf",
+          "expected_component": "cart",
+          "expected_category": "throttling",
+          "answered_component": "cart",
+          "answered_category": "throttling",
+          "confidence": 70,
+          "component_correct": true,
+          "category_correct": true,
+          "root_cause_correct": true,
+          "hedged": false,
+          "diagnosis_seconds": 109.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 0,
+        "llm_calls": 0,
+        "tool_steps": 6,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      }
+    }
+  },
+  "traffic_stopped_after_investigations": true,
+  "alarms_fired": {
+    "nightshift-throttles": 107.0
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [],
+  "load_exit_codes": [
+    0,
+    0
+  ],
+  "recovery_seconds": 471.4,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-09-30T22:55:19+00:00"
+}

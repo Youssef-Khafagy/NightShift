@@ -1,0 +1,18 @@
+investigation 0e053bff27d1 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   4. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   5. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   6. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, reason | filter level = \"E
+   8. note_hypotheses {"hypotheses": "likely: timeout_regression in fulfillment due to slow dependency on payments\npossib
+   9. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=ni
+  10. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+  11. get_function_config {"service": "fulfillment"}
+  12. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "config_regression", "confidence": 99, "su
+  13. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "config_regression", "confidence": 99, "su
+stop: finished
+report: fulfillment / config_regression, confidence 99
+tokens: 24420 in + 1370 out = 25790 over 6 calls; largest request estimate 4433; log bytes scanned 1,180,997; wall 32s
+saved results/investigations/0e053bff27d1.json

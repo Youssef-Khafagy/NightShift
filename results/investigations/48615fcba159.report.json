@@ -1,0 +1,22 @@
+{
+  "investigation_id": "48615fcba159",
+  "root_cause_component": "payments",
+  "fault_category": "slow_dependency",
+  "confidence": 95,
+  "summary": "The payments service experienced high latency with p99 duration near 3.8 seconds, causing calls from the fulfillment service to fail and triggering the payment failures alarm.",
+  "evidence": [
+    3,
+    5
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate why payments service duration is high (p99 ~3.8s) and causing payment failures in fulfillment."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "3": "query_logs",
+    "5": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

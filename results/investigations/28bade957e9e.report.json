@@ -1,0 +1,22 @@
+{
+  "investigation_id": "28bade957e9e",
+  "root_cause_component": "placed-orders",
+  "fault_category": "insufficient_evidence",
+  "confidence": 90,
+  "summary": "The dead-letter queue (DLQ) for the `nightshift-placed-orders` queue has 131 messages, triggering the alarm. However, due to repeated query failures, I could not retrieve logs or confirm the root cause of the messages in the DLQ. No recent deployments were detected for the fulfillment service, and log queries failed due to syntax errors.",
+  "evidence": [
+    1,
+    2
+  ],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "2": "get_queue_stats"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": [
+    6
+  ]
+}

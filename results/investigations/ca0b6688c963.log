@@ -1,0 +1,8 @@
+alarm-only ca0b6688c963
+   1. get_alarm {"name": "throttles"}
+   2. finish_investigation {"fault_category": "throttling", "evidence_steps": "1", "proposed_actions": "Check Lambda concurrenc
+   3. finish_investigation {"confidence": 50, "proposed_actions": "Check Lambda concurrency limits and account quotas across se
+stop: finished
+report: none / insufficient_evidence, confidence 50
+tokens: 2614 in + 314 out = 2928 over 2 calls; largest request estimate 2364; log bytes scanned 0; wall 2s
+saved results/investigations/ca0b6688c963.json

@@ -1,0 +1,24 @@
+{
+  "investigation_id": "514d6b97e791",
+  "root_cause_component": "dsql",
+  "fault_category": "hot_row_contention",
+  "confidence": 85,
+  "summary": "The nightshift-placed-orders queue is stuck because the fulfillment consumer is experiencing intermittent delays due to hot row contention in the dsql database. This causes messages to age beyond the visibility timeout without being processed.",
+  "evidence": [
+    1,
+    5,
+    7
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Check for hot keys or locks in the dsql database and optimize queries or add indexing as needed."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "5": "get_queue_stats",
+    "7": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,38 @@
+Run 1a5391fc: 1.0/s for 1320s, seed 441684476
+  orders                   1,320
+  Lambda invocations       6,204   month to date    125,830   cap 500,000
+  SQS requests             3,344
+  DSQL DPU                 330.0   month to date    8,189.5   cap 50,000
+  log volume                 7.7 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "1a5391fc",
+  "date": "2026-09-30T17:46:10+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1320,
+  "seed": 441684476,
+  "projected": {
+    "orders": 1320,
+    "lambda_invocations": 6204.0,
+    "sqs_requests": 3344.0000000000005,
+    "dsql_dpu": 330.0,
+    "log_mb": 7.73388
+  },
+  "sent": 577,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 576,
+    "lambda_throttled": 1
+  },
+  "elapsed_seconds": 576.5,
+  "achieved_rate": 1.001,
+  "checkout_latency_ms": {
+    "p50": 395.0,
+    "p95": 459.7,
+    "p99": 1067.0
+  }
+}

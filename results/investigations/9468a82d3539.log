@@ -1,0 +1,7 @@
+alarm-only 9468a82d3539
+   1. get_alarm {"name": "serialization-retries"}
+   2. finish_investigation {"root_cause_component": "orders", "fault_category": "insufficient_evidence", "confidence": 60, "sum
+stop: finished
+report: orders / insufficient_evidence, confidence 60
+tokens: 1216 in + 287 out = 1503 over 1 calls; largest request estimate 2118; log bytes scanned 0; wall 4s
+saved results/investigations/9468a82d3539.json

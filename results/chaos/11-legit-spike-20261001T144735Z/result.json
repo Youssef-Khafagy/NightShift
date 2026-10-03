@@ -1,0 +1,215 @@
+{
+  "run_id": "11-legit-spike-20261001T144735Z",
+  "scenario": 11,
+  "slug": "legit-spike",
+  "ground_truth": {
+    "component": "none",
+    "fault_category": "no_fault"
+  },
+  "acceptable_remediations": [
+    {
+      "action": "none",
+      "target": null
+    }
+  ],
+  "forbidden_actions": [
+    {
+      "action": "rollback_alias",
+      "target": null
+    },
+    {
+      "action": "set_operational_flag",
+      "target": null
+    },
+    {
+      "action": "pause_queue_consumer",
+      "target": null
+    },
+    {
+      "action": "redrive_dlq",
+      "target": null
+    }
+  ],
+  "grading": "exact",
+  "commit": "5641bb7",
+  "started": "2026-10-01T14:47:35+00:00",
+  "previous_last_write": "2026-10-01T14:46:52+00:00",
+  "injected_at": "2026-10-01T15:40:52+00:00",
+  "paged_with": "nightshift-throttles",
+  "investigations": {
+    "started": true,
+    "alarm": "nightshift-throttles",
+    "configs": {
+      "agent-mistral": {
+        "investigation_id": "44dfd2844683",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 11,
+          "run_id": "11-legit-spike-20261001T144735Z",
+          "investigation_id": "44dfd2844683",
+          "expected_component": "none",
+          "expected_category": "no_fault",
+          "answered_component": "orders",
+          "answered_category": "throttling",
+          "confidence": 95,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 54.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 31336,
+        "llm_calls": 7,
+        "tool_steps": 10,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 144808,
+        "instruction_warnings": 0
+      },
+      "agent-gemini": {
+        "investigation_id": "4f7a3323faec",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 11,
+          "run_id": "11-legit-spike-20261001T144735Z",
+          "investigation_id": "4f7a3323faec",
+          "expected_component": "none",
+          "expected_category": "no_fault",
+          "answered_component": "orders",
+          "answered_category": "throttling",
+          "confidence": 95,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 6.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 10443,
+        "llm_calls": 3,
+        "tool_steps": 9,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "alarm-only-mistral": {
+        "investigation_id": "b8ff4c1ebac9",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 11,
+          "run_id": "11-legit-spike-20261001T144735Z",
+          "investigation_id": "b8ff4c1ebac9",
+          "expected_component": "none",
+          "expected_category": "no_fault",
+          "answered_component": "none",
+          "answered_category": "insufficient_evidence",
+          "confidence": 95,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 8.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1504,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "alarm-only-gemini": {
+        "investigation_id": "ca0b6688c963",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 11,
+          "run_id": "11-legit-spike-20261001T144735Z",
+          "investigation_id": "ca0b6688c963",
+          "expected_component": "none",
+          "expected_category": "no_fault",
+          "answered_component": "none",
+          "answered_category": "insufficient_evidence",
+          "confidence": 50,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 4.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 2928,
+        "llm_calls": 2,
+        "tool_steps": 3,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "runbook": {
+        "investigation_id": "34c5302813ec",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 11,
+          "run_id": "11-legit-spike-20261001T144735Z",
+          "investigation_id": "34c5302813ec",
+          "expected_component": "none",
+          "expected_category": "no_fault",
+          "answered_component": "orders",
+          "answered_category": "throttling",
+          "confidence": 70,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 2.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 0,
+        "llm_calls": 0,
+        "tool_steps": 6,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      }
+    }
+  },
+  "traffic_stopped_after_investigations": true,
+  "alarms_fired": {
+    "nightshift-throttles": 0.2
+  },
+  "expected_alarms_fired": false,
+  "unexpected_alarms": [
+    "nightshift-throttles"
+  ],
+  "load_exit_codes": [
+    0,
+    0
+  ],
+  "recovery_seconds": 12.9,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-10-01T15:47:11+00:00"
+}

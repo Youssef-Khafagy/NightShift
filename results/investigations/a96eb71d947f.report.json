@@ -1,0 +1,26 @@
+{
+  "investigation_id": "a96eb71d947f",
+  "root_cause_component": "cart",
+  "fault_category": "iam_regression",
+  "confidence": 95,
+  "summary": "A deployment changed the CART_TABLE_NAME setting for the cart service, resulting in AccessDeniedException errors when calling DynamoDB PutItem.",
+  "evidence": [
+    1,
+    2,
+    3
+  ],
+  "actions": [
+    "rollback_alias service=cart"
+  ],
+  "proposed_actions": [
+    "Check IAM permissions for the cart function regarding the new table name configured in the deployment."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "2": "query_logs",
+    "3": "list_recent_deployments"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

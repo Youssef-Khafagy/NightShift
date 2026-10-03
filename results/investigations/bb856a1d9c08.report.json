@@ -1,0 +1,22 @@
+{
+  "investigation_id": "bb856a1d9c08",
+  "root_cause_component": "cart",
+  "fault_category": "bad_deploy",
+  "confidence": 90,
+  "summary": "The nightshift-cart Lambda function alarm fired due to errors exceeding the threshold, indicating a bad deployment of the cart service. Rolling back the cart service alias will resolve the issue.",
+  "evidence": [
+    1
+  ],
+  "actions": [
+    "rollback_alias service=cart"
+  ],
+  "proposed_actions": [
+    "Monitor cart service error rates after rollback."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

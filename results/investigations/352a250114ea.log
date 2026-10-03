@@ -1,0 +1,11 @@
+investigation 352a250114ea (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. query_logs {"service": "orders", "query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @times
+   3. list_recent_deployments {"service": "orders"}
+   4. note_hypotheses {"hypotheses": "likely: bad_deploy caused orders function to throw errors due to invalid metric unit
+   5. finish_investigation {"summary": "The orders service was deployed with a bad code version (28) at 20:44 UTC, introducing
+stop: finished
+report: orders / bad_deploy, confidence 95
+tokens: 10570 in + 307 out = 10877 over 3 calls; largest request estimate 3430; log bytes scanned 227,141; wall 5s
+proposed (graded, never approved): rollback_alias service=orders
+saved results/investigations/352a250114ea.json

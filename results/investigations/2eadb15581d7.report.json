@@ -1,0 +1,26 @@
+{
+  "investigation_id": "2eadb15581d7",
+  "root_cause_component": "payments",
+  "fault_category": "slow_dependency",
+  "confidence": 85,
+  "summary": "The `nightshift-orders` Lambda function experienced a spike in errors due to downstream slowness/timeouts in the `nightshift-payments` dependency, which exhibited max trace latencies exceeding 200 seconds.",
+  "evidence": [
+    1,
+    4,
+    5,
+    14
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate payments service performance and latency spikes."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "4": "get_traces",
+    "5": "get_metrics",
+    "14": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

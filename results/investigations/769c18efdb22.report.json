@@ -1,0 +1,26 @@
+{
+  "investigation_id": "769c18efdb22",
+  "root_cause_component": "cart",
+  "fault_category": "config_regression",
+  "confidence": 100,
+  "summary": "A recent deployment changed the CART_TABLE_NAME environment variable setting for the cart service, causing cart Lambda executions to fail with AccessDeniedException when calling DynamoDB due to referencing an unauthorized table name.",
+  "evidence": [
+    3,
+    5,
+    6
+  ],
+  "actions": [
+    "rollback_alias service=cart"
+  ],
+  "proposed_actions": [
+    "None"
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "3": "list_recent_deployments",
+    "5": "get_function_config",
+    "6": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

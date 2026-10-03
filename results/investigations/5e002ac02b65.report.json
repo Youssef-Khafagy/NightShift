@@ -1,0 +1,22 @@
+{
+  "investigation_id": "5e002ac02b65",
+  "root_cause_component": "orders",
+  "fault_category": "bad_deploy",
+  "confidence": 70,
+  "summary": "orders was deployed at 2026-09-30T16:41:10.092+00:00 (code changed) before orders-errors fired. Roll it back.",
+  "evidence": [
+    1,
+    2
+  ],
+  "actions": [
+    "rollback_alias service=orders"
+  ],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "2": "list_recent_deployments"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

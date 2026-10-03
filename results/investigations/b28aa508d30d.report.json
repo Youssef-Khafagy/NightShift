@@ -1,0 +1,20 @@
+{
+  "investigation_id": "b28aa508d30d",
+  "root_cause_component": "placed-orders",
+  "fault_category": "insufficient_evidence",
+  "confidence": 50,
+  "summary": "An alarm fired indicating that the ApproximateAgeOfOldestMessage for the nightshift-placed-orders SQS queue exceeded 300 seconds. Without additional investigation tools, there is insufficient evidence to determine the exact fault category.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate the nightshift-placed-orders SQS queue and its consumer service to check why message processing age has exceeded the threshold."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

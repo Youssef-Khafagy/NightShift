@@ -1,0 +1,38 @@
+Run b21e08a2: 1.0/s for 1320s, seed 2988312738
+  orders                   1,320
+  Lambda invocations       6,204   month to date      4,173   cap 500,000
+  SQS requests             3,344
+  DSQL DPU                 330.0   month to date      217.5   cap 50,000
+  log volume                 7.7 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "b21e08a2",
+  "date": "2026-10-01T04:00:02+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1320,
+  "seed": 2988312738,
+  "projected": {
+    "orders": 1320,
+    "lambda_invocations": 6204.0,
+    "sqs_requests": 3344.0000000000005,
+    "dsql_dpu": 330.0,
+    "log_mb": 7.73388
+  },
+  "sent": 544,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 543,
+    "lambda_throttled": 1
+  },
+  "elapsed_seconds": 543.4,
+  "achieved_rate": 1.001,
+  "checkout_latency_ms": {
+    "p50": 337.8,
+    "p95": 400.2,
+    "p99": 934.0
+  }
+}

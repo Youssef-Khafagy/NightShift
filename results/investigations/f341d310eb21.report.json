@@ -1,0 +1,24 @@
+{
+  "investigation_id": "f341d310eb21",
+  "root_cause_component": "orders",
+  "fault_category": "insufficient_evidence",
+  "confidence": 60,
+  "summary": "The alarm indicates a sudden spike in errors for the `nightshift-orders` Lambda function, with 45 errors in one minute. Without additional context or logs, the root cause cannot be determined from this information alone.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "1. Check CloudWatch Logs for the `nightshift-orders` Lambda function to identify error patterns or stack traces.",
+    "2. Review recent deployments or configuration changes to the Lambda function or its dependencies.",
+    "3. Monitor downstream services (e.g., payments, fulfillment, databases) for errors or performance degradation.",
+    "4. Verify Lambda concurrency and resource allocation settings.",
+    "5. Check for any DLQ (Dead Letter Queue) messages that might indicate poison messages or retry storms."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

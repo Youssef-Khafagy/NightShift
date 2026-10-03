@@ -1,0 +1,28 @@
+{
+  "investigation_id": "1b6de169c9d7",
+  "root_cause_component": "orders",
+  "fault_category": "bad_deploy",
+  "confidence": 95,
+  "summary": "A new deployment of the orders service (version 27) introduced unhandled exceptions or logic errors, causing 100% of Lambda invocations to fail immediately after the deploy. No evidence of slow dependencies, timeouts, or configuration issues.",
+  "evidence": [
+    2,
+    3,
+    5,
+    7
+  ],
+  "actions": [
+    "rollback_alias service=orders"
+  ],
+  "proposed_actions": [
+    "Review commit 5641bb7 for the root cause of the failures."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_metrics",
+    "3": "list_recent_deployments",
+    "5": "get_traces",
+    "7": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

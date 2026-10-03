@@ -1,0 +1,28 @@
+{
+  "investigation_id": "de6493c537f0",
+  "root_cause_component": "placed-orders",
+  "fault_category": "poison_message",
+  "confidence": 100,
+  "summary": "A malformed message lacking an 'order_id' key failed repeatedly during fulfillment processing with a KeyError, causing it to remain in flight and driving up the approximate age of the oldest message in the SQS queue.",
+  "evidence": [
+    2,
+    10,
+    12,
+    14
+  ],
+  "actions": [
+    "redrive_dlq"
+  ],
+  "proposed_actions": [
+    "Inspect the malformed message in the queue or DLQ to determine why it lacks an order_id."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_queue_stats",
+    "10": "query_logs",
+    "12": "get_metrics",
+    "14": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

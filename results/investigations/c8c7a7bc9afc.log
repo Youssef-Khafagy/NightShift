@@ -1,0 +1,19 @@
+investigation c8c7a7bc9afc (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+   3. list_recent_deployments {"service": "orders", "minutes": 60}
+   4. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+   5. list_recent_deployments {"service": "orders", "minutes": 30}
+   6. query_logs {"service": "orders", "query": "fields @timestamp, @message, level | filter level = \"ERROR\" | sort
+   7. get_traces {"service": "orders", "minutes": 30}
+   8. query_logs {"service": "payments", "query": "fields @timestamp, @message, level | filter level = \"ERROR\" | so
+   9. get_metrics {"namespace": "AWS/DynamoDB", "metric": "ThrottledRequests", "statistic": "Sum", "dimensions": "Tabl
+  10. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level | filter level = \"ERROR\" |
+  11. get_metrics {"namespace": "AWS/AuroraDSQL", "metric": "CPUUtilization", "statistic": "Average", "dimensions": "D
+  12. get_traces {"service": "orders", "minutes": 30}
+  13. query_logs {"service": "orders", "query": "fields @timestamp, @message, correlation_id, duration_ms, status | f
+  14. finish_investigation {"root_cause_component": "dsql", "fault_category": "slow_dependency", "confidence": 85, "summary": "
+stop: finished
+report: dsql / slow_dependency, confidence 85
+tokens: 28840 in + 2057 out = 30897 over 7 calls; largest request estimate 4758; log bytes scanned 284,236; wall 30s
+saved results/investigations/c8c7a7bc9afc.json

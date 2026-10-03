@@ -1,0 +1,17 @@
+investigation dc12ff9306b6 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. list_recent_deployments {"service": "fulfillment"}
+   3. get_traces {"minutes": 15, "service": "fulfillment"}
+   4. query_logs {"minutes": 15, "query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp d
+   5. get_flag_values {}
+   6. lookup_recent_changes {"minutes": 15}
+   7. get_function_config {"service": "payments"}
+   8. list_recent_deployments {"service": "payments"}
+   9. query_logs {"query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp desc", "minutes"
+  10. note_hypotheses {"hypotheses": "likely: slow_dependency due to payments service latency of 5000ms configured in paym
+  11. finish_investigation {"evidence_steps": "7", "fault_category": "slow_dependency", "root_cause_component": "payments", "ac
+stop: finished
+report: payments / slow_dependency, confidence 95
+tokens: 14605 in + 456 out = 15061 over 4 calls; largest request estimate 3916; log bytes scanned 519,692; wall 9s
+proposed (graded, never approved): set_operational_flag name=payments_degraded_mode value=true
+saved results/investigations/dc12ff9306b6.json

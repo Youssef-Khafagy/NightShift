@@ -1,0 +1,18 @@
+investigation 8581c43ac23c (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. list_recent_deployments {"service": "orders", "minutes": 30}
+   3. query_logs {"service": "orders", "query": "fields @timestamp, @message, level, correlation_id | filter level =
+   4. note_hypotheses {"hypotheses": "likely: no recent deployments, so not bad_deploy\npossible: config_regression, timeo
+   5. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=ni
+   6. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+   7. get_queue_stats {}
+   8. query_logs {"service": "orders", "query": "fields @timestamp, @message, level, correlation_id, error_type, reas
+   9. get_traces {"service": "orders", "minutes": 5}
+  10. get_function_config {"service": "orders"}
+  11. query_logs {"service": "orders", "query": "fields @timestamp, @message, correlation_id, error_type, reason, sta
+  12. finish_investigation {"root_cause_component": "placed-orders", "fault_category": "iam_regression", "confidence": 99, "sum
+  13. finish_investigation {"root_cause_component": "placed-orders", "fault_category": "iam_regression", "confidence": 99, "sum
+stop: finished
+report: placed-orders / iam_regression, confidence 99
+tokens: 35008 in + 1679 out = 36687 over 8 calls; largest request estimate 5475; log bytes scanned 456,889; wall 43s
+saved results/investigations/8581c43ac23c.json

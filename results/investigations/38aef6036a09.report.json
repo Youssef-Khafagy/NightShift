@@ -1,0 +1,22 @@
+{
+  "investigation_id": "38aef6036a09",
+  "root_cause_component": "placed-orders",
+  "fault_category": "poison_message",
+  "confidence": 85,
+  "summary": "The nightshift-placed-orders SQS queue alarm fired because the approximate age of the oldest message exceeded 355 seconds (threshold 300), indicating a poison message is failing repeatedly and backing up the queue. Pausing the queue consumer will allow investigation of the failing message.",
+  "evidence": [
+    1
+  ],
+  "actions": [
+    "pause_queue_consumer"
+  ],
+  "proposed_actions": [
+    "Investigate the dead-letter queue and inspect the malformed message in the nightshift-placed-orders queue."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

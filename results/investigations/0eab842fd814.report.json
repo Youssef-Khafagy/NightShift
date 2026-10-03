@@ -1,0 +1,22 @@
+{
+  "investigation_id": "0eab842fd814",
+  "root_cause_component": "placed-orders",
+  "fault_category": "poison_message",
+  "confidence": 85,
+  "summary": "The `nightshift-placed-orders-dlq` queue has 30 messages, far exceeding the threshold of 1. This suggests a poison message or a persistent error in the `placed-orders` processing pipeline, causing messages to repeatedly fail and accumulate in the dead-letter queue.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate the messages in the `nightshift-placed-orders-dlq` queue for errors or malformed data.",
+    "Check the CloudWatch Logs for `placed-orders` processing errors around the time the DLQ messages arrived.",
+    "Consider redriving the DLQ if the issue is intermittent or to reprocess messages manually after fixing the root cause."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

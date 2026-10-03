@@ -1,0 +1,13 @@
+{
+  "entry": 32,
+  "scenario": 14,
+  "run": 3,
+  "attempt": 1,
+  "phase": 2,
+  "status": "done",
+  "started": "2026-10-02T19:25:08.568139+00:00",
+  "run_dir": "results/chaos/14-missing-telemetry-20261002T192508Z",
+  "exit_code": 0,
+  "actor_invocations": 0,
+  "finished": "2026-10-02T20:28:11.320015+00:00"
+}

@@ -1,0 +1,7 @@
+runbook b4e8b98b0a8b
+   1. get_alarm {"name": "queue-age"}
+   2. list_recent_deployments {"minutes": 30}
+stop: finished
+report: none / insufficient_evidence, confidence 0
+tokens: 0 in + 0 out = 0 over 0 calls; largest request estimate 0; log bytes scanned 0; wall 0s
+saved results/investigations/b4e8b98b0a8b.json

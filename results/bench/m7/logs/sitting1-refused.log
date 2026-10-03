@@ -1,0 +1,48 @@
+entry 1: scenario 4 run 2
+entry 2: scenario 1 run 3
+entry 3: scenario 11 run 2
+entry 4: scenario 10 run 1
+entry 5: scenario 13 run 1
+entry 6: scenario 1 run 1
+entry 7: scenario 3 run 1
+entry 8: scenario 9 run 1
+entry 9: scenario 11 run 3
+NightShift cost check, 2026-09-30 14:50 UTC
+
+Billing view (Free Tier API, lags about a day)
+  OK     AWS Glue: Catalog-Request                                                41.00 /    1,000,000     0.00%  Request; forecast 41
+  OK     AWS Lambda: Lambda-GB-Second                                          3,077.70 /      400,000     0.77%  Lambda-GB-Second; forecast 3,078
+  OK     AWS Lambda: Request                                                 123,193.00 /    1,000,000    12.32%  Request; forecast 1.232e+05
+  OK     Amazon Simple Queue Service: Requests                                86,746.00 /    1,000,000     8.68%  Requests; forecast 8.675e+04
+  OK     AWS X-Ray: XRay-TracesAccessed                                       13,182.00 /    1,000,000     1.32%  traces; forecast 1.318e+04
+  WATCH  AWS X-Ray: XRay-TracesStored                                         60,331.00 /      100,000    60.33%  Traces; forecast 6.033e+04
+  OK     AmazonCloudWatch: CW:AlarmMonitorUsage                                    2.38 /           10    23.81%  Alarms; forecast 2.381
+  OK     AmazonCloudWatch: CW:MetricMonitorUsage                                   0.11 /           10     1.14%  Metrics; forecast 0.1139
+  OK     AmazonCloudWatch: CW:Requests                                           641.00 /    1,000,000     0.06%  Requests; forecast 641
+  OK     AmazonCloudWatch: TimedStorage-ByteHrs                                    0.00 /            5     0.07%  GB-Mo; forecast 0.003714
+  OK     AmazonCloudWatch: DataProcessing-Bytes                                    0.15 /            5     3.06%  GB; forecast 0.1531
+  OK     AmazonCloudWatch: DataScanned-Bytes                                       0.02 /            5     0.31%  GB; forecast 0.0153
+  OK     Amazon DynamoDB: CAN1-TimedStorage-ByteHrs                                0.00 /           25     0.00%  GB-Mo; forecast 0.0003422
+  OK     Amazon DynamoDB: CAN1-ReadCapacityUnit-Hrs                            2,042.00 /       18,600    10.98%  ReadCapacityUnit-Hrs; forecast 2,042
+  OK     Amazon DynamoDB: CAN1-WriteCapacityUnit-Hrs                           2,042.00 /       18,600    10.98%  WriteCapacityUnit-Hrs; forecast 2,042
+  OK     Amazon Simple Notification Service: CAN1-DeliveryAttempts-SMTP           82.00 /        1,000     8.20%  Notifications; forecast 82
+  OK     Amazon Simple Notification Service: CAN1-Requests-Tier1                 566.00 /    1,000,000     0.06%  Requests; forecast 566
+  OK     Amazon Simple Notification Service: Requests-Tier1                        3.00 /    1,000,000     0.00%  Requests; forecast 3
+  OK     AWS Key Management Service: KMS-Requests                                 34.00 /       20,000     0.17%  Requests; forecast 34
+
+Live view (CloudWatch, month to date)
+  OK     Aurora DSQL: TotalDPU                                                 8,050.08 /      100,000     8.05%  not tracked by the Free Tier API or its alerts
+  OK     Lambda: invocations, all functions                                  123,193.00 /    1,000,000    12.32%
+  OK     SQS: requests, project queues                                       111,276.00 /    1,000,000    11.13%  upper bound: batched calls counted per message
+  OK     CloudWatch Logs: bytes ingested, project groups                 164,355,799.00 / 5,000,000,000     3.29%  ingestion only; the 5 GB also covers storage and Insights scans
+  WATCH  CloudWatch: custom metrics                                                5.00 /           10    50.00%  ledger in COST.md
+  OK     CloudWatch: alarm metrics                                                10.00 /           10   100.00%  fixed allocation: ALERT only above the limit
+
+0 ALERT, 2 WATCH, 23 OK
+Scenario 4 (slow-dependency)
+Quiet gap: 45 min; last run wrote at 2026-09-27 10:13:41+00:00
+PREFLIGHT FAILED:
+  the queue consumer is off; scripts/consumer.py on
+entry 1: refused
+entry 1 was refused before any write; see above
+BATCH EXIT 1 at 2026-09-30T14:51:05Z

@@ -1,0 +1,15 @@
+investigation dda48be75eeb (mistral ministral-14b-latest)
+   1. get_queue_stats {}
+   2. get_metrics {"namespace": "AWS/SQS", "metric": "ApproximateNumberOfMessagesVisible", "statistic": "Sum", "dimens
+   3. get_metrics {"namespace": "AWS/SQS", "metric": "ApproximateNumberOfMessagesVisible", "statistic": "Sum", "dimens
+   4. list_recent_deployments {"service": "orders", "minutes": 30}
+   5. get_traces {"service": "orders", "minutes": 5}
+   6. query_logs {"service": "orders", "query": "fields @timestamp, level, message, duration_ms, correlation_id | fil
+   7. get_function_config {"service": "orders"}
+   8. finish_investigation {"root_cause_component": "orders", "fault_category": "throttling", "confidence": 95, "summary": "The
+   9. finish_investigation {"root_cause_component": "orders", "fault_category": "throttling", "confidence": 95, "summary": "The
+  10. finish_investigation {"root_cause_component": "orders", "fault_category": "throttling", "confidence": 95, "summary": "The
+stop: finished
+report: orders / throttling, confidence 95
+tokens: 34652 in + 2635 out = 37287 over 8 calls; largest request estimate 4853; log bytes scanned 58,809; wall 32s
+saved results/investigations/dda48be75eeb.json

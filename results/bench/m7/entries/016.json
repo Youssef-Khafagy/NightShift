@@ -1,0 +1,13 @@
+{
+  "entry": 16,
+  "scenario": 1,
+  "run": 2,
+  "attempt": 1,
+  "phase": 1,
+  "status": "done",
+  "started": "2026-10-01T11:31:22.750173+00:00",
+  "run_dir": "results/chaos/01-bad-deploy-20261001T113122Z",
+  "exit_code": 0,
+  "actor_invocations": 0,
+  "finished": "2026-10-01T12:33:58.308086+00:00"
+}

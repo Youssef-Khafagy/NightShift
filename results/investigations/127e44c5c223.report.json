@@ -1,0 +1,28 @@
+{
+  "investigation_id": "127e44c5c223",
+  "root_cause_component": "payments",
+  "fault_category": "slow_dependency",
+  "confidence": 95,
+  "summary": "The `payments` Lambda became extremely slow (p99 duration spiked to 5016ms) and throttled (22 requests blocked) at 15:42:00, causing downstream failures in `fulfillment`. This is a slow_dependency issue.",
+  "evidence": [
+    6,
+    8,
+    9,
+    10
+  ],
+  "actions": [
+    "pause_queue_consumer"
+  ],
+  "proposed_actions": [
+    "Investigate why the `payments` Lambda slowed down (e.g., database, external dependencies)."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "6": "query_logs",
+    "8": "get_metrics",
+    "9": "get_metrics",
+    "10": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

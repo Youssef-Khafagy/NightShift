@@ -1,0 +1,9 @@
+alarm-only 2cb9b9e2d679
+   1. get_alarm {"name": "throttles"}
+   2. finish_investigation {"root_cause_component": "none", "fault_category": "throttling", "confidence": 90, "summary": "The A
+   3. finish_investigation {"root_cause_component": "none", "fault_category": "throttling", "confidence": 90, "summary": "The A
+   4. finish_investigation {"root_cause_component": "dsql", "fault_category": "throttling", "confidence": 85, "summary": "The L
+stop: finished
+report: dsql / throttling, confidence 85
+tokens: 4907 in + 1030 out = 5937 over 3 calls; largest request estimate 3060; log bytes scanned 0; wall 10s
+saved results/investigations/2cb9b9e2d679.json

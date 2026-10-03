@@ -1,0 +1,7 @@
+alarm-only b8ff4c1ebac9
+   1. get_alarm {"name": "throttles"}
+   2. finish_investigation {"root_cause_component": "none", "fault_category": "insufficient_evidence", "confidence": 95, "summa
+stop: finished
+report: none / insufficient_evidence, confidence 95
+tokens: 1183 in + 321 out = 1504 over 1 calls; largest request estimate 2097; log bytes scanned 0; wall 6s
+saved results/investigations/b8ff4c1ebac9.json

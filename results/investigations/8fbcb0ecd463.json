@@ -1,0 +1,364 @@
+{
+  "config": {
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "max_tokens_per_investigation": 100000,
+    "max_steps": 15,
+    "max_wall_seconds": 840,
+    "input_token_cap": 24000,
+    "max_output_tokens": 1500,
+    "full_results_kept": 3,
+    "max_tool_output_chars": 2500,
+    "log_scan_cap_bytes": 20971520,
+    "max_log_query_minutes": 30
+  },
+  "state": {
+    "investigation_id": "8fbcb0ecd463",
+    "trigger": {
+      "name": "nightshift-queue-age",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).",
+      "since": "2026-10-01T13:34:58Z",
+      "metric": {
+        "namespace": "AWS/SQS",
+        "name": "ApproximateAgeOfOldestMessage",
+        "dimensions": {
+          "QueueName": "nightshift-placed-orders"
+        },
+        "statistic": "Maximum",
+        "period_seconds": 300
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 300.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-10-01T13:34:58Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-10-01T13:35:09+00:00",
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "turn": 4,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-10-01T13:35:10+00:00",
+        "tool": "get_alarm",
+        "args": {},
+        "call_id": "call_108795",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"alarms\":[{\"name\":\"nightshift-cart-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-checkout-latency\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-dlq-depth\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-fulfillment-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-orders-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-payment-failures\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-payments-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-queue-age\",\"state\":\"ALARM\",\"since\":\"2026-10-01T13:34:58Z\"},{\"name\":\"nightshift-serialization-retries\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-throttles\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"}]}}",
+        "summary": "{\"alarms\":[{\"name\":\"nightshift-cart-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-checkout-latency\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-dlq-depth\",\"state\":\"OK\",\"since\":\"more th...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0T62D7ZivfvZ87h03IxO9oPCuBSRLJsv+oX5QxpF0qJU/yxXss72esh0IeFFl/1DCO7XHAshhK3uimoWVeF5y4Q+LM7V3k2R4CL4nyjNevwyxF8utihynrMXc="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 1,
+        "at": "2026-10-01T13:35:11+00:00",
+        "tool": "get_queue_stats",
+        "args": {},
+        "call_id": "call_108796",
+        "result": "{\"tool\":\"get_queue_stats\",\"truncated\":false,\"untrusted_data\":{\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":8,\"visibility_timeout_seconds\":180},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":0,\"in_flight\":0,\"visibility_timeout_seconds\":30},\"max_receive_count\":3,\"consumer\":[{\"function\":\"nightshift-fulfillment:live\",\"state\":\"Enabled\",\"batch_size\":10,\"maximum_concurrency\":2}]}}}}",
+        "summary": "{\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":8,\"visibility_timeout_seconds\":180},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":0,\"in_flight\":0,\"visibility_t...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 3,
+        "turn": 1,
+        "at": "2026-10-01T13:35:11+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "minutes": 30
+        },
+        "call_id": "call_108797",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 4,
+        "turn": 2,
+        "at": "2026-10-01T13:35:12+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "likely: slow_dependency or timeout in fulfillment consumer processing SQS messages\npossible: queue consumer is stuck or processing very slowly\nruled_out: bad_deploy (no recent deployments)"
+        },
+        "call_id": "call_138203",
+        "result": "{\"ok\": \"3 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"3 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0Tp769B8eYsKk5ruhq4hAdorzIiGaijJBTJYTGdnmnpGBno2QgE+jQjQhzd6unwj0oGsQRrG2hLsFahqi4ZMC+oXhX8qfDTQfK9l+mSJPm4vWdX8MQMBOgpWc="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 5,
+        "turn": 2,
+        "at": "2026-10-01T13:35:13+00:00",
+        "tool": "get_traces",
+        "args": {
+          "minutes": 15,
+          "service": "fulfillment"
+        },
+        "call_id": "call_138204",
+        "result": "{\"tool\":\"get_traces\",\"truncated\":false,\"untrusted_data\":{\"service\":\"nightshift-fulfillment\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":191,\"with_error\":0,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.909,\"p99\":3.662,\"max\":288.541},\"slowest\":[{\"id\":\"1-6abe60bb-4e29180f3f92924c85328409\",\"seconds\":288.541},{\"id\":\"1-6abe5f0d-c4401676681690c051b44b47\",\"seconds\":4.285},{\"id\":\"1-6abe5f0e-e2a1d757e52cd6ffe6cea621\",\"seconds\":3.662},{\"id\":\"1-6abe5f1f-4af4a586e96aad3230acf344\",\"seconds\":2.252},{\"id\":\"1-6abe6129-46c2387237b670ebc11c0b64\",\"seconds\":1.764}]}}",
+        "summary": "{\"service\":\"nightshift-fulfillment\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":191,\"with_error\":0,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.909,\"p99\":3.662,\"max\":288.541},\"sl...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 6,
+        "turn": 2,
+        "at": "2026-10-01T13:35:14+00:00",
+        "tool": "query_logs",
+        "args": {
+          "query": "fields @timestamp, @message, level | sort @timestamp desc | limit 20",
+          "minutes": 15,
+          "service": "fulfillment"
+        },
+        "call_id": "call_138205",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 13:35:06.614\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T13:35:06.614Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"1e605dcb-4b96-53d6-b7e7-3ef32827561e\\\",\\\"metrics\\\":{\\\"durationMs\\\":824.478,\\\"billedDurationMs\\\":825,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":112},\\\"tracing\\\":{\\\"spanId\\\":\\\"f31d0f0c4619ed3c\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6a...[109 chars cut]\"},{\"@timestamp\":\"2026-10-01 13:35:06.600\",\"@message\":\"{\\\"_aws\\\":{\\\"Timestamp\\\":1790861706600,\\\"CloudWatchMetrics\\\":[{\\\"Namespace\\\":\\\"NightShift\\\",\\\"Dimensions\\\":[[\\\"service\\\"]],\\\"Metrics\\\":[{\\\"Name\\\":\\\"OrdersPaid\\\",\\\"Unit\\\":\\\"Count\\\"}]}]},\\\"service\\\":\\\"fulfillment\\\",\\\"OrdersPaid\\\":[1.0,1.0,1.0]}\\n\"},{\"@timestamp\":\"2026-10-01 13:35:06.600\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"process:145\\\",\\\"message\\\":\\\"order paid\\\",\\\"timestamp\\\":\\\"2026-10-01 13:35:06,599+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-90d4c1c8-644\\\",\\\"order_id\\\":\\\"6e821da5-8543-4b5e-b64d-a468ba695557\\\",\\\"payment_id\\\":\\\"9794ea1d-84fa-4b11-8b06-e7a6865a2e6b\\\",\\\"xray_trace_id\\\":\\\"1-6abe6189-e1...[25 chars cut]\",\"level\":\"INFO\"},{\"@timestamp\":\"2026-10-01 13:35:06.315\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"process:145\\\",\\\"message\\\":\\\"order paid\\\",\\\"timestamp\\\":\\\"2026-10-01 13:35:06,315+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-90d4c1c8-643\\\",\\\"order_id\\\":\\\"35fcec46-296f-4fde-b635-a2aac384a0c5\\\",\\\"payment_id\\\":\\\"b7ef94f0-fa3f-4b7e-b99b-85c7e4898204\\\",\\\"xray_trace_id\\\":\\\"1-6abe6189-e1...[25 chars cut]\",\"level\":\"INFO\"},{\"@timestamp\":\"2026-10-01 13:35:06.039\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"process:145\\\",\\\"message\\\":\\\"order paid\\\",\\\"timestamp\\\":\\\"2026-10-01 13:35:06,039+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-90d4c1c8-640\\\",\\\"order_id\\\":\\\"5b0c8033-57f3-4f85-bf6a-c7baec703f54\\\",\\\"payment_id\\\":\\\"4ed66268-0d19-4e40-9da9-0baec307c895\\\",\\\"xray_trace_id\\\":\\\"1-6abe6189-e1...[25 chars cut]\",\"level\":\"INFO\"},\"...[15 more items cut]\"],\"bytes_scanned\":448841,\"scan_budget_left_bytes\":20522679}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 13:35:06.614\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T13:35:06.614Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"1e605dcb-4b96-53d6-b7e7-3ef32827561e\\\",\\\"metrics\\\":{\\\"durationM...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 7,
+        "turn": 3,
+        "at": "2026-10-01T13:35:16+00:00",
+        "tool": "get_function_config",
+        "args": {
+          "service": "fulfillment"
+        },
+        "call_id": "call_118666",
+        "result": "{\"tool\":\"get_function_config\",\"truncated\":false,\"untrusted_data\":{\"function\":\"nightshift-fulfillment\",\"live_alias_version\":\"7\",\"last_modified\":\"more than 30 minutes ago\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":30,\"reserved_concurrency\":2,\"state\":\"Active\",\"code_sha256\":\"Qu3/XPxCmXaWPXZdVpICalRSNrIXkZ6si8xPuHY/geY=\",\"environment\":{\"DSQL_ENDPOINT\":\"<DSQL_CLUSTER_ID>.dsql.ca-central-1.on.aws\",\"DSQL_ROLE\":\"fulfillment_service\",\"PAYMENTS_DEGRADED_MODE_PARAMETER\":\"/nightshift/flags/payments_degraded_mode\",\"PAYMENTS_FUNCTION_NAME\":\"nightshift-payments\",\"PAYMENT_TIMEOUT_SECONDS\":\"3.0\",\"POWERTOOLS_LOG_LEVEL\":\"INFO\",\"POWERTOOLS_SERVICE_NAME\":\"fulfillment\"}}}",
+        "summary": "{\"function\":\"nightshift-fulfillment\",\"live_alias_version\":\"7\",\"last_modified\":\"more than 30 minutes ago\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":30,\"reserved_concurrency\":2,\"state\":\"Active\",\"code_sha256\":\"Qu3/XPxCmXaWPXZdVp...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TBiCPXqxjb0xK0GFMlufPQJEQTIKgPgkxOq3sbrsp/lE+qEN+ALmYsMs6xKaowRjDycHJ9X6xvgfATQvk7qe6N7fR/BBvcET+q/uNLH1lj0BBl8IFIoXLr/Q="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 8,
+        "turn": 3,
+        "at": "2026-10-01T13:35:17+00:00",
+        "tool": "query_logs",
+        "args": {
+          "service": "fulfillment",
+          "minutes": 15,
+          "query": "fields @timestamp, @message | filter level = \"ERROR\" or level = \"WARN\" | sort @timestamp desc | limit 20"
+        },
+        "call_id": "call_118667",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 13:33:18.698\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-10-01 13:33:18,697+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"e3e1b203-111d-4766-9118-0e540742784c\\\",\\\"message_id\\\":\\\"e3e1b203-111d-4766-9118-0e540742784c\\\",\\\"reason\\\":\\\"'order_id'\\\",\\\"exception\\\":\\\"Traceback (most recen...[669 chars cut]\"},{\"@timestamp\":\"2026-10-01 13:30:20.204\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-10-01 13:30:20,203+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"e3e1b203-111d-4766-9118-0e540742784c\\\",\\\"message_id\\\":\\\"e3e1b203-111d-4766-9118-0e540742784c\\\",\\\"reason\\\":\\\"'order_id'\\\",\\\"exception\\\":\\\"Traceback (most recen...[669 chars cut]\"},{\"@timestamp\":\"2026-10-01 13:27:20.651\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-10-01 13:27:20,650+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"e3e1b203-111d-4766-9118-0e540742784c\\\",\\\"message_id\\\":\\\"e3e1b203-111d-4766-9118-0e540742784c\\\",\\\"reason\\\":\\\"'order_id'\\\",\\\"exception\\\":\\\"Traceback (most recen...[669 chars cut]\"}],\"bytes_scanned\":371734,\"scan_budget_left_bytes\":20150945}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 13:33:18.698\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-10-01 13:33:18,697+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"c...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 9,
+        "turn": 3,
+        "at": "2026-10-01T13:35:17+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "statistic": "Maximum",
+          "metric": "Duration",
+          "minutes": 15,
+          "namespace": "AWS/Lambda"
+        },
+        "call_id": "call_118668",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Duration {} Maximum per 60s\",\"window_minutes\":15,\"points\":[[\"13:24:00Z\",3316.55],[\"13:25:00Z\",1717.88],[\"13:26:00Z\",1713.64],[\"13:27:00Z\",1683.77],[\"13:28:00Z\",1367.06],[\"13:29:00Z\",1648.97],[\"13:30:00Z\",1471.92],[\"13:31:00Z\",1449.95],[\"13:32:00Z\",1681.59],[\"13:33:00Z\",1758.18],[\"13:34:00Z\",1695.22]],\"summary\":{\"min\":1367.06,\"max\":3316.55,\"count\":11}}}",
+        "summary": "{\"metric\":\"AWS/Lambda Duration {} Maximum per 60s\",\"window_minutes\":15,\"points\":[[\"13:24:00Z\",3316.55],[\"13:25:00Z\",1717.88],[\"13:26:00Z\",1713.64],[\"13:27:00Z\",1683.77],[\"13:28:00Z\",1367.06],[\"13:29:00Z\",1648.97],[\"13:30:00Z\",1471.92],[\"13:...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 10,
+        "turn": 4,
+        "at": "2026-10-01T13:35:19+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "likely: poison_message causing repeated failures and message retries (retry storm / visibility timeout holds) for message_id e3e1b203-111d-4766-9118-0e540742784c\nruled_out: slow_dependency or timeout in fulfillment consumer processing SQS messages\nruled_out: queue consumer is stuck or processing very slowly\nruled_out: bad_deploy (no recent deployments)"
+        },
+        "call_id": "call_104259",
+        "result": "{\"ok\": \"4 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"4 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0Tpw/hJI3Qr6+w74C6z3vGVk0KraAN3LtyhkOt86CrplxayScV96JiKPoyuZycOtsNferiSQ93oNmjZe3rAYxICOpgfuxt9dfZ2c47EXMD91ZhJSb//NTP6Pg="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 11,
+        "turn": 4,
+        "at": "2026-10-01T13:35:19+00:00",
+        "tool": "finish_investigation",
+        "args": {
+          "proposed_actions": "Inspect the malformed message in the queue or check dead-letter queue settings.",
+          "actions": "pause_queue_consumer",
+          "root_cause_component": "placed-orders",
+          "hypotheses": "likely: poison_message causing repeated failures and message retries (retry storm / visibility timeout holds) for message_id e3e1b203-111d-4766-9118-0e540742784c\nruled_out: slow_dependency or timeout in fulfillment consumer processing SQS messages\nruled_out: queue consumer is stuck or processing very slowly\nruled_out: bad_deploy (no recent deployments)",
+          "fault_category": "poison_message",
+          "confidence": 95,
+          "summary": "A malformed message lacking 'order_id' is repeatedly failing processing in the fulfillment Lambda function. Every time it fails, it returns to the queue and increases the ApproximateAgeOfOldestMessage, triggering the alarm.",
+          "evidence_steps": "2,8"
+        },
+        "call_id": "call_104260",
+        "result": "{\"ok\": \"investigation closed\"}",
+        "summary": "\"{\\\"ok\\\": \\\"investigation closed\\\"}\"",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      }
+    ],
+    "calls": [
+      {
+        "turn": 1,
+        "at": "2026-10-01T13:35:10+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2732,
+        "output_tokens": 40,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2513,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 2,
+        "at": "2026-10-01T13:35:12+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3255,
+        "output_tokens": 122,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2961,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 3,
+        "at": "2026-10-01T13:35:15+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4515,
+        "output_tokens": 108,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3683,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 4,
+        "at": "2026-10-01T13:35:19+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4713,
+        "output_tokens": 362,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3856,
+        "rate_limit_headers": {}
+      }
+    ],
+    "hypotheses": [
+      {
+        "status": "likely",
+        "text": "poison_message causing repeated failures and message retries (retry storm / visibility timeout holds) for message_id e3e1b203-111d-4766-9118-0e540742784c"
+      },
+      {
+        "status": "ruled_out",
+        "text": "slow_dependency or timeout in fulfillment consumer processing SQS messages"
+      },
+      {
+        "status": "ruled_out",
+        "text": "queue consumer is stuck or processing very slowly"
+      },
+      {
+        "status": "ruled_out",
+        "text": "bad_deploy (no recent deployments)"
+      }
+    ],
+    "hypothesis_changes": [
+      {
+        "step": 4,
+        "before": [],
+        "after": [
+          {
+            "status": "likely",
+            "text": "slow_dependency or timeout in fulfillment consumer processing SQS messages"
+          },
+          {
+            "status": "possible",
+            "text": "queue consumer is stuck or processing very slowly"
+          },
+          {
+            "status": "ruled_out",
+            "text": "bad_deploy (no recent deployments)"
+          }
+        ]
+      },
+      {
+        "step": 10,
+        "before": [
+          {
+            "status": "likely",
+            "text": "slow_dependency or timeout in fulfillment consumer processing SQS messages"
+          },
+          {
+            "status": "possible",
+            "text": "queue consumer is stuck or processing very slowly"
+          },
+          {
+            "status": "ruled_out",
+            "text": "bad_deploy (no recent deployments)"
+          }
+        ],
+        "after": [
+          {
+            "status": "likely",
+            "text": "poison_message causing repeated failures and message retries (retry storm / visibility timeout holds) for message_id e3e1b203-111d-4766-9118-0e540742784c"
+          },
+          {
+            "status": "ruled_out",
+            "text": "slow_dependency or timeout in fulfillment consumer processing SQS messages"
+          },
+          {
+            "status": "ruled_out",
+            "text": "queue consumer is stuck or processing very slowly"
+          },
+          {
+            "status": "ruled_out",
+            "text": "bad_deploy (no recent deployments)"
+          }
+        ]
+      }
+    ],
+    "log_bytes_scanned": 820575,
+    "rejected_calls": 0,
+    "wall_seconds_used": 10.038649167996482,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "proposed_actions": "Inspect the malformed message in the queue or check dead-letter queue settings.",
+      "actions": "pause_queue_consumer",
+      "root_cause_component": "placed-orders",
+      "hypotheses": "likely: poison_message causing repeated failures and message retries (retry storm / visibility timeout holds) for message_id e3e1b203-111d-4766-9118-0e540742784c\nruled_out: slow_dependency or timeout in fulfillment consumer processing SQS messages\nruled_out: queue consumer is stuck or processing very slowly\nruled_out: bad_deploy (no recent deployments)",
+      "fault_category": "poison_message",
+      "confidence": 95,
+      "summary": "A malformed message lacking 'order_id' is repeatedly failing processing in the fulfillment Lambda function. Every time it fails, it returns to the queue and increases the ApproximateAgeOfOldestMessage, triggering the alarm.",
+      "evidence_steps": "2,8"
+    }
+  }
+}

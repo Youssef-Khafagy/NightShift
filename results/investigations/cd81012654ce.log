@@ -1,0 +1,19 @@
+investigation cd81012654ce (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. list_recent_deployments {"service": "orders", "minutes": 30}
+   3. query_logs {"service": "orders", "query": "fields @timestamp, @message, level, correlation_id | filter level =
+   4. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=ni
+   5. get_metrics {"namespace": "AWS/Lambda", "metric": "Invocations", "statistic": "Sum", "dimensions": "FunctionName
+   6. get_queue_stats {}
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, correlation_id | filter lev
+   8. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=ni
+   9. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+  10. get_function_config {"service": "fulfillment"}
+  11. get_metrics {"namespace": "AWS/AuroraDSQL", "metric": "CPUUtilization", "statistic": "Average", "dimensions": "D
+  12. get_metrics {"namespace": "AWS/AuroraDSQL", "metric": "Latency", "statistic": "Average", "dimensions": "DBInstan
+  13. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, correlation_id, duration |
+  14. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "slow_dependency", "confidence": 85, "summ
+stop: finished
+report: fulfillment / slow_dependency, confidence 85
+tokens: 30517 in + 2324 out = 32841 over 7 calls; largest request estimate 5162; log bytes scanned 172,667; wall 50s
+saved results/investigations/cd81012654ce.json

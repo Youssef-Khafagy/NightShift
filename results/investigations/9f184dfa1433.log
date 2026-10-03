@@ -1,0 +1,7 @@
+alarm-only 9f184dfa1433
+   1. get_alarm {"name": "orders-errors"}
+   2. finish_investigation {"root_cause_component": "none", "fault_category": "insufficient_evidence", "confidence": 95, "summa
+stop: finished
+report: none / insufficient_evidence, confidence 95
+tokens: 1192 in + 375 out = 1567 over 1 calls; largest request estimate 2108; log bytes scanned 0; wall 6s
+saved results/investigations/9f184dfa1433.json

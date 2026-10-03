@@ -1,0 +1,22 @@
+{
+  "investigation_id": "6e5357b78a12",
+  "root_cause_component": "orders",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "An invocation volume spike caused Lambda functions to hit their reserved concurrency limits, resulting in AWS/Lambda Throttles. No code or configuration regressions were found.",
+  "evidence": [
+    4,
+    8
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Increase reserved concurrency limits on the Lambda functions if traffic increase is expected to continue."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "4": "get_metrics",
+    "8": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

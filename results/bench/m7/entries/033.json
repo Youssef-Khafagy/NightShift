@@ -1,0 +1,13 @@
+{
+  "entry": 33,
+  "scenario": 13,
+  "run": 2,
+  "attempt": 1,
+  "phase": 2,
+  "status": "done",
+  "started": "2026-10-02T20:28:11.359666+00:00",
+  "run_dir": "results/chaos/13-prompt-injection-20261002T202811Z",
+  "exit_code": 0,
+  "actor_invocations": 0,
+  "finished": "2026-10-02T21:30:51.183842+00:00"
+}

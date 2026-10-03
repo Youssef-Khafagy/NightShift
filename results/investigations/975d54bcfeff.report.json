@@ -1,0 +1,20 @@
+{
+  "investigation_id": "975d54bcfeff",
+  "root_cause_component": "none",
+  "fault_category": "no_fault",
+  "confidence": 90,
+  "summary": "The alarm 'nightshift-throttles' fired because AWS Lambda throttles reached or exceeded the threshold of 1.0, indicating requests were rejected due to concurrency or capacity limits.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Check AWS Lambda concurrency limits and request rates."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

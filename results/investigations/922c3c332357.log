@@ -1,0 +1,7 @@
+alarm-only 922c3c332357
+   1. get_alarm {"name": "serialization-retries"}
+   2. finish_investigation {"actions": "", "evidence_steps": "1", "proposed_actions": "Monitor the orders service for serializa
+stop: finished
+report: orders / hot_row_contention, confidence 100
+tokens: 1212 in + 155 out = 1367 over 1 calls; largest request estimate 2118; log bytes scanned 0; wall 1s
+saved results/investigations/922c3c332357.json

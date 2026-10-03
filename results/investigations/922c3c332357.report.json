@@ -1,0 +1,20 @@
+{
+  "investigation_id": "922c3c332357",
+  "root_cause_component": "orders",
+  "fault_category": "hot_row_contention",
+  "confidence": 100,
+  "summary": "The nightshift-serialization-retries alarm for the orders service fired due to high serialization retries (10.0 per period for multiple consecutive periods), indicating hot row contention in database transactions.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Monitor the orders service for serialization retry rates and transaction aborts."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,20 @@
+{
+  "investigation_id": "c55387286126",
+  "root_cause_component": "fulfillment",
+  "fault_category": "throttling",
+  "confidence": 90,
+  "summary": "The fulfillment service encountered TooManyRequestsException errors when making invoke requests, leading to payment failures and triggering the alarm.",
+  "evidence": [
+    6
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Check concurrency limits or invoke rates for the downstream service called by fulfillment."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "6": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

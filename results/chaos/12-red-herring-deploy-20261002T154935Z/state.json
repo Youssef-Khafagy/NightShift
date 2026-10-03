@@ -1,0 +1,25 @@
+[
+  {
+    "kind": "code",
+    "service": "cart",
+    "recorded": true,
+    "previous": "18",
+    "new": "23",
+    "restored": true
+  },
+  {
+    "kind": "env",
+    "service": "payments",
+    "original_env": {
+      "POWERTOOLS_SERVICE_NAME": "payments",
+      "POWERTOOLS_LOG_LEVEL": "INFO",
+      "PAYMENT_LATENCY_JITTER_MS": "20",
+      "PAYMENT_ERROR_RATE": "0",
+      "PAYMENT_LATENCY_MS": "40"
+    },
+    "recorded": false,
+    "previous": "7",
+    "new": "19",
+    "restored": true
+  }
+]

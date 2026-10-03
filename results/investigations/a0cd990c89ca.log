@@ -1,0 +1,21 @@
+investigation a0cd990c89ca (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. query_logs {"service": "orders", "query": "fields @timestamp, @message, level, correlation_id, reason, status |
+   3. list_recent_deployments {"minutes": 30, "service": "orders"}
+   4. get_metrics {"period": 60, "metric": "Errors", "namespace": "AWS/Lambda", "statistic": "Sum", "minutes": 15}
+   5. get_metrics {"metric": "Invocations", "minutes": 15, "namespace": "AWS/Lambda", "period": 60, "statistic": "Sum"
+   6. lookup_recent_changes {"minutes": 30}
+   7. note_hypotheses {"hypotheses": "ruled_out: bad_deploy (no recent deployments found for orders service)\nruled_out: c
+   8. get_traces {"minutes": 15, "service": "orders"}
+   9. query_logs {"service": "orders", "minutes": 10, "query": "fields @timestamp, @message, level | filter level in
+  10. get_topology {}
+  11. get_metrics {"metric": "Duration", "period": 60, "namespace": "AWS/Lambda", "dimensions": "FunctionName=nightshi
+  12. get_metrics {"namespace": "AWS/Lambda", "period": 60, "metric": "Throttles", "statistic": "Sum", "dimensions": "
+  13. get_function_config {"service": "orders"}
+  14. get_metrics {"statistic": "Sum", "minutes": 15, "namespace": "AWS/Lambda", "metric": "Errors", "period": 60, "di
+  15. query_logs {"minutes": 15, "query": "fields @timestamp, @message | sort @timestamp desc | limit 20", "service":
+  16. finish_investigation {"evidence_steps": "15", "confidence": 100, "root_cause_component": "orders", "proposed_actions": "R
+stop: finished
+report: orders / iam_regression, confidence 100
+tokens: 24689 in + 727 out = 25416 over 6 calls; largest request estimate 4714; log bytes scanned 490,095; wall 14s
+saved results/investigations/a0cd990c89ca.json

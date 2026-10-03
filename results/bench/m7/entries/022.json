@@ -1,0 +1,13 @@
+{
+  "entry": 22,
+  "scenario": 5,
+  "run": 3,
+  "attempt": 1,
+  "phase": 2,
+  "status": "done",
+  "started": "2026-10-01T19:55:26.970265+00:00",
+  "run_dir": "results/chaos/05-poison-message-20261001T195526Z",
+  "exit_code": 0,
+  "actor_invocations": 0,
+  "finished": "2026-10-01T21:06:24.082821+00:00"
+}

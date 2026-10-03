@@ -1,0 +1,26 @@
+{
+  "investigation_id": "5221155667e9",
+  "root_cause_component": "payments",
+  "fault_category": "slow_dependency",
+  "confidence": 95,
+  "summary": "The fulfillment service is timing out while calling payments due to extremely high latency (up to 97 seconds) in the payments service. This slow dependency is causing payment failures in fulfillment.",
+  "evidence": [
+    5,
+    7,
+    11,
+    13
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate the root cause of latency in the payments service."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "5": "get_metrics",
+    "7": "query_logs",
+    "11": "get_traces",
+    "13": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,20 @@
+{
+  "investigation_id": "30f93b202f5f",
+  "root_cause_component": "placed-orders",
+  "fault_category": "poison_message",
+  "confidence": 70,
+  "summary": "Messages reached the dead-letter queue: a message the consumer cannot process. Do not redrive until the producer is fixed.",
+  "evidence": [
+    1,
+    3
+  ],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "3": "get_queue_stats"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,17 @@
+investigation 8fbcb0ecd463 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. get_queue_stats {}
+   3. list_recent_deployments {"minutes": 30}
+   4. note_hypotheses {"hypotheses": "likely: slow_dependency or timeout in fulfillment consumer processing SQS messages\n
+   5. get_traces {"minutes": 15, "service": "fulfillment"}
+   6. query_logs {"query": "fields @timestamp, @message, level | sort @timestamp desc | limit 20", "minutes": 15, "se
+   7. get_function_config {"service": "fulfillment"}
+   8. query_logs {"service": "fulfillment", "minutes": 15, "query": "fields @timestamp, @message | filter level = \"E
+   9. get_metrics {"statistic": "Maximum", "metric": "Duration", "minutes": 15, "namespace": "AWS/Lambda"}
+  10. note_hypotheses {"hypotheses": "likely: poison_message causing repeated failures and message retries (retry storm /
+  11. finish_investigation {"proposed_actions": "Inspect the malformed message in the queue or check dead-letter queue settings
+stop: finished
+report: placed-orders / poison_message, confidence 95
+tokens: 15215 in + 632 out = 15847 over 4 calls; largest request estimate 3856; log bytes scanned 820,575; wall 10s
+proposed (graded, never approved): pause_queue_consumer
+saved results/investigations/8fbcb0ecd463.json

@@ -1,0 +1,19 @@
+investigation aa9614f20c92 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+   3. list_recent_deployments {"service": "orders", "minutes": 60}
+   4. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+   5. list_recent_deployments {"service": "orders", "minutes": 30}
+   6. query_logs {"service": "orders", "query": "fields @timestamp, @message, level, correlation_id | filter level =
+   7. get_traces {"service": "orders", "minutes": 30}
+   8. get_metrics {"namespace": "AWS/AuroraDSQL", "metric": "WaitTime", "statistic": "Average", "dimensions": "DBInsta
+   9. get_metrics {"namespace": "AWS/DynamoDB", "metric": "ThrottledRequests", "statistic": "Sum", "dimensions": "Tabl
+  10. get_metrics {"namespace": "AWS/DynamoDB", "metric": "SuccessfulRequestLatency", "statistic": "Average", "dimensi
+  11. lookup_recent_changes {"minutes": 30}
+  12. get_function_config {"service": "orders"}
+  13. query_logs {"service": "orders", "query": "fields @timestamp, @message, level, correlation_id | filter @message
+  14. finish_investigation {"root_cause_component": "orders", "fault_category": "insufficient_evidence", "confidence": 70, "sum
+stop: finished
+report: orders / insufficient_evidence, confidence 70
+tokens: 35604 in + 1727 out = 37331 over 8 calls; largest request estimate 5270; log bytes scanned 356,223; wall 32s
+saved results/investigations/aa9614f20c92.json

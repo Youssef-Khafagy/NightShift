@@ -1,0 +1,20 @@
+{
+  "investigation_id": "ee39a49b4924",
+  "root_cause_component": "fulfillment",
+  "fault_category": "insufficient_evidence",
+  "confidence": 50,
+  "summary": "An alarm for payment failures in the fulfillment service fired, but the available alarm data is insufficient to determine the root cause or fault category without further investigation tools.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate payment and fulfillment service logs to determine the cause of PaymentFailures."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

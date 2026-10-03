@@ -1,0 +1,13 @@
+{
+  "entry": 21,
+  "scenario": 10,
+  "run": 2,
+  "attempt": 1,
+  "phase": 2,
+  "status": "done",
+  "started": "2026-10-01T18:52:13.547663+00:00",
+  "run_dir": "results/chaos/10-retry-storm-20261001T185213Z",
+  "exit_code": 0,
+  "actor_invocations": 0,
+  "finished": "2026-10-01T19:55:26.921909+00:00"
+}

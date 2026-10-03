@@ -1,0 +1,38 @@
+Run 3b7cc48d: 1.0/s for 1260s, seed 998032525
+  orders                   1,260
+  Lambda invocations       5,922   month to date    135,080   cap 500,000
+  SQS requests             3,192
+  DSQL DPU                 315.0   month to date    8,680.5   cap 50,000
+  log volume                 7.4 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "3b7cc48d",
+  "date": "2026-09-30T20:46:07+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1260,
+  "seed": 998032525,
+  "projected": {
+    "orders": 1260,
+    "lambda_invocations": 5922.0,
+    "sqs_requests": 3192.0,
+    "dsql_dpu": 315.0,
+    "log_mb": 7.38234
+  },
+  "sent": 297,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 180,
+    "500": 117
+  },
+  "elapsed_seconds": 297.0,
+  "achieved_rate": 1.0,
+  "checkout_latency_ms": {
+    "p50": 366.4,
+    "p95": 473.4,
+    "p99": 3856.3
+  }
+}

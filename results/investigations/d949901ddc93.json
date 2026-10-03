@@ -1,0 +1,90 @@
+{
+  "config": {
+    "kind": "runbook"
+  },
+  "state": {
+    "investigation_id": "d949901ddc93",
+    "trigger": {
+      "name": "nightshift-payment-failures",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [29.0 (02/10/26 23:32:00)] was greater than or equal to the threshold (3.0).",
+      "since": "2026-10-02T23:33:29Z",
+      "metric": {
+        "namespace": "NightShift",
+        "name": "PaymentFailures",
+        "dimensions": {
+          "service": "fulfillment"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 3.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-10-02T23:33:29Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-10-02T23:33:30+00:00",
+    "provider": "runbook",
+    "model": "scripted",
+    "turn": 2,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-10-02T23:33:30+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "payment-failures"
+        },
+        "call_id": "baseline-451cf349",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [29.0 (02/10/26 23:32:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-10-02T23:33:29Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"PaymentFailures\",\"dimensions\":{\"service\":\"fulfillment\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 3.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-02T23:33:29Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [29.0 (02/10/26 23:32:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-10-02T23:33:29Z\",\"metric\":{\"namespace\":\"NightShift\",\"...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 2,
+        "at": "2026-10-02T23:33:30+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "minutes": 30,
+          "service": "payments"
+        },
+        "call_id": "baseline-db4c9677",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      }
+    ],
+    "calls": [],
+    "hypotheses": [
+      {
+        "status": "likely",
+        "text": "The payment provider is failing. Defer payments until it recovers."
+      }
+    ],
+    "hypothesis_changes": [],
+    "log_bytes_scanned": 0,
+    "rejected_calls": 0,
+    "wall_seconds_used": 0.0,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "root_cause_component": "payments",
+      "fault_category": "slow_dependency",
+      "confidence": 70,
+      "summary": "The payment provider is failing. Defer payments until it recovers.",
+      "evidence_steps": "1",
+      "hypotheses": "likely: The payment provider is failing. Defer payments until it recovers.",
+      "actions": "set_operational_flag name=payments_degraded_mode value=true",
+      "proposed_actions": ""
+    }
+  }
+}

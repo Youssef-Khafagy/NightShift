@@ -1,0 +1,20 @@
+{
+  "investigation_id": "e960136037c3",
+  "root_cause_component": "orders",
+  "fault_category": "hot_row_contention",
+  "confidence": 95,
+  "summary": "The `nightshift-serialization-retries` alarm fired because the `SerializationRetries` metric for the orders service spiked to 23 retries per minute. There were no recent deployments, errors, or trace faults, indicating that many concurrent transactions were attempting to update the same database rows, leading to transaction serialization failures and automatic retries.",
+  "evidence": [
+    8
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate concurrent transactions updating the same rows or inventory/counters in the orders service."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "8": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,8 @@
+alarm-only 8bcb68b5d19e
+   1. get_alarm {"name": "payment-failures"}
+   2. finish_investigation {"confidence": 50, "actions": "rollback_alias service=payments", "proposed_actions": "Investigate pa
+stop: finished
+report: payments / bad_deploy, confidence 50
+tokens: 1185 in + 124 out = 1309 over 1 calls; largest request estimate 2108; log bytes scanned 0; wall 1s
+proposed (graded, never approved): rollback_alias service=payments
+saved results/investigations/8bcb68b5d19e.json

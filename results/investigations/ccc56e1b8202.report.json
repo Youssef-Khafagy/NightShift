@@ -1,0 +1,29 @@
+{
+  "investigation_id": "ccc56e1b8202",
+  "root_cause_component": "placed-orders",
+  "fault_category": "config_regression",
+  "confidence": 95,
+  "summary": "A manual `sqs:SetQueueAttributes` change at 19:45:30 altered the queue's visibility timeout or redrive policy, causing messages to be reprocessed repeatedly and moved to the dead-letter queue.",
+  "evidence": [
+    1,
+    2,
+    8
+  ],
+  "actions": [
+    "redrive_dlq"
+  ],
+  "proposed_actions": [
+    "Inspect and revert the queue attributes for `nightshift-placed-orders` to their previous values."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "2": "get_queue_stats",
+    "8": "lookup_recent_changes"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": [
+    10,
+    12
+  ]
+}

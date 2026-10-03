@@ -1,0 +1,21 @@
+investigation 73ab23232d19 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   4. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   5. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   6. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, order_id, reason | filter le
+   8. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, order_id, reason | filter le
+   9. note_hypotheses {"hypotheses": "likely: throttling in fulfillment service due to Lambda rate limits\npossible: timeo
+  10. get_function_config {"service": "fulfillment"}
+  11. get_traces {"service": "fulfillment", "minutes": 30}
+  12. get_metrics {"namespace": "AWS/Lambda", "metric": "ConcurrentExecutions", "statistic": "Maximum", "dimensions":
+  13. lookup_recent_changes {"minutes": 30}
+  14. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "throttling", "confidence": 95, "summary":
+  15. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "throttling", "confidence": 95, "summary":
+stop: finished
+report: fulfillment / throttling, confidence 95
+tokens: 35798 in + 2123 out = 37921 over 8 calls; largest request estimate 5528; log bytes scanned 786,147; wall 45s
+proposed (graded, never approved): rollback_alias service=fulfillment
+saved results/investigations/73ab23232d19.json

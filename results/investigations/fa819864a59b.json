@@ -1,0 +1,371 @@
+{
+  "config": {
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "max_tokens_per_investigation": 100000,
+    "max_steps": 15,
+    "max_wall_seconds": 840,
+    "input_token_cap": 24000,
+    "max_output_tokens": 1500,
+    "full_results_kept": 3,
+    "max_tool_output_chars": 2500,
+    "log_scan_cap_bytes": 20971520,
+    "max_log_query_minutes": 30
+  },
+  "state": {
+    "investigation_id": "fa819864a59b",
+    "trigger": {
+      "name": "nightshift-cart-errors",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [51.0 (02/10/26 22:29:00)] was greater than or equal to the threshold (1.0).",
+      "since": "2026-10-02T22:30:51Z",
+      "metric": {
+        "namespace": "AWS/Lambda",
+        "name": "Errors",
+        "dimensions": {
+          "FunctionName": "nightshift-cart"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 1.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-10-02T22:30:51Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-10-02T22:30:55+00:00",
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "turn": 7,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-10-02T22:30:56+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "nightshift-cart-errors"
+        },
+        "call_id": "call_362626",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [51.0 (02/10/26 22:29:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-02T22:30:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-cart\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-02T22:30:51Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [51.0 (02/10/26 22:29:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-02T22:30:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\"...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TvyRYFh6bwwPbynX+Fv3edReJxgadLBOWTv6UAjTTJnaKCyk8Tgd9yfzMSr+MnGcXY8Ze7Nel1EkXGFDA3zrQmB/P5+BrzOQvSWofc6fAli+RvD5PPa6fokI="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 1,
+        "at": "2026-10-02T22:30:57+00:00",
+        "tool": "query_logs",
+        "args": {
+          "minutes": 15,
+          "query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp desc",
+          "service": "cart"
+        },
+        "call_id": "call_362627",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":0,\"scan_budget_left_bytes\":20971520}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":0,\"scan_budget_left_bytes\":20971520}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 3,
+        "turn": 1,
+        "at": "2026-10-02T22:30:58+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "service": "cart"
+        },
+        "call_id": "call_362628",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-02T22:29:07.117+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 25\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABLE_NAME\"]}}]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-02T22:29:07.117+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 25\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABL...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 4,
+        "turn": 2,
+        "at": "2026-10-02T22:30:59+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "likely: config_regression: environment variable CART_TABLE_NAME was changed in recent deployment at 22:29\nruled_out: bad_deploy: code_changed is false for the recent deployment"
+        },
+        "call_id": "call_90212",
+        "result": "{\"ok\": \"2 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"2 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TkgPdpR1Klt4FhOOsmhzE9R6J/q66WhprI5DOxpi/T8eSDXIpDoZYltA29l1cBg/q6FkZvhIipVEe1gb5zWHFpo+nnmcDhQvg9Z+lDZ5oxZWSncjjFyd5XTY="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 5,
+        "turn": 2,
+        "at": "2026-10-02T22:30:59+00:00",
+        "tool": "get_function_config",
+        "args": {
+          "service": "cart"
+        },
+        "call_id": "call_90213",
+        "result": "{\"tool\":\"get_function_config\",\"truncated\":false,\"untrusted_data\":{\"function\":\"nightshift-cart\",\"live_alias_version\":\"25\",\"last_modified\":\"2026-10-02T22:29:05Z\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":5,\"reserved_concurrency\":5,\"state\":\"Active\",\"code_sha256\":\"oY8AaX6RKh3QdUN3peopXcZI76Unqp3nUS23GW0Tnuw=\",\"environment\":{\"CART_TABLE_NAME\":\"nightshift-carts\",\"POWERTOOLS_LOG_LEVEL\":\"INFO\",\"POWERTOOLS_SERVICE_NAME\":\"cart\"}}}",
+        "summary": "{\"function\":\"nightshift-cart\",\"live_alias_version\":\"25\",\"last_modified\":\"2026-10-02T22:29:05Z\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":5,\"reserved_concurrency\":5,\"state\":\"Active\",\"code_sha256\":\"oY8AaX6RKh3QdUN3peopXcZI76Unq...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 6,
+        "turn": 3,
+        "at": "2026-10-02T22:31:00+00:00",
+        "tool": "get_topology",
+        "args": {},
+        "call_id": "call_347579",
+        "result": "{\"tool\":\"get_topology\",\"truncated\":false,\"untrusted_data\":{\"dsql\":{\"cluster_id\":\"<DSQL_CLUSTER_ID>\"},\"metrics_namespace\":\"NightShift\",\"queues\":{\"nightshift-placed-orders\":{\"consumer\":\"fulfillment\",\"dlq\":\"nightshift-placed-orders-dlq\",\"max_receive_count\":3}},\"region\":\"ca-central-1\",\"services\":{\"cart\":{\"alias\":\"live\",\"calls\":[],\"entry\":[\"function_url\",\"invoke\"],\"flags\":[],\"function\":\"nightshift-cart\",\"log_group\":\"/aws/lambda/nightshift-cart\",\"stores\":[\"dynamodb:nightshift-cart\"]},\"fulfillment\":{\"alias\":\"live\",\"calls\":[\"payments\"],\"entry\":[\"sqs:nightshift-placed-orders\"],\"flags\":[\"/nightshift/flags/payments_degraded_mode\"],\"function\":\"nightshift-fulfillment\",\"log_group\":\"/aws/lambda/nightshift-fulfillment\",\"stores\":[\"dsql\"]},\"orders\":{\"alias\":\"live\",\"calls\":[\"cart\"],\"entry\":[\"function_url\"],\"flags\":[\"/nightshift/flags/checkout_rate_limit\"],\"function\":\"nightshift-orders\",\"log_group\":\"/aws/lambda/nightshift-orders\",\"publishes\":[\"nightshift-placed-orders\"],\"stores\":[\"dsql\"]},\"payments\":{\"alias\":\"live\",\"calls\":[],\"entry\":[\"invoke\"],\"external\":true,\"flags\":[],\"function\":\"nightshift-payments\",\"log_group\":\"/aws/lambda/nightshift-payments\",\"stores\":[]}},\"tables\":{\"nightshift-cart\":{\"billing\":\"PROVISIONED\"}},\"v\":1}}",
+        "summary": "{\"dsql\":{\"cluster_id\":\"<DSQL_CLUSTER_ID>\"},\"metrics_namespace\":\"NightShift\",\"queues\":{\"nightshift-placed-orders\":{\"consumer\":\"fulfillment\",\"dlq\":\"nightshift-placed-orders-dlq\",\"max_receive_count\":3}},\"region\":\"ca-central-1\",\"servic...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TNR0ETjJPriA+TqTAnPTNEuVtJtW39bhJ/mLN9EjaWrofaxL4+ufjA0kjECrasg+TkUZWvYmIV4Uy/HOjXSlVYiDaRPMUz/nUJSdFVl9fz4gwPBnOFFszIJQ="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 7,
+        "turn": 4,
+        "at": "2026-10-02T22:31:02+00:00",
+        "tool": "query_logs",
+        "args": {
+          "minutes": 5,
+          "service": "cart",
+          "query": "fields @timestamp, @message, level, error_message, exception | sort @timestamp desc | limit 20"
+        },
+        "call_id": "call_89062",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-02 22:30:53.589\",\"@message\":\"{\\\"time\\\":\\\"2026-10-02T22:30:53.589Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"5e57d65e-48d5-4c24-a757-d65dfce92201\\\",\\\"metrics\\\":{\\\"durationMs\\\":37.366,\\\"billedDurationMs\\\":38,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":102},\\\"tracing\\\":{\\\"spanId\\\":\\\"a3a740ff7c94833e\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6ac0...[107 chars cut]\"},{\"@timestamp\":\"2026-10-02 22:30:53.569\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-02T22:30:53Z\\\", \\\"log_level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-cart-exec/nightshift-cart is not authorized to perform: dynamodb:PutItem on resource: arn...[1191 chars cut]\"},{\"@timestamp\":\"2026-10-02 22:30:53.551\",\"@message\":\"{\\\"time\\\":\\\"2026-10-02T22:30:53.551Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"5e57d65e-48d5-4c24-a757-d65dfce92201\\\",\\\"functionArn\\\":\\\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-cart:live\\\",\\\"version\\\":\\\"25\\\",\\\"tracing\\\":{\\\"spanId\\\":\\\"a3a740ff7c94833e\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=...[94 chars cut]\"},{\"@timestamp\":\"2026-10-02 22:30:52.589\",\"@message\":\"{\\\"time\\\":\\\"2026-10-02T22:30:52.589Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"340f53c3-4ed7-4ca3-a812-e5e8500e1455\\\",\\\"metrics\\\":{\\\"durationMs\\\":26.097,\\\"billedDurationMs\\\":27,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":102},\\\"tracing\\\":{\\\"spanId\\\":\\\"876792fa7577adaa\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6ac0...[107 chars cut]\"},{\"@timestamp\":\"2026-10-02 22:30:52.570\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-02T22:30:52Z\\\", \\\"log_level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-cart-exec/nightshift-cart is not authorized to perform: dynamodb:PutItem on resource: arn...[1191 chars cut]\"},\"...[15 more items cut]\"],\"bytes_scanned\":656123,\"scan_budget_left_bytes\":20315397}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-02 22:30:53.589\",\"@message\":\"{\\\"time\\\":\\\"2026-10-02T22:30:53.589Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"5e57d65e-48d5-4c24-a757-d65dfce92201\\\",\\\"metrics\\\":{\\\"durationM...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0T5lnRQpbM6hnmCbDrbBLa5p7j2rLmK3M0GnotaJbe+MQNdW5R5obqZuaixf0mfhOA6mKXx+uxDdeP99tOAIDe7QKyOKWKf3erJHGnulcKffOVsj5jWMaeIsQ="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 8,
+        "turn": 5,
+        "at": "2026-10-02T22:31:03+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "likely: config_regression: environment variable CART_TABLE_NAME was changed to 'nightshift-carts' (plural) while the actual DynamoDB table is named 'nightshift-cart' (singular), resulting in AccessDeniedException when accessing DynamoDB\nruled_out: bad_deploy: code_changed is false for the recent deployment"
+        },
+        "call_id": "call_430354",
+        "result": "{\"ok\": \"2 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"2 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TwrxsqFUUDZk8zodMhqqQkzjuf5VBFAqgwo8d3PeWYpkCwnjrsl7Qa4On+R9mWd6+sTxNAu+CzgKo+wJCMNI4i/jWYlFetn3qjHOt9f+jALQur7b4a3dZ6Vs="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 9,
+        "turn": 6,
+        "at": "2026-10-02T22:31:04+00:00",
+        "tool": "finish_investigation",
+        "args": {
+          "summary": "A recent configuration change to the cart service modified the CART_TABLE_NAME environment variable to a non-existent table name, causing an AccessDeniedException (since the IAM role lacks permissions for the incorrect resource), which triggered the cart errors alarm.",
+          "fault_category": "config_regression",
+          "proposed_actions": "Rollback the cart service alias to version 18 to restore the correct CART_TABLE_NAME configuration.",
+          "evidence_steps": "3,7",
+          "actions": [
+            "rollback_alias service=cart"
+          ],
+          "root_cause_component": "cart",
+          "confidence": 100,
+          "hypotheses": "likely: config_regression: environment variable CART_TABLE_NAME was changed to 'nightshift-carts' (plural) while the actual DynamoDB table is named 'nightshift-cart' (singular), resulting in AccessDeniedException when accessing DynamoDB\nruled_out: bad_deploy: code_changed is false for the recent deployment"
+        },
+        "call_id": "call_313982",
+        "result": "{\"error\": \"finish_investigation rejected\", \"problems\": [\"'actions' must be string, got list\"]}",
+        "summary": "\"{\\\"error\\\": \\\"finish_investigation rejected\\\", \\\"problems\\\": [\\\"'actions' must be string, got list\\\"]}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0T6rVRPSrcrPrbRWxgMO1tKPHnfF9YWUNkAa6yJHSUs3OYm07eSYvsD9zgB/4l8TGBDBQhScYmQIDnZrzP0uWul5H4yZFxjG9syi/JuNxVGUJLbX+HPPUpWG4="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 10,
+        "turn": 7,
+        "at": "2026-10-02T22:31:05+00:00",
+        "tool": "finish_investigation",
+        "args": {
+          "hypotheses": "likely: config_regression: environment variable CART_TABLE_NAME was changed to 'nightshift-carts' (plural) while the actual DynamoDB table is named 'nightshift-cart' (singular), resulting in AccessDeniedException when accessing DynamoDB\nruled_out: bad_deploy: code_changed is false for the recent deployment",
+          "confidence": 100,
+          "actions": "rollback_alias service=cart",
+          "evidence_steps": "3,7",
+          "summary": "A recent configuration change to the cart service modified the CART_TABLE_NAME environment variable to a non-existent table name, causing an AccessDeniedException (since the IAM role lacks permissions for the incorrect resource), which triggered the cart errors alarm.",
+          "root_cause_component": "cart",
+          "proposed_actions": "Rollback the cart service alias to version 18 to restore the correct CART_TABLE_NAME configuration.",
+          "fault_category": "config_regression"
+        },
+        "call_id": "call_229607",
+        "result": "{\"ok\": \"investigation closed\"}",
+        "summary": "\"{\\\"ok\\\": \\\"investigation closed\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0T/ZPHw+iLZJ3BYoGiA9bso8BUkjDbPKAHfqLgA5JTfSVCCxR07uIMR/ZsvzwUA7JeiQVO93Ha1Rxzla926Iat/75eCzur9xbwkaUvd7oNyM8nlyegtK3QBoA="
+        },
+        "in_trigger": false
+      }
+    ],
+    "calls": [
+      {
+        "turn": 1,
+        "at": "2026-10-02T22:30:56+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2716,
+        "output_tokens": 84,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2504,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 2,
+        "at": "2026-10-02T22:30:59+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3209,
+        "output_tokens": 80,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2864,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 3,
+        "at": "2026-10-02T22:31:00+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3440,
+        "output_tokens": 10,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3034,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 4,
+        "at": "2026-10-02T22:31:00+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3794,
+        "output_tokens": 49,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3376,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 5,
+        "at": "2026-10-02T22:31:03+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4785,
+        "output_tokens": 88,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 4042,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 6,
+        "at": "2026-10-02T22:31:04+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4871,
+        "output_tokens": 217,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 4139,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 7,
+        "at": "2026-10-02T22:31:05+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4872,
+        "output_tokens": 217,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 4153,
+        "rate_limit_headers": {}
+      }
+    ],
+    "hypotheses": [
+      {
+        "status": "likely",
+        "text": "config_regression: environment variable CART_TABLE_NAME was changed to 'nightshift-carts' (plural) while the actual DynamoDB table is named 'nightshift-cart' (singular), resulting in AccessDeniedException when accessing DynamoDB"
+      },
+      {
+        "status": "ruled_out",
+        "text": "bad_deploy: code_changed is false for the recent deployment"
+      }
+    ],
+    "hypothesis_changes": [
+      {
+        "step": 4,
+        "before": [],
+        "after": [
+          {
+            "status": "likely",
+            "text": "config_regression: environment variable CART_TABLE_NAME was changed in recent deployment at 22:29"
+          },
+          {
+            "status": "ruled_out",
+            "text": "bad_deploy: code_changed is false for the recent deployment"
+          }
+        ]
+      },
+      {
+        "step": 8,
+        "before": [
+          {
+            "status": "likely",
+            "text": "config_regression: environment variable CART_TABLE_NAME was changed in recent deployment at 22:29"
+          },
+          {
+            "status": "ruled_out",
+            "text": "bad_deploy: code_changed is false for the recent deployment"
+          }
+        ],
+        "after": [
+          {
+            "status": "likely",
+            "text": "config_regression: environment variable CART_TABLE_NAME was changed to 'nightshift-carts' (plural) while the actual DynamoDB table is named 'nightshift-cart' (singular), resulting in AccessDeniedException when accessing DynamoDB"
+          },
+          {
+            "status": "ruled_out",
+            "text": "bad_deploy: code_changed is false for the recent deployment"
+          }
+        ]
+      }
+    ],
+    "log_bytes_scanned": 656123,
+    "rejected_calls": 0,
+    "wall_seconds_used": 9.976827505000983,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "hypotheses": "likely: config_regression: environment variable CART_TABLE_NAME was changed to 'nightshift-carts' (plural) while the actual DynamoDB table is named 'nightshift-cart' (singular), resulting in AccessDeniedException when accessing DynamoDB\nruled_out: bad_deploy: code_changed is false for the recent deployment",
+      "confidence": 100,
+      "actions": "rollback_alias service=cart",
+      "evidence_steps": "3,7",
+      "summary": "A recent configuration change to the cart service modified the CART_TABLE_NAME environment variable to a non-existent table name, causing an AccessDeniedException (since the IAM role lacks permissions for the incorrect resource), which triggered the cart errors alarm.",
+      "root_cause_component": "cart",
+      "proposed_actions": "Rollback the cart service alias to version 18 to restore the correct CART_TABLE_NAME configuration.",
+      "fault_category": "config_regression"
+    }
+  }
+}

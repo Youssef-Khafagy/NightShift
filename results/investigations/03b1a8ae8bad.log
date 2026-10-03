@@ -1,0 +1,7 @@
+alarm-only 03b1a8ae8bad
+   1. get_alarm {"name": "payment-failures"}
+   2. finish_investigation {"root_cause_component": "fulfillment", "fault_category": "insufficient_evidence", "confidence": 60,
+stop: finished
+report: fulfillment / insufficient_evidence, confidence 60
+tokens: 1192 in + 317 out = 1509 over 1 calls; largest request estimate 2108; log bytes scanned 0; wall 5s
+saved results/investigations/03b1a8ae8bad.json

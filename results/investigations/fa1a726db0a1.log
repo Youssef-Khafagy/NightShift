@@ -1,0 +1,21 @@
+investigation fa1a726db0a1 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. get_function_config {"service": "orders"}
+   3. get_function_config {"service": "payments"}
+   4. get_function_config {"service": "cart"}
+   5. get_function_config {"service": "fulfillment"}
+   6. get_function_config {"service": "hello"}
+   7. get_metrics {"metric": "Throttles", "namespace": "AWS/Lambda", "statistic": "Sum", "minutes": 15}
+   8. get_metrics {"metric": "Invocations", "statistic": "Sum", "namespace": "AWS/Lambda", "minutes": 15}
+   9. note_hypotheses {"hypotheses": "likely: reserved concurrency limits are being reached causing throttling\nruled_out:
+  10. get_metrics {"metric": "Throttles", "minutes": 15, "namespace": "AWS/Lambda", "dimensions": "FunctionName=nights
+  11. finish_investigation {"evidence_steps": "2,3,4,5,7,8", "root_cause_component": "orders", "actions": "set_operational_flag
+  12. get_metrics {"statistic": "Sum", "dimensions": "FunctionName=nightshift-cart", "metric": "Throttles", "minutes":
+  13. get_metrics {"namespace": "AWS/Lambda", "dimensions": "FunctionName=nightshift-payments", "minutes": 15, "statis
+  14. get_metrics {"namespace": "AWS/Lambda", "dimensions": "FunctionName=nightshift-fulfillment", "minutes": 15, "met
+  15. finish_investigation {"root_cause_component": "cart", "confidence": 95, "summary": "The nightshift-throttles alarm trigge
+stop: finished
+report: cart / throttling, confidence 95
+tokens: 22858 in + 746 out = 23604 over 6 calls; largest request estimate 4022; log bytes scanned 0; wall 8s
+proposed (graded, never approved): set_operational_flag name=checkout_rate_limit value=10
+saved results/investigations/fa1a726db0a1.json

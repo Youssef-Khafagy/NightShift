@@ -1,0 +1,20 @@
+{
+  "investigation_id": "ab85b48d0635",
+  "root_cause_component": "payments",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "Fulfillment experienced payment failures because calls to the payments service were throttled with TooManyRequestsException due to a low reserved concurrency limit (2) on the payments function.",
+  "evidence": [
+    5,
+    6
+  ],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "5": "query_logs",
+    "6": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

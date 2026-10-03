@@ -1,0 +1,24 @@
+{
+  "investigation_id": "8fe4b9a8ef31",
+  "root_cause_component": "orders",
+  "fault_category": "hot_row_contention",
+  "confidence": 95,
+  "summary": "Concurrent transactions in the orders service are updating the same row(s), causing serialization conflicts and retry storms. The spike in CheckoutsPlaced exacerbated the issue.",
+  "evidence": [
+    2,
+    3,
+    6
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate database schema for hot rows and optimize indexing."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "2": "get_metrics",
+    "3": "get_metrics",
+    "6": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,39 @@
+Run 1187c275: 1.0/s for 1260s, seed 294109813
+  orders                   1,260
+  Lambda invocations       5,922   month to date     45,608   cap 500,000
+  SQS requests             3,192
+  DSQL DPU                 315.0   month to date    2,351.0   cap 50,000
+  log volume                 7.4 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "1187c275",
+  "date": "2026-10-02T18:03:53+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1260,
+  "seed": 294109813,
+  "projected": {
+    "orders": 1260,
+    "lambda_invocations": 5922.0,
+    "sqs_requests": 3192.0,
+    "dsql_dpu": 315.0,
+    "log_mb": 7.38234
+  },
+  "sent": 256,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 216,
+    "500": 9,
+    "lambda_throttled": 31
+  },
+  "elapsed_seconds": 255.4,
+  "achieved_rate": 1.002,
+  "checkout_latency_ms": {
+    "p50": 416.8,
+    "p95": 575.8,
+    "p99": 3219.0
+  }
+}

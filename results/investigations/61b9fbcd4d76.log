@@ -1,0 +1,17 @@
+investigation 61b9fbcd4d76 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "period": 60, "metric": "PaymentFailures", "statistic": "Sum", "minutes"
+   3. query_logs {"service": "payments", "minutes": 15, "query": "fields @timestamp, level, message, correlation_id |
+   4. get_traces {"minutes": 15, "service": "payments"}
+   5. query_logs {"service": "fulfillment", "minutes": 15, "query": "fields @timestamp, level, message, correlation_i
+   6. list_recent_deployments {"service": "payments"}
+   7. get_topology {}
+   8. get_flag_values {}
+   9. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, correlation_id, reason | fil
+  10. note_hypotheses {"hypotheses": "likely: slow_dependency (payments service is slow, causing read timeouts in fulfillm
+  11. finish_investigation {"summary": "The fulfillment service experienced payment failures due to read timeouts when invoking
+  12. finish_investigation {"actions": "", "fault_category": "slow_dependency", "confidence": 95, "root_cause_component": "paym
+stop: finished
+report: payments / slow_dependency, confidence 95
+tokens: 19145 in + 749 out = 19894 over 5 calls; largest request estimate 4036; log bytes scanned 3,516,576; wall 20s
+saved results/investigations/61b9fbcd4d76.json

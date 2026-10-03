@@ -1,0 +1,14 @@
+investigation 453c4f47b7b9 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. note_hypotheses {"hypotheses": "likely: fulfillment service payment failures are caused by a bad deploy or upstream
+   3. query_logs {"minutes": 10, "query": "fields @timestamp, @message, level, reason | filter level = \"ERROR\" | so
+   4. list_recent_deployments {"service": "fulfillment", "minutes": 30}
+   5. note_hypotheses {"hypotheses": "ruled_out: bad deploy (no recent deployments for fulfillment)\nlikely: slow dependen
+   6. query_logs {"service": "payments", "minutes": 10, "query": "fields @timestamp, @message, level | filter level =
+   7. get_traces {"service": "payments", "minutes": 10}
+   8. note_hypotheses {"hypotheses": "ruled_out: bad deploy (no recent deployments for fulfillment)\nruled_out: payments s
+   9. finish_investigation {"confidence": 90, "actions": "", "evidence_steps": "3,7", "hypotheses": "ruled_out: bad deploy (no
+stop: finished
+report: payments / slow_dependency, confidence 90
+tokens: 12988 in + 513 out = 13501 over 4 calls; largest request estimate 3238; log bytes scanned 483,914; wall 15s
+saved results/investigations/453c4f47b7b9.json

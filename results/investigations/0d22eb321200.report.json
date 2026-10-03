@@ -1,0 +1,28 @@
+{
+  "investigation_id": "0d22eb321200",
+  "root_cause_component": "payments",
+  "fault_category": "throttling",
+  "confidence": 95,
+  "summary": "The nightshift-payments Lambda function was throttled due to a traffic surge, causing fulfillment service calls to fail and trigger the PaymentFailures alarm. The function's reserved concurrency (2) was insufficient for the load, resulting in timeouts and throttling errors.",
+  "evidence": [
+    8,
+    9,
+    10,
+    11
+  ],
+  "actions": [
+    "pause_queue_consumer"
+  ],
+  "proposed_actions": [
+    "Increase reserved concurrency for nightshift-payments Lambda to handle the current load."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "8": "query_logs",
+    "9": "get_function_config",
+    "10": "get_metrics",
+    "11": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

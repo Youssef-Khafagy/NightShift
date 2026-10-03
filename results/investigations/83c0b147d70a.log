@@ -1,0 +1,14 @@
+investigation 83c0b147d70a (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-throttles"}
+   2. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+   3. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+   4. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+   5. list_recent_deployments {"service": "orders", "minutes": 15}
+   6. list_recent_deployments {"service": "payments", "minutes": 15}
+   7. get_function_config {"service": "cart"}
+   8. finish_investigation {"root_cause_component": "cart", "fault_category": "throttling", "confidence": 95, "summary": "The n
+stop: finished
+report: cart / throttling, confidence 95
+tokens: 14592 in + 1112 out = 15704 over 4 calls; largest request estimate 3650; log bytes scanned 0; wall 15s
+proposed (graded, never approved): rollback_alias service=cart
+saved results/investigations/83c0b147d70a.json

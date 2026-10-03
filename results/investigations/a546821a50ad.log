@@ -1,0 +1,9 @@
+alarm-only a546821a50ad
+   1. get_alarm {"name": "dlq-depth"}
+   2. finish_investigation {"evidence_steps": "1", "hypotheses": "likely: poison_message\nruled_out: no_fault\nruled_out: retry
+   3. finish_investigation {"proposed_actions": "Inspect the dead-letter queue (DLQ) messages for nightshift-placed-orders-dlq
+stop: finished
+report: placed-orders / poison_message, confidence 90
+tokens: 2610 in + 343 out = 2953 over 2 calls; largest request estimate 2330; log bytes scanned 0; wall 2s
+proposed (graded, never approved): redrive_dlq
+saved results/investigations/a546821a50ad.json

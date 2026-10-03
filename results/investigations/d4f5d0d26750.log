@@ -1,0 +1,7 @@
+alarm-only d4f5d0d26750
+   1. get_alarm {"name": "orders-errors"}
+   2. finish_investigation {"summary": "An alarm fired indicating that the nightshift-orders Lambda function experienced errors
+stop: finished
+report: orders / insufficient_evidence, confidence 30
+tokens: 1187 in + 227 out = 1414 over 1 calls; largest request estimate 2108; log bytes scanned 0; wall 11s
+saved results/investigations/d4f5d0d26750.json

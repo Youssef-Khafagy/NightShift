@@ -1,0 +1,30 @@
+{
+  "run_id": "fafd1940",
+  "date": "2026-10-02T20:20:22+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1260,
+  "seed": 4210891072,
+  "projected": {
+    "orders": 1260,
+    "lambda_invocations": 5922.0,
+    "sqs_requests": 3192.0,
+    "dsql_dpu": 315.0,
+    "log_mb": 7.38234
+  },
+  "sent": 298,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 181,
+    "500": 116,
+    "lambda_throttled": 1
+  },
+  "elapsed_seconds": 297.8,
+  "achieved_rate": 1.001,
+  "checkout_latency_ms": {
+    "p50": 295.2,
+    "p95": 361.3,
+    "p99": 4323.0
+  }
+}

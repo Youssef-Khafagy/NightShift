@@ -1,0 +1,40 @@
+[
+  {
+    "kind": "policy",
+    "role": "nightshift-orders-exec",
+    "sid": "PublishPlacedOrders",
+    "original": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Action": "dsql:DbConnect",
+          "Effect": "Allow",
+          "Resource": "arn:aws:dsql:ca-central-1:<ACCOUNT_ID>:cluster/<DSQL_CLUSTER_ID>",
+          "Sid": "ConnectToDsql"
+        },
+        {
+          "Action": "ssm:GetParameter",
+          "Effect": "Allow",
+          "Resource": "arn:aws:ssm:ca-central-1:<ACCOUNT_ID>:parameter/nightshift/flags/checkout_rate_limit",
+          "Sid": "ReadCheckoutRateLimit"
+        },
+        {
+          "Action": "sqs:SendMessage",
+          "Effect": "Allow",
+          "Resource": "arn:aws:sqs:ca-central-1:<ACCOUNT_ID>:nightshift-placed-orders",
+          "Sid": "PublishPlacedOrders"
+        },
+        {
+          "Action": "lambda:InvokeFunction",
+          "Effect": "Allow",
+          "Resource": [
+            "arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-cart:*",
+            "arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-cart"
+          ],
+          "Sid": "CallCartService"
+        }
+      ]
+    },
+    "restored": true
+  }
+]

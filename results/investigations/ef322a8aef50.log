@@ -1,0 +1,7 @@
+alarm-only ef322a8aef50
+   1. get_alarm {"name": "orders-errors"}
+   2. finish_investigation {"root_cause_component": "orders", "fault_category": "insufficient_evidence", "evidence_steps": "1",
+stop: finished
+report: orders / insufficient_evidence, confidence 60
+tokens: 1186 in + 160 out = 1346 over 1 calls; largest request estimate 2108; log bytes scanned 0; wall 1s
+saved results/investigations/ef322a8aef50.json

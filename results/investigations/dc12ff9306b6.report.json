@@ -1,0 +1,22 @@
+{
+  "investigation_id": "dc12ff9306b6",
+  "root_cause_component": "payments",
+  "fault_category": "slow_dependency",
+  "confidence": 95,
+  "summary": "The payments service was configured with a high latency of 5000ms (PAYMENT_LATENCY_MS=5000), causing timeouts and payment failures across the fulfillment service.",
+  "evidence": [
+    7
+  ],
+  "actions": [
+    "set_operational_flag name=payments_degraded_mode value=true"
+  ],
+  "proposed_actions": [
+    "Lower PAYMENT_LATENCY_MS back to a normal value in the payments function configuration."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "7": "get_function_config"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

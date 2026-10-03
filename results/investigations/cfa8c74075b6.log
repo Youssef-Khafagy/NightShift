@@ -1,0 +1,17 @@
+investigation cfa8c74075b6 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. note_hypotheses {"hypotheses": "likely: payments service is failing or rejecting payment requests from fulfillment\n
+   3. query_logs {"minutes": 15, "service": "payments", "query": "fields @timestamp, @message, level, reason | filter
+   4. query_logs {"query": "fields @timestamp, @message, level, status | filter level = \"ERROR\" | sort @timestamp d
+   5. note_hypotheses {"hypotheses": "likely: payments service is throttling requests from fulfillment due to concurrency
+   6. get_function_config {"service": "payments"}
+   7. get_metrics {"minutes": 15, "metric": "Throttles", "namespace": "AWS/Lambda", "statistic": "Sum"}
+   8. list_recent_deployments {"service": "payments", "minutes": 15}
+   9. lookup_recent_changes {"minutes": 15}
+  10. finish_investigation {"root_cause_component": "payments", "summary": "The payments service was updated with a reserved co
+  11. finish_investigation {"actions": "rollback_alias service=payments", "root_cause_component": "payments", "fault_category":
+stop: finished
+report: payments / throttling, confidence 95
+tokens: 22889 in + 637 out = 23526 over 6 calls; largest request estimate 4216; log bytes scanned 525,083; wall 10s
+proposed (graded, never approved): rollback_alias service=payments
+saved results/investigations/cfa8c74075b6.json

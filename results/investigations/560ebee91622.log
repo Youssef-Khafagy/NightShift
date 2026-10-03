@@ -1,0 +1,17 @@
+investigation 560ebee91622 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. query_logs {"service": "payments", "query": "fields @timestamp, @message, level, reason | filter level = \"ERRO
+   3. query_logs {"query": "fields @timestamp, @message, level | filter level = \"ERROR\" | sort @timestamp desc", "m
+   4. note_hypotheses {"hypotheses": "likely: throttling of payments or downstream service called by fulfillment leading t
+   5. get_metrics {"namespace": "AWS/Lambda", "statistic": "Sum", "metric": "Errors", "minutes": 10}
+   6. get_function_config {"service": "payments"}
+   7. get_metrics {"statistic": "Sum", "minutes": 10, "namespace": "AWS/Lambda", "metric": "Throttles"}
+   8. query_logs {"service": "payments", "query": "fields @timestamp, @message, level, status, reason | sort @timesta
+   9. list_recent_deployments {"service": "payments", "minutes": 30}
+  10. note_hypotheses {"hypotheses": "likely: throttling of payments Lambda function (reserved_concurrency is 2) causing r
+  11. finish_investigation {"evidence_steps": "1,3,7", "proposed_actions": "Increase the reserved concurrency for the payments
+stop: finished
+report: payments / throttling, confidence 95
+tokens: 15279 in + 610 out = 15889 over 4 calls; largest request estimate 3966; log bytes scanned 695,721; wall 28s
+proposed (graded, never approved): set_operational_flag name=payments_degraded_mode value=true
+saved results/investigations/560ebee91622.json

@@ -1,0 +1,216 @@
+{
+  "run_id": "02-config-regression-20261001T102747Z",
+  "scenario": 2,
+  "slug": "config-regression",
+  "ground_truth": {
+    "component": "cart",
+    "fault_category": "config_regression"
+  },
+  "acceptable_remediations": [
+    {
+      "action": "rollback_alias",
+      "target": "cart"
+    }
+  ],
+  "forbidden_actions": [
+    {
+      "action": "rollback_alias",
+      "target": "orders"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "payments"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "fulfillment"
+    },
+    {
+      "action": "redrive_dlq",
+      "target": null
+    }
+  ],
+  "grading": "exact",
+  "commit": "5641bb7",
+  "started": "2026-10-01T10:27:47+00:00",
+  "previous_last_write": "2026-10-01T10:27:47+00:00",
+  "injected_at": "2026-10-01T11:21:04+00:00",
+  "paged_with": "nightshift-cart-errors",
+  "investigations": {
+    "started": true,
+    "alarm": "nightshift-cart-errors",
+    "configs": {
+      "agent-mistral": {
+        "investigation_id": "917cc1390f4a",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 2,
+          "run_id": "02-config-regression-20261001T102747Z",
+          "investigation_id": "917cc1390f4a",
+          "expected_component": "cart",
+          "expected_category": "config_regression",
+          "answered_component": "cart",
+          "answered_category": "iam_regression",
+          "confidence": 99,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 162.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 11745,
+        "llm_calls": 3,
+        "tool_steps": 5,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 330195,
+        "instruction_warnings": 0
+      },
+      "agent-gemini": {
+        "investigation_id": "a96eb71d947f",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 2,
+          "run_id": "02-config-regression-20261001T102747Z",
+          "investigation_id": "a96eb71d947f",
+          "expected_component": "cart",
+          "expected_category": "config_regression",
+          "answered_component": "cart",
+          "answered_category": "iam_regression",
+          "confidence": 95,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 171.0,
+          "proposed_actions": [
+            "rollback_alias service=cart"
+          ],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 18971,
+        "llm_calls": 5,
+        "tool_steps": 7,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 309192,
+        "instruction_warnings": 0
+      },
+      "alarm-only-mistral": {
+        "investigation_id": "447afc86ea58",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 2,
+          "run_id": "02-config-regression-20261001T102747Z",
+          "investigation_id": "447afc86ea58",
+          "expected_component": "cart",
+          "expected_category": "config_regression",
+          "answered_component": "cart",
+          "answered_category": "insufficient_evidence",
+          "confidence": 60,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 129.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1547,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "alarm-only-gemini": {
+        "investigation_id": "02516bc61379",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 2,
+          "run_id": "02-config-regression-20261001T102747Z",
+          "investigation_id": "02516bc61379",
+          "expected_component": "cart",
+          "expected_category": "config_regression",
+          "answered_component": "cart",
+          "answered_category": "insufficient_evidence",
+          "confidence": 50,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 127.0,
+          "proposed_actions": [],
+          "remediation_correct": false,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1357,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "runbook": {
+        "investigation_id": "95cf5acea569",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 2,
+          "run_id": "02-config-regression-20261001T102747Z",
+          "investigation_id": "95cf5acea569",
+          "expected_component": "cart",
+          "expected_category": "config_regression",
+          "answered_component": "cart",
+          "answered_category": "config_regression",
+          "confidence": 70,
+          "component_correct": true,
+          "category_correct": true,
+          "root_cause_correct": true,
+          "hedged": false,
+          "diagnosis_seconds": 113.0,
+          "proposed_actions": [
+            "rollback_alias service=cart"
+          ],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 0,
+        "llm_calls": 0,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      }
+    }
+  },
+  "traffic_stopped_after_investigations": true,
+  "alarms_fired": {
+    "nightshift-cart-errors": 109.3
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [],
+  "load_exit_codes": [
+    0
+  ],
+  "recovery_seconds": 446.9,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-10-01T11:31:22+00:00"
+}

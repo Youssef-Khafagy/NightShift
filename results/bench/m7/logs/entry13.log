@@ -1,0 +1,60 @@
+entry 13: scenario 11 run 1
+NightShift cost check, 2026-10-01 14:47 UTC
+
+Billing view (Free Tier API, lags about a day)
+  OK     AWS Glue: Catalog-Request                                                 4.00 /    1,000,000     0.00%  Request; forecast 124
+  OK     AWS Lambda: Lambda-GB-Second                                            321.90 /      400,000     0.08%  Lambda-GB-Second; forecast 9,979
+  OK     AWS Lambda: Request                                                  10,158.00 /    1,000,000     1.02%  Request; forecast 3.149e+05
+  OK     Amazon Simple Queue Service: Requests                                 9,142.00 /    1,000,000     0.91%  Requests; forecast 2.834e+05
+  OK     AWS X-Ray: XRay-TracesAccessed                                        1,894.00 /    1,000,000     0.19%  traces; forecast 5.871e+04
+  OK     AWS X-Ray: XRay-TracesStored                                          1,435.00 /      100,000     1.44%  Traces; forecast 4.448e+04
+  OK     AmazonCloudWatch: CW:AlarmMonitorUsage                                    0.12 /           10     1.21%  Alarms; forecast 3.75
+  OK     AmazonCloudWatch: CW:MetricMonitorUsage                                   0.02 /           10     0.23%  Metrics; forecast 0.7083
+  OK     AmazonCloudWatch: CW:Requests                                            86.00 /    1,000,000     0.01%  Requests; forecast 2,666
+  OK     AmazonCloudWatch: TimedStorage-ByteHrs                                    0.00 /            5     0.01%  GB-Mo; forecast 0.01145
+  OK     AmazonCloudWatch: DataProcessing-Bytes                                    0.01 /            5     0.27%  GB; forecast 0.4227
+  OK     AmazonCloudWatch: DataScanned-Bytes                                       0.01 /            5     0.11%  GB; forecast 0.1644
+  OK     Amazon DynamoDB: CAN1-TimedStorage-ByteHrs                                0.00 /           25     0.00%  GB-Mo; forecast 0.001027
+  OK     Amazon DynamoDB: CAN1-ReadCapacityUnit-Hrs                               99.00 /       18,600     0.53%  ReadCapacityUnit-Hrs; forecast 3,069
+  OK     Amazon DynamoDB: CAN1-WriteCapacityUnit-Hrs                              99.00 /       18,600     0.53%  WriteCapacityUnit-Hrs; forecast 3,069
+  OK     Amazon Simple Notification Service: CAN1-DeliveryAttempts-SMTP           16.00 /        1,000     1.60%  Notifications; forecast 496
+  OK     Amazon Simple Notification Service: CAN1-Requests-Tier1                  40.00 /    1,000,000     0.00%  Requests; forecast 1,240
+
+Live view (CloudWatch, month to date)
+  OK     Aurora DSQL: TotalDPU                                                   999.28 /      100,000     1.00%  not tracked by the Free Tier API or its alerts
+  OK     Lambda: invocations, all functions                                   19,792.00 /    1,000,000     1.98%
+  OK     SQS: requests, project queues                                        22,062.00 /    1,000,000     2.21%  upper bound: batched calls counted per message
+  OK     CloudWatch Logs: bytes ingested, project groups                  28,291,581.00 / 5,000,000,000     0.57%  ingestion only; the 5 GB also covers storage and Insights scans
+  WATCH  CloudWatch: custom metrics                                                5.00 /           10    50.00%  ledger in COST.md
+  OK     CloudWatch: alarm metrics                                                10.00 /           10   100.00%  fixed allocation: ALERT only above the limit
+
+0 ALERT, 1 WATCH, 22 OK
+Scenario 11 (legit-spike)
+Quiet gap: 45 min; last run wrote at 2026-10-01 14:46:52+00:00
+  waiting for quiet: the last run wrote at 14:46:52Z; 45 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 14:46:52Z; 40 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 14:46:52Z; 35 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 14:46:52Z; 30 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 14:46:52Z; 25 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 14:46:52Z; 20 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 14:46:52Z; 15 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 14:46:52Z; 10 more minutes of quiet needed
+  waiting for quiet: the last run wrote at 14:46:52Z; 5 more minutes of quiet needed
+  waiting for quiet: 2 Lambda invocations in the last 45 minutes
+Warm-up: 1.0/s, 180s, traffic runs 1320s
+Inject:
+  start load 3/s for 300s
+Waiting up to 360s for: nothing (no fault)
+  investigating nightshift-throttles
+Collecting the investigations:
+  agent-mistral: orders / throttling (95) WRONG, 31336 tokens
+  agent-gemini: orders / throttling (95) WRONG, 10443 tokens
+  alarm-only-mistral: none / insufficient_evidence (95) hedged, 1504 tokens
+  alarm-only-gemini: none / insufficient_evidence (50) hedged, 2928 tokens
+  runbook: orders / throttling (70) WRONG, 0 tokens
+  fired: {'nightshift-throttles': 0.2}
+Recover:
+Health: {'load_ran': True, 'alarms_ok': True, 'smoke_test': True, 'plan_clean': True}
+Result: /home/youssef/code/NightShift/results/chaos/11-legit-spike-20261001T144735Z/result.json
+entry 13: done
+BATCH EXIT 0 at 2026-10-01T15:47:11Z

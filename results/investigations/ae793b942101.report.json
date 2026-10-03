@@ -1,0 +1,22 @@
+{
+  "investigation_id": "ae793b942101",
+  "root_cause_component": "orders",
+  "fault_category": "iam_regression",
+  "confidence": 100,
+  "summary": "The nightshift-orders Lambda function is failing with AccessDenied errors when trying to call the SQS SendMessage operation because the execution role lacks the required sqs:sendmessage permission.",
+  "evidence": [
+    8,
+    9
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Restore the missing sqs:sendmessage permission for the nightshift-orders execution role."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "8": "query_logs",
+    "9": "get_metrics"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

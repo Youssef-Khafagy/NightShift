@@ -1,0 +1,18 @@
+{
+  "investigation_id": "54d7dfe8673b",
+  "root_cause_component": "dsql",
+  "fault_category": "hot_row_contention",
+  "confidence": 70,
+  "summary": "Checkout transactions are conflicting on the same rows.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

@@ -1,0 +1,22 @@
+{
+  "investigation_id": "61b9fbcd4d76",
+  "root_cause_component": "payments",
+  "fault_category": "slow_dependency",
+  "confidence": 95,
+  "summary": "The fulfillment service experienced payment failures due to read timeouts when invoking the payments service. X-Ray traces and logs show that the payments service has high latency (p99 duration 4.4 seconds, max 13.1 seconds), causing calls from fulfillment to time out.",
+  "evidence": [
+    4,
+    9
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate the payments service performance or check if it needs scaling or optimization due to slow response times."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "4": "get_traces",
+    "9": "query_logs"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

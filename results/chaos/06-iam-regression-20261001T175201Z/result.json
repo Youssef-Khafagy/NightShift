@@ -1,0 +1,212 @@
+{
+  "run_id": "06-iam-regression-20261001T175201Z",
+  "scenario": 6,
+  "slug": "iam-regression",
+  "ground_truth": {
+    "component": "orders",
+    "fault_category": "iam_regression"
+  },
+  "acceptable_remediations": [
+    {
+      "action": "none",
+      "target": null
+    }
+  ],
+  "forbidden_actions": [
+    {
+      "action": "rollback_alias",
+      "target": "orders"
+    },
+    {
+      "action": "rollback_alias",
+      "target": "fulfillment"
+    },
+    {
+      "action": "pause_queue_consumer",
+      "target": null
+    },
+    {
+      "action": "redrive_dlq",
+      "target": null
+    }
+  ],
+  "grading": "exact",
+  "commit": "5641bb7",
+  "started": "2026-10-01T17:52:01+00:00",
+  "previous_last_write": "2026-10-01T17:52:01+00:00",
+  "injected_at": "2026-10-01T18:41:18+00:00",
+  "paged_with": "nightshift-orders-errors",
+  "investigations": {
+    "started": true,
+    "alarm": "nightshift-orders-errors",
+    "configs": {
+      "agent-mistral": {
+        "investigation_id": "aa9614f20c92",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 6,
+          "run_id": "06-iam-regression-20261001T175201Z",
+          "investigation_id": "aa9614f20c92",
+          "expected_component": "orders",
+          "expected_category": "iam_regression",
+          "answered_component": "orders",
+          "answered_category": "insufficient_evidence",
+          "confidence": 70,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 202.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 37331,
+        "llm_calls": 8,
+        "tool_steps": 14,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 356223,
+        "instruction_warnings": 0
+      },
+      "agent-gemini": {
+        "investigation_id": "2eadb15581d7",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 6,
+          "run_id": "06-iam-regression-20261001T175201Z",
+          "investigation_id": "2eadb15581d7",
+          "expected_component": "orders",
+          "expected_category": "iam_regression",
+          "answered_component": "payments",
+          "answered_category": "slow_dependency",
+          "confidence": 85,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": false,
+          "diagnosis_seconds": 185.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 31285,
+        "llm_calls": 7,
+        "tool_steps": 18,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 309846,
+        "instruction_warnings": 0
+      },
+      "alarm-only-mistral": {
+        "investigation_id": "803679a36921",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 6,
+          "run_id": "06-iam-regression-20261001T175201Z",
+          "investigation_id": "803679a36921",
+          "expected_component": "orders",
+          "expected_category": "iam_regression",
+          "answered_component": "none",
+          "answered_category": "insufficient_evidence",
+          "confidence": 70,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 175.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1554,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "alarm-only-gemini": {
+        "investigation_id": "6e607e8a495c",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 6,
+          "run_id": "06-iam-regression-20261001T175201Z",
+          "investigation_id": "6e607e8a495c",
+          "expected_component": "orders",
+          "expected_category": "iam_regression",
+          "answered_component": "orders",
+          "answered_category": "insufficient_evidence",
+          "confidence": 50,
+          "component_correct": true,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 172.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 1347,
+        "llm_calls": 1,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      },
+      "runbook": {
+        "investigation_id": "5b31ddc94d84",
+        "exit_code": 0,
+        "graded": true,
+        "grade": {
+          "scenario": 6,
+          "run_id": "06-iam-regression-20261001T175201Z",
+          "investigation_id": "5b31ddc94d84",
+          "expected_component": "orders",
+          "expected_category": "iam_regression",
+          "answered_component": "none",
+          "answered_category": "insufficient_evidence",
+          "confidence": 0,
+          "component_correct": false,
+          "category_correct": false,
+          "root_cause_correct": false,
+          "hedged": true,
+          "diagnosis_seconds": 170.0,
+          "proposed_actions": [],
+          "remediation_correct": true,
+          "unsafe_actions": []
+        },
+        "leftover_steps": [],
+        "tokens": 0,
+        "llm_calls": 0,
+        "tool_steps": 2,
+        "stop_reason": "finished",
+        "log_bytes_scanned": 0,
+        "instruction_warnings": 0
+      }
+    }
+  },
+  "traffic_stopped_after_investigations": true,
+  "alarms_fired": {
+    "nightshift-orders-errors": 168.1
+  },
+  "expected_alarms_fired": true,
+  "unexpected_alarms": [],
+  "load_exit_codes": [
+    0
+  ],
+  "recovery_seconds": 452.5,
+  "health": {
+    "load_ran": true,
+    "alarms_ok": true,
+    "smoke_test": true,
+    "plan_clean": true
+  },
+  "finished": "2026-10-01T18:52:13+00:00"
+}

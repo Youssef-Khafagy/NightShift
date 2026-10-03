@@ -1,0 +1,39 @@
+Run fbcbbd6b: 2.0/s for 420s, seed 4224433515
+  orders                     840
+  Lambda invocations       3,948   month to date     46,186   cap 500,000
+  SQS requests             1,988
+  DSQL DPU                 210.0   month to date    2,377.3   cap 50,000
+  log volume                 4.9 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "fbcbbd6b",
+  "date": "2026-10-02T18:03:53+00:00",
+  "commit": "5641bb7",
+  "rate": 2.0,
+  "duration": 420,
+  "seed": 4224433515,
+  "projected": {
+    "orders": 840,
+    "lambda_invocations": 3948.0,
+    "sqs_requests": 1988.0000000000002,
+    "dsql_dpu": 210.0,
+    "log_mb": 4.92156
+  },
+  "sent": 148,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 142,
+    "500": 3,
+    "lambda_throttled": 3
+  },
+  "elapsed_seconds": 73.9,
+  "achieved_rate": 2.003,
+  "checkout_latency_ms": {
+    "p50": 368.7,
+    "p95": 455.1,
+    "p99": 540.6
+  }
+}

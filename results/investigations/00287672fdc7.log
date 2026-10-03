@@ -1,0 +1,20 @@
+investigation 00287672fdc7 (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+   3. list_recent_deployments {"service": "orders", "minutes": 60}
+   4. get_metrics {"namespace": "AWS/Lambda", "metric": "Errors", "statistic": "Sum", "dimensions": "FunctionName=nigh
+   5. list_recent_deployments {"service": "orders", "minutes": 30}
+   6. query_logs {"service": "orders", "query": "fields @timestamp, @message, level, correlation_id | filter level =
+   7. note_hypotheses {"hypotheses": "likely: errors began suddenly with no recent deployments, suggesting a dependency or
+   8. get_queue_stats {}
+   9. get_metrics {"namespace": "AWS/SQS", "metric": "ApproximateNumberOfMessagesVisible", "statistic": "Average", "di
+  10. get_metrics {"namespace": "AWS/SQS", "metric": "ApproximateAgeOfOldestMessage", "statistic": "Average", "dimensi
+  11. lookup_recent_changes {"minutes": 30}
+  12. get_traces {"service": "orders", "minutes": 30}
+  13. get_function_config {"service": "orders"}
+  14. finish_investigation {"root_cause_component": "orders", "fault_category": "bad_deploy", "confidence": 95, "summary": "A r
+stop: finished
+report: orders / bad_deploy, confidence 95
+tokens: 28589 in + 1775 out = 30364 over 7 calls; largest request estimate 4895; log bytes scanned 0; wall 22s
+proposed (graded, never approved): rollback_alias service=orders
+saved results/investigations/00287672fdc7.json

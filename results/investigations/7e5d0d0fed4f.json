@@ -1,0 +1,90 @@
+{
+  "config": {
+    "kind": "runbook"
+  },
+  "state": {
+    "investigation_id": "7e5d0d0fed4f",
+    "trigger": {
+      "name": "nightshift-cart-errors",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [51.0 (02/10/26 22:29:00)] was greater than or equal to the threshold (1.0).",
+      "since": "2026-10-02T22:30:51Z",
+      "metric": {
+        "namespace": "AWS/Lambda",
+        "name": "Errors",
+        "dimensions": {
+          "FunctionName": "nightshift-cart"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 1.0 for 1 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-10-02T22:30:51Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-10-02T22:30:55+00:00",
+    "provider": "runbook",
+    "model": "scripted",
+    "turn": 2,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-10-02T22:30:55+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "cart-errors"
+        },
+        "call_id": "baseline-dc5139a4",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [51.0 (02/10/26 22:29:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-02T22:30:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-cart\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-02T22:30:51Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [51.0 (02/10/26 22:29:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-02T22:30:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\"...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 2,
+        "at": "2026-10-02T22:30:56+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "minutes": 30,
+          "service": "cart"
+        },
+        "call_id": "baseline-709cb2a1",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-02T22:29:07.117+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 25\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABLE_NAME\"]}}]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-02T22:29:07.117+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 25\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABL...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      }
+    ],
+    "calls": [],
+    "hypotheses": [
+      {
+        "status": "likely",
+        "text": "cart was deployed at 2026-10-02T22:29:07.117+00:00 (settings (env CART_TABLE_NAME) changed) before cart-errors fired. Roll it back."
+      }
+    ],
+    "hypothesis_changes": [],
+    "log_bytes_scanned": 0,
+    "rejected_calls": 0,
+    "wall_seconds_used": 0.0,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "root_cause_component": "cart",
+      "fault_category": "config_regression",
+      "confidence": 70,
+      "summary": "cart was deployed at 2026-10-02T22:29:07.117+00:00 (settings (env CART_TABLE_NAME) changed) before cart-errors fired. Roll it back.",
+      "evidence_steps": "1,2",
+      "hypotheses": "likely: cart was deployed at 2026-10-02T22:29:07.117+00:00 (settings (env CART_TABLE_NAME) changed) before cart-errors fired. Roll it back.",
+      "actions": "rollback_alias service=cart",
+      "proposed_actions": ""
+    }
+  }
+}

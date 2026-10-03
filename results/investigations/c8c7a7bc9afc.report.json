@@ -1,0 +1,26 @@
+{
+  "investigation_id": "c8c7a7bc9afc",
+  "root_cause_component": "dsql",
+  "fault_category": "slow_dependency",
+  "confidence": 85,
+  "summary": "The `orders` service is experiencing a spike in errors and timeouts, likely due to slow or failing queries in the `dsql` layer. No errors are logged in downstream services (`payments`, `fulfillment`), but the `orders` service's traces show high error rates and long durations (p99: 2.641s, max: 4.361s), suggesting a dependency issue. The `dsql` layer is the most probable cause of these timeouts.",
+  "evidence": [
+    1,
+    4,
+    7,
+    12
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Check Aurora DSQL query performance for slow or failing queries, especially around the time of the error spike. Review recent DSQL schema changes or query optimizations."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm",
+    "4": "get_metrics",
+    "7": "get_traces",
+    "12": "get_traces"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

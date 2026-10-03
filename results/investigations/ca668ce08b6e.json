@@ -1,0 +1,280 @@
+{
+  "config": {
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "max_tokens_per_investigation": 100000,
+    "max_steps": 15,
+    "max_wall_seconds": 840,
+    "input_token_cap": 24000,
+    "max_output_tokens": 1500,
+    "full_results_kept": 3,
+    "max_tool_output_chars": 2500,
+    "log_scan_cap_bytes": 20971520,
+    "max_log_query_minutes": 30
+  },
+  "state": {
+    "investigation_id": "ca668ce08b6e",
+    "trigger": {
+      "name": "nightshift-serialization-retries",
+      "state": "ALARM",
+      "reason": "Threshold Crossed: 2 datapoints [10.0 (30/09/26 23:52:00), 10.0 (30/09/26 23:51:00)] were greater than or equal to the threshold (10.0).",
+      "since": "2026-09-30T23:53:02Z",
+      "metric": {
+        "namespace": "NightShift",
+        "name": "SerializationRetries",
+        "dimensions": {
+          "service": "orders"
+        },
+        "statistic": "Sum",
+        "period_seconds": 60
+      },
+      "fires_when": "GreaterThanOrEqualToThreshold 10.0 for 2 period(s)",
+      "recent_state_changes": [
+        {
+          "at": "2026-09-30T23:53:02Z",
+          "summary": "Alarm updated from OK to ALARM"
+        }
+      ]
+    },
+    "started_at": "2026-09-30T23:53:12+00:00",
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "turn": 4,
+    "steps": [
+      {
+        "number": 1,
+        "turn": 1,
+        "at": "2026-09-30T23:53:13+00:00",
+        "tool": "get_alarm",
+        "args": {
+          "name": "nightshift-serialization-retries"
+        },
+        "call_id": "call_880856",
+        "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-serialization-retries\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 2 datapoints [10.0 (30/09/26 23:52:00), 10.0 (30/09/26 23:51:00)] were greater than or equal to the threshold (10.0).\",\"since\":\"2026-09-30T23:53:02Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"SerializationRetries\",\"dimensions\":{\"service\":\"orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 10.0 for 2 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-30T23:53:02Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+        "summary": "{\"name\":\"nightshift-serialization-retries\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 2 datapoints [10.0 (30/09/26 23:52:00), 10.0 (30/09/26 23:51:00)] were greater than or equal to the threshold (10.0).\",\"since\":\"2026-09-30T23:53:02Z\",\"m...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TCXKSGG4MqbivdYb2BoB/RbJW4Xa1ZTUCIQUDRZzaZnoWNaZY3yp8KLY4qfxuFTAeIi0htkWa9Y7xCs372NVFBlpC22sc1mCLvIGPIwOnUCWR1e5CFqfvbJU="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 2,
+        "turn": 1,
+        "at": "2026-09-30T23:53:13+00:00",
+        "tool": "list_recent_deployments",
+        "args": {
+          "minutes": 15,
+          "service": "orders"
+        },
+        "call_id": "call_880857",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":15,\"moves\":[]}}",
+        "summary": "{\"window_minutes\":15,\"moves\":[]}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 3,
+        "turn": 1,
+        "at": "2026-09-30T23:53:15+00:00",
+        "tool": "query_logs",
+        "args": {
+          "minutes": 15,
+          "service": "orders",
+          "query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp desc"
+        },
+        "call_id": "call_880858",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":61912,\"scan_budget_left_bytes\":20909608}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":61912,\"scan_budget_left_bytes\":20909608}",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 4,
+        "turn": 2,
+        "at": "2026-09-30T23:53:16+00:00",
+        "tool": "note_hypotheses",
+        "args": {
+          "hypotheses": "likely: hot row contention causing database serialization retries in the orders service\nruled_out: bad deploy causing serialization retries (no recent deployments)"
+        },
+        "call_id": "call_1031830",
+        "result": "{\"ok\": \"2 hypotheses recorded\"}",
+        "summary": "\"{\\\"ok\\\": \\\"2 hypotheses recorded\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0Tv/R6V3GPHhyaESGs2s1i5zywR3oSQx2FTP9pgdYL2/vWSdSQNe55HWVAk1ySKMibYo7PtOObnLAcodEO0lEKnZzLM1YqkuraNTW04cLff4q3phOg/3nNDog="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 5,
+        "turn": 2,
+        "at": "2026-09-30T23:53:16+00:00",
+        "tool": "get_metrics",
+        "args": {
+          "minutes": 15,
+          "statistic": "Sum",
+          "dimensions": "service=orders",
+          "namespace": "NightShift",
+          "metric": "SerializationRetries",
+          "period": 60
+        },
+        "call_id": "call_1031831",
+        "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"NightShift SerializationRetries {'service': 'orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"23:45:00Z\",1.0],[\"23:48:00Z\",3.0],[\"23:49:00Z\",6.0],[\"23:50:00Z\",5.0],[\"23:51:00Z\",10.0],[\"23:52:00Z\",10.0]],\"summary\":{\"min\":1.0,\"max\":10.0,\"count\":6}}}",
+        "summary": "{\"metric\":\"NightShift SerializationRetries {'service': 'orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"23:45:00Z\",1.0],[\"23:48:00Z\",3.0],[\"23:49:00Z\",6.0],[\"23:50:00Z\",5.0],[\"23:51:00Z\",10.0],[\"23:52:00Z\",10.0]],\"summary\":{\"min\":1.0,...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 6,
+        "turn": 2,
+        "at": "2026-09-30T23:53:17+00:00",
+        "tool": "query_logs",
+        "args": {
+          "query": "fields @timestamp, @message | sort @timestamp desc",
+          "service": "orders",
+          "minutes": 15
+        },
+        "call_id": "call_1031832",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 23:53:09.470\",\"@message\":\"{\\\"time\\\":\\\"2026-09-30T23:53:09.470Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"a05add08-f822-4e3b-9dd2-614f57d5e02e\\\",\\\"metrics\\\":{\\\"durationMs\\\":343.415,\\\"billedDurationMs\\\":344,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":111},\\\"tracing\\\":{\\\"spanId\\\":\\\"8b841a5efeaebe3b\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6a...[109 chars cut]\"},{\"@timestamp\":\"2026-09-30 23:53:09.449\",\"@message\":\"{\\\"_aws\\\":{\\\"Timestamp\\\":1790812389449,\\\"CloudWatchMetrics\\\":[{\\\"Namespace\\\":\\\"NightShift\\\",\\\"Dimensions\\\":[[\\\"service\\\"]],\\\"Metrics\\\":[{\\\"Name\\\":\\\"CheckoutsPlaced\\\",\\\"Unit\\\":\\\"Count\\\"}]}]},\\\"service\\\":\\\"orders\\\",\\\"CheckoutsPlaced\\\":[1.0]}\\n\"},{\"@timestamp\":\"2026-09-30 23:53:09.449\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"handler:356\\\",\\\"message\\\":\\\"checkout complete\\\",\\\"timestamp\\\":\\\"2026-09-30 23:53:09,449+0000\\\",\\\"service\\\":\\\"orders\\\",\\\"correlation_id\\\":\\\"load-6bbd3677-804\\\",\\\"order_id\\\":\\\"9ecb0a7e-b5c0-438f-8d23-25487c437c58\\\",\\\"replayed\\\":false,\\\"xray_trace_id\\\":\\\"1-6abda0e5-3dee1ec714e9c8a26d098c09\\\"}\\n\"},{\"@timestamp\":\"2026-09-30 23:53:09.126\",\"@message\":\"{\\\"time\\\":\\\"2026-09-30T23:53:09.126Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"a05add08-f822-4e3b-9dd2-614f57d5e02e\\\",\\\"functionArn\\\":\\\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-orders:live\\\",\\\"version\\\":\\\"26\\\",\\\"tracing\\\":{\\\"spanId\\\":\\\"8b841a5efeaebe3b\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Roo...[96 chars cut]\"},{\"@timestamp\":\"2026-09-30 23:53:09.090\",\"@message\":\"{\\\"time\\\":\\\"2026-09-30T23:53:09.090Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"241ed767-4d3b-49e9-ad53-67cc22791b46\\\",\\\"metrics\\\":{\\\"durationMs\\\":302.242,\\\"billedDurationMs\\\":303,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":111},\\\"tracing\\\":{\\\"spanId\\\":\\\"85e63549d4945f1d\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6a...[109 chars cut]\"},\"...[15 more items cut]\"],\"bytes_scanned\":1744614,\"scan_budget_left_bytes\":19164994}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 23:53:09.470\",\"@message\":\"{\\\"time\\\":\\\"2026-09-30T23:53:09.470Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"a05add08-f822-4e3b-9dd2-614f57d5e02e\\\",\\\"metrics\\\":{\\\"durationM...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {},
+        "in_trigger": false
+      },
+      {
+        "number": 7,
+        "turn": 3,
+        "at": "2026-09-30T23:53:19+00:00",
+        "tool": "query_logs",
+        "args": {
+          "query": "fields @timestamp, @message | filter level = \"WARN\" or level = \"ERROR\" or @message like \"serial\" or @message like \"abort\" | sort @timestamp desc",
+          "minutes": 5,
+          "service": "orders"
+        },
+        "call_id": "call_962814",
+        "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 23:53:13.730\",\"@message\":\"{\\\"level\\\":\\\"WARNING\\\",\\\"location\\\":\\\"on_retry:270\\\",\\\"message\\\":\\\"serialization conflict, retrying\\\",\\\"timestamp\\\":\\\"2026-09-30 23:53:13,730+0000\\\",\\\"service\\\":\\\"orders\\\",\\\"correlation_id\\\":\\\"load-6bbd3677-817\\\",\\\"attempt\\\":1,\\\"delay_ms\\\":48.8,\\\"sqlstate\\\":\\\"40001\\\",\\\"product_ids\\\":[\\\"11111111-1111-4111-8111-111111111111\\\",\\\"44444444-...[85 chars cut]\"},{\"@timestamp\":\"2026-09-30 23:52:52.660\",\"@message\":\"{\\\"level\\\":\\\"WARNING\\\",\\\"location\\\":\\\"on_retry:270\\\",\\\"message\\\":\\\"serialization conflict, retrying\\\",\\\"timestamp\\\":\\\"2026-09-30 23:52:52,660+0000\\\",\\\"service\\\":\\\"orders\\\",\\\"correlation_id\\\":\\\"load-6bbd3677-754\\\",\\\"attempt\\\":1,\\\"delay_ms\\\":19.7,\\\"sqlstate\\\":\\\"40001\\\",\\\"product_ids\\\":[\\\"33333333-3333-4333-8333-333333333333\\\",\\\"44444444-...[85 chars cut]\"},{\"@timestamp\":\"2026-09-30 23:52:44.758\",\"@message\":\"{\\\"level\\\":\\\"WARNING\\\",\\\"location\\\":\\\"on_retry:270\\\",\\\"message\\\":\\\"serialization conflict, retrying\\\",\\\"timestamp\\\":\\\"2026-09-30 23:52:44,758+0000\\\",\\\"service\\\":\\\"orders\\\",\\\"correlation_id\\\":\\\"load-6bbd3677-730\\\",\\\"attempt\\\":1,\\\"delay_ms\\\":31.1,\\\"sqlstate\\\":\\\"40001\\\",\\\"product_ids\\\":[\\\"33333333-3333-4333-8333-333333333333\\\",\\\"55555555-...[85 chars cut]\"},{\"@timestamp\":\"2026-09-30 23:52:38.730\",\"@message\":\"{\\\"level\\\":\\\"WARNING\\\",\\\"location\\\":\\\"on_retry:270\\\",\\\"message\\\":\\\"serialization conflict, retrying\\\",\\\"timestamp\\\":\\\"2026-09-30 23:52:38,729+0000\\\",\\\"service\\\":\\\"orders\\\",\\\"correlation_id\\\":\\\"load-6bbd3677-712\\\",\\\"attempt\\\":1,\\\"delay_ms\\\":11.2,\\\"sqlstate\\\":\\\"40001\\\",\\\"product_ids\\\":[\\\"44444444-4444-4444-8444-444444444444\\\"],\\\"xray_tra...[46 chars cut]\"},{\"@timestamp\":\"2026-09-30 23:52:34.701\",\"@message\":\"{\\\"level\\\":\\\"WARNING\\\",\\\"location\\\":\\\"on_retry:270\\\",\\\"message\\\":\\\"serialization conflict, retrying\\\",\\\"timestamp\\\":\\\"2026-09-30 23:52:34,700+0000\\\",\\\"service\\\":\\\"orders\\\",\\\"correlation_id\\\":\\\"load-6bbd3677-700\\\",\\\"attempt\\\":1,\\\"delay_ms\\\":33.8,\\\"sqlstate\\\":\\\"40001\\\",\\\"product_ids\\\":[\\\"11111111-1111-4111-8111-111111111111\\\",\\\"22222222-...[124 chars cut]\"},\"...[15 more items cut]\"],\"bytes_scanned\":1219655,\"scan_budget_left_bytes\":17945339}}",
+        "summary": "{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 23:53:13.730\",\"@message\":\"{\\\"level\\\":\\\"WARNING\\\",\\\"location\\\":\\\"on_retry:270\\\",\\\"message\\\":\\\"serialization conflict, retrying\\\",\\\"timestamp\\\":\\\"2026-09-30 23:53:13,730+0000\\\",\\\"service\\...(older result, shortened)",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0ThAJs0OZQpoDvtQu1rmuLUzkjKXycjlUvJOSNwELGM/2Yygfw2B+mCN/CejLtHvUr32PrrOW8SvERwVcIv6JAGSrBe1m1JBUEuuDo1a8rDubeDZThInH6taM="
+        },
+        "in_trigger": false
+      },
+      {
+        "number": 8,
+        "turn": 4,
+        "at": "2026-09-30T23:53:20+00:00",
+        "tool": "finish_investigation",
+        "args": {
+          "summary": "The orders service experienced a spike in database serialization conflicts (SQLSTATE 40001) due to concurrent transactions updating shared inventory or product rows, triggering the nightshift-serialization-retries alarm.",
+          "proposed_actions": "none",
+          "root_cause_component": "orders",
+          "hypotheses": "likely: hot row contention causing database serialization retries in the orders service\nruled_out: bad deploy causing serialization retries (no recent deployments)",
+          "fault_category": "hot_row_contention",
+          "confidence": 95,
+          "evidence_steps": "1,5,7",
+          "actions": ""
+        },
+        "call_id": "call_906081",
+        "result": "{\"ok\": \"investigation closed\"}",
+        "summary": "\"{\\\"ok\\\": \\\"investigation closed\\\"}\"",
+        "reasoning": "",
+        "provider_data": {
+          "thoughtSignature": "EmAKXgFpFH0TYnMFqk6JJfh7KESM2OpRnh3M62pPEeEr4cCuF+ohrylZSsWYVpBpftrE7537uaQNcvjRZXqzMPrpzgZpOfycay1kZQcBuJGM4w+Fsd2JzqOTS1vAD08AAUw="
+        },
+        "in_trigger": false
+      }
+    ],
+    "calls": [
+      {
+        "turn": 1,
+        "at": "2026-09-30T23:53:13+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 2741,
+        "output_tokens": 90,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2515,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 2,
+        "at": "2026-09-30T23:53:16+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 3180,
+        "output_tokens": 135,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 2833,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 3,
+        "at": "2026-09-30T23:53:18+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 4354,
+        "output_tokens": 63,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 3589,
+        "rate_limit_headers": {}
+      },
+      {
+        "turn": 4,
+        "at": "2026-09-30T23:53:20+00:00",
+        "provider": "gemini",
+        "model": "gemini-3.5-flash-lite",
+        "input_tokens": 5431,
+        "output_tokens": 148,
+        "cached_tokens": 0,
+        "estimated_request_tokens": 4286,
+        "rate_limit_headers": {}
+      }
+    ],
+    "hypotheses": [
+      {
+        "status": "likely",
+        "text": "hot row contention causing database serialization retries in the orders service"
+      },
+      {
+        "status": "ruled_out",
+        "text": "bad deploy causing serialization retries (no recent deployments)"
+      }
+    ],
+    "hypothesis_changes": [
+      {
+        "step": 4,
+        "before": [],
+        "after": [
+          {
+            "status": "likely",
+            "text": "hot row contention causing database serialization retries in the orders service"
+          },
+          {
+            "status": "ruled_out",
+            "text": "bad deploy causing serialization retries (no recent deployments)"
+          }
+        ]
+      }
+    ],
+    "log_bytes_scanned": 3026181,
+    "rejected_calls": 0,
+    "wall_seconds_used": 8.27057026100374,
+    "finished": true,
+    "stop_reason": "finished",
+    "final": {
+      "summary": "The orders service experienced a spike in database serialization conflicts (SQLSTATE 40001) due to concurrent transactions updating shared inventory or product rows, triggering the nightshift-serialization-retries alarm.",
+      "proposed_actions": "none",
+      "root_cause_component": "orders",
+      "hypotheses": "likely: hot row contention causing database serialization retries in the orders service\nruled_out: bad deploy causing serialization retries (no recent deployments)",
+      "fault_category": "hot_row_contention",
+      "confidence": 95,
+      "evidence_steps": "1,5,7",
+      "actions": ""
+    }
+  }
+}

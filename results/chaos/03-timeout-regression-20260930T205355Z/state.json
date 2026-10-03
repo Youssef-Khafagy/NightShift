@@ -1,0 +1,19 @@
+[
+  {
+    "kind": "env",
+    "service": "fulfillment",
+    "original_env": {
+      "POWERTOOLS_SERVICE_NAME": "fulfillment",
+      "DSQL_ROLE": "fulfillment_service",
+      "POWERTOOLS_LOG_LEVEL": "INFO",
+      "DSQL_ENDPOINT": "<DSQL_CLUSTER_ID>.dsql.ca-central-1.on.aws",
+      "PAYMENTS_DEGRADED_MODE_PARAMETER": "/nightshift/flags/payments_degraded_mode",
+      "PAYMENTS_FUNCTION_NAME": "nightshift-payments",
+      "PAYMENT_TIMEOUT_SECONDS": "3.0"
+    },
+    "recorded": true,
+    "previous": "7",
+    "new": "9",
+    "restored": true
+  }
+]

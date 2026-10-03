@@ -1,0 +1,9 @@
+alarm-only efa19586579f
+   1. get_alarm {"name": "dlq-depth"}
+   2. finish_investigation {"proposed_actions": "Inspect the messages in the dead-letter queue to identify the malformed messag
+   3. finish_investigation {"confidence": 90, "summary": "An alarm fired for the nightshift placed-orders dead-letter queue (ni
+stop: finished
+report: placed-orders / poison_message, confidence 90
+tokens: 2603 in + 322 out = 2925 over 2 calls; largest request estimate 2321; log bytes scanned 0; wall 2s
+proposed (graded, never approved): redrive_dlq
+saved results/investigations/efa19586579f.json

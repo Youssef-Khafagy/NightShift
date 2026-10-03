@@ -1,0 +1,16 @@
+investigation ae793b942101 (gemini gemini-3.5-flash-lite)
+   1. get_alarm {"name": "nightshift-orders-errors"}
+   2. list_recent_deployments {"service": "orders"}
+   3. query_logs {"service": "orders", "query": "fields @timestamp, level, message, correlation_id | filter level = \
+   4. get_traces {"minutes": 10, "service": "orders"}
+   5. get_function_config {"service": "orders"}
+   6. lookup_recent_changes {"minutes": 15}
+   7. note_hypotheses {"hypotheses": "ruled_out: bad_deploy (no recent deployments)\nruled_out: config_regression (no rece
+   8. query_logs {"minutes": 10, "service": "orders", "query": "fields @timestamp, @message | sort @timestamp desc |
+   9. get_metrics {"namespace": "AWS/Lambda", "statistic": "Sum", "period": 60, "metric": "Errors", "minutes": 15}
+  10. note_hypotheses {"hypotheses": "ruled_out: bad_deploy\nruled_out: config_regression\nruled_out: slow_dependency\nrul
+  11. finish_investigation {"fault_category": "iam_regression", "evidence_steps": "8,9", "hypotheses": "ruled_out: bad_deploy\n
+stop: finished
+report: orders / iam_regression, confidence 100
+tokens: 19887 in + 553 out = 20440 over 5 calls; largest request estimate 3998; log bytes scanned 636,167; wall 12s
+saved results/investigations/ae793b942101.json

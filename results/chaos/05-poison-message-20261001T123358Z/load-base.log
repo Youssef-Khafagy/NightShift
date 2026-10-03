@@ -1,0 +1,37 @@
+Run 90d4c1c8: 1.0/s for 1800s, seed 2429862344
+  orders                   1,800
+  Lambda invocations       8,460   month to date     14,949   cap 500,000
+  SQS requests             4,560
+  DSQL DPU                 450.0   month to date      748.4   cap 50,000
+  log volume                10.5 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "90d4c1c8",
+  "date": "2026-10-01T13:38:11+00:00",
+  "commit": "5641bb7",
+  "rate": 1.0,
+  "duration": 1800,
+  "seed": 2429862344,
+  "projected": {
+    "orders": 1800,
+    "lambda_invocations": 8460.0,
+    "sqs_requests": 4560.0,
+    "dsql_dpu": 450.0,
+    "log_mb": 10.5462
+  },
+  "sent": 833,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 833
+  },
+  "elapsed_seconds": 832.4,
+  "achieved_rate": 1.001,
+  "checkout_latency_ms": {
+    "p50": 378.6,
+    "p95": 492.1,
+    "p99": 999.2
+  }
+}

@@ -1,0 +1,14 @@
+investigation 2d7085912eda (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. list_recent_deployments {"service": "fulfillment", "minutes": 15}
+   4. note_hypotheses {"hypotheses": "likely: fulfillment service failure causing payment failures\npossible: slow depende
+   5. query_logs {"service": "fulfillment", "query": "fields @timestamp, level, message, order_id, reason, status | f
+   6. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+   7. get_function_config {"service": "payments"}
+   8. finish_investigation {"root_cause_component": "payments", "fault_category": "throttling", "confidence": 95, "summary": "T
+   9. finish_investigation {"root_cause_component": "payments", "fault_category": "throttling", "confidence": 95, "summary": "T
+stop: finished
+report: payments / throttling, confidence 95
+tokens: 23069 in + 1148 out = 24217 over 6 calls; largest request estimate 4107; log bytes scanned 739,131; wall 26s
+saved results/investigations/2d7085912eda.json

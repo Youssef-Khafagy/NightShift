@@ -1,0 +1,21 @@
+investigation f541874e064e (mistral ministral-14b-latest)
+   1. get_alarm {"name": "nightshift-payment-failures"}
+   2. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   3. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   4. list_recent_deployments {"service": "fulfillment", "minutes": 60}
+   5. get_metrics {"namespace": "NightShift", "metric": "PaymentFailures", "statistic": "Sum", "dimensions": "service=
+   6. get_metrics {"namespace": "NightShift", "metric": "OrdersPaid", "statistic": "Sum", "dimensions": "service=fulfi
+   7. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, reason | filter level = \"E
+   8. query_logs {"service": "fulfillment", "query": "fields @timestamp, @message, level, reason | filter level = \"E
+   9. note_hypotheses {"hypotheses": "likely: throttling in the payments service due to rate limits or concurrency issues\
+  10. get_metrics {"namespace": "AWS/Lambda", "metric": "Throttles", "statistic": "Sum", "dimensions": "FunctionName=n
+  11. get_metrics {"namespace": "AWS/Lambda", "metric": "Duration", "statistic": "p99", "dimensions": "FunctionName=ni
+  12. list_recent_deployments {"service": "payments", "minutes": 60}
+  13. list_recent_deployments {"service": "payments", "minutes": 30}
+  14. lookup_recent_changes {"minutes": 30}
+  15. finish_investigation {"root_cause_component": "payments", "fault_category": "config_regression", "confidence": 95, "summa
+stop: finished
+report: payments / config_regression, confidence 95
+tokens: 29287 in + 1466 out = 30753 over 7 calls; largest request estimate 4628; log bytes scanned 463,880; wall 32s
+proposed (graded, never approved): rollback_alias service=payments
+saved results/investigations/f541874e064e.json

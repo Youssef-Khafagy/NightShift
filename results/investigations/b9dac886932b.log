@@ -1,0 +1,8 @@
+alarm-only b9dac886932b
+   1. get_alarm {"name": "serialization-retries"}
+   2. finish_investigation {"root_cause_component": "orders", "fault_category": "retry_storm", "confidence": 85, "summary": "Th
+   3. finish_investigation {"root_cause_component": "orders", "fault_category": "retry_storm", "confidence": 85, "summary": "Th
+stop: finished
+report: orders / retry_storm, confidence 85
+tokens: 2804 in + 662 out = 3466 over 2 calls; largest request estimate 2578; log bytes scanned 0; wall 13s
+saved results/investigations/b9dac886932b.json

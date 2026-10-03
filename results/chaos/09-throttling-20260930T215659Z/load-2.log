@@ -1,0 +1,38 @@
+Run 76a8237b: 2.0/s for 420s, seed 1990730619
+  orders                     840
+  Lambda invocations       3,948   month to date    138,483   cap 500,000
+  SQS requests             1,988
+  DSQL DPU                 210.0   month to date    8,847.6   cap 50,000
+  log volume                 4.9 MB
+  queue consumer      enabled
+
+Sending...
+{
+  "run_id": "76a8237b",
+  "date": "2026-09-30T22:47:28+00:00",
+  "commit": "5641bb7",
+  "rate": 2.0,
+  "duration": 420,
+  "seed": 1990730619,
+  "projected": {
+    "orders": 840,
+    "lambda_invocations": 3948.0,
+    "sqs_requests": 1988.0000000000002,
+    "dsql_dpu": 210.0,
+    "log_mb": 4.92156
+  },
+  "sent": 256,
+  "stopped_early": true,
+  "dropped_by_generator": 0,
+  "outcomes": {
+    "201": 230,
+    "lambda_throttled": 26
+  },
+  "elapsed_seconds": 127.9,
+  "achieved_rate": 2.001,
+  "checkout_latency_ms": {
+    "p50": 380.7,
+    "p95": 456.7,
+    "p99": 545.6
+  }
+}

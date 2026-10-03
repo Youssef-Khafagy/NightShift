@@ -1,0 +1,20 @@
+{
+  "investigation_id": "02516bc61379",
+  "root_cause_component": "cart",
+  "fault_category": "insufficient_evidence",
+  "confidence": 50,
+  "summary": "An alarm 'nightshift-cart-errors' fired indicating errors in the nightshift-cart Lambda function, but without logs or additional metrics, there is insufficient evidence to determine the exact fault category or root cause.",
+  "evidence": [
+    1
+  ],
+  "actions": [],
+  "proposed_actions": [
+    "Investigate CloudWatch logs and Lambda function configuration for nightshift-cart to determine the exact cause of the errors."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

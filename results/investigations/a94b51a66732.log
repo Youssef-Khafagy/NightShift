@@ -1,0 +1,8 @@
+alarm-only a94b51a66732
+   1. get_alarm {"name": "payment-failures"}
+   2. finish_investigation {"confidence": 90, "evidence_steps": "1", "fault_category": "bad_deploy", "summary": "The payment-fa
+stop: finished
+report: payments / bad_deploy, confidence 90
+tokens: 1185 in + 136 out = 1321 over 1 calls; largest request estimate 2108; log bytes scanned 0; wall 1s
+proposed (graded, never approved): rollback_alias service=payments
+saved results/investigations/a94b51a66732.json

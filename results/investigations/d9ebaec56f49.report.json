@@ -1,0 +1,22 @@
+{
+  "investigation_id": "d9ebaec56f49",
+  "root_cause_component": "payments",
+  "fault_category": "bad_deploy",
+  "confidence": 90,
+  "summary": "The payments service experienced a spike in payment failures resulting in an alarm for fulfillment payment failures. Rolling back the payments alias is recommended to restore normal payment processing.",
+  "evidence": [
+    1
+  ],
+  "actions": [
+    "rollback_alias service=payments"
+  ],
+  "proposed_actions": [
+    "Check payments service deployment logs."
+  ],
+  "stop_reason": "finished",
+  "evidence_tools": {
+    "1": "get_alarm"
+  },
+  "evidence_dropped": [],
+  "evidence_empty": []
+}

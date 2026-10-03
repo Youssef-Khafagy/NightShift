@@ -1,0 +1,14 @@
+investigation 4f7a3323faec (gemini gemini-3.5-flash-lite)
+   1. get_alarm {}
+   2. get_topology {}
+   3. get_function_config {"service": "orders"}
+   4. get_function_config {"service": "cart"}
+   5. get_function_config {"service": "payments"}
+   6. get_function_config {"service": "fulfillment"}
+   7. note_hypotheses {"hypotheses": "likely: throttling due to low reserved concurrency on Lambda functions\nruled_out: b
+   8. get_metrics {"namespace": "AWS/Lambda", "statistic": "Sum", "period": 60, "metric": "Throttles", "minutes": 15}
+   9. finish_investigation {"actions": "", "confidence": 95, "summary": "The alarm `nightshift-throttles` fired because Lambda
+stop: finished
+report: orders / throttling, confidence 95
+tokens: 10095 in + 348 out = 10443 over 3 calls; largest request estimate 3348; log bytes scanned 0; wall 4s
+saved results/investigations/4f7a3323faec.json
