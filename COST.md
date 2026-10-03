@@ -496,9 +496,37 @@ Alerts go to <ALERT_EMAIL>. Free tier usage alerts (85% of any tracked allowance
 | Thing | Free allowance | Projected usage | Headroom |
 |---|---|---|---|
 | GitHub Actions, private repo | 2,000 minutes/month, 500 MB artifact storage | CI on pull requests only, target under 5 minutes per run, so well under 400 minutes/month | Large. Public repos have no minute cap, so this ceiling disappears if the repo is made public. |
-| Vercel Hobby (M8 dashboard) | Hobby plan, non-commercial | One Next.js project, replay mode from static JSON | Verify current Hobby limits before M8 |
+| Vercel Hobby (M8 dashboard) | Per month: 1,000,000 function invocations, 4 CPU-hours of Active CPU, 360 GB-hours of provisioned memory, 1,000,000 CDN requests, 100 GB Fast Data Transfer, 10 GB Fast Origin Transfer; 100 deployments a day (checked 2026-10-03) | One Next.js project. Public replay pages are static files served from the CDN; only the owner's live pages run functions. See "M8 dashboard" below | Over 98% on every line |
+| GitHub OAuth app (M8 login) | Free; part of every GitHub account | One app, one user | n/a |
 
 Overage on GitHub Actions is only possible with a payment method on file and spending limit raised above $0. The default spending limit on the Free plan is $0, so jobs stop instead of billing.
+
+### M8 dashboard (checked 2026-10-03, M8 step 1)
+
+**Vercel Hobby cannot bill.** "As the Hobby plan is a free tier there are no billing cycles. In most cases, if you exceed your usage limits on the Hobby plan, you will have to wait until 30 days have passed before you can use the feature again." There is no card on a Hobby account, so the failure mode of a traffic spike is a paused site, not a charge. Hobby is "restricted to non-commercial personal use only"; commercial means a deployment "used for the purpose of financial gain" (payments, advertising, being paid to build or host it). A portfolio project with no ads and no payments is not that.
+
+**OIDC federation to AWS works on Hobby** ("available on all plans"). With the team issuer mode a function's token says `iss` `https://oidc.vercel.com/<team>`, `aud` `https://vercel.com/<team>`, `sub` `owner:<team>:project:<project>:environment:<env>`, where env is `development`, `preview` or `production`. Function tokens last two hours. The dashboard role's trust policy names the production subject only, so preview deployments of a pull request get no AWS access at all.
+
+**STS and IAM are free.** The IAM FAQ: "IAM is offered at no additional charge". The CI roles have used `AssumeRoleWithWebIdentity` since M1 and no bill has shown an STS line.
+
+**What the public costs: nothing in AWS.** Replay pages are built once from committed JSON and served as static files. They make no AWS call and no LLM call, and no public route exists that could. A replay page is about 100 to 300 KB, so 100 GB of transfer is several hundred thousand page views.
+
+**What an open live page costs** (owner only, behind GitHub login, built in step 9). Rules: it polls every 15 seconds and only while the tab is visible; it never calls `Scan`, `GetMetricData` or `GetMetricWidgetImage`; it reads the current investigation by key.
+
+| Per poll | Calls | Allowance it draws on |
+|---|---|---|
+| Alarm states | 1 `DescribeAlarms` (prefix `nightshift-`, 10 alarms) | CloudWatch, 1M API requests a month (GetMetricData and the other two always-charged calls excluded; see above) |
+| Current investigation | 1 `GetItem` on the incident lock (under 1 KB, 0.5 RCU) plus 1 `GetItem` on its checkpoint (largest so far 34 KB, about 4.5 RCU eventually consistent) | `nightshift-investigations`, 5 RCU provisioned, already in the capacity ledger. 5 RCU every 15 s is 0.33 RCU a second |
+| A few health numbers | up to 3 `GetMetricStatistics` | CloudWatch API requests |
+| The page itself | 1 Vercel function invocation, about 50 ms of CPU | Vercel Hobby |
+
+Worst case assumed: the live page open 2 hours a day, every day. That is 14,400 polls a month: about 72,000 CloudWatch requests (7% of 1M), 14,400 Vercel invocations (1.4%) and about 12 minutes of Active CPU (5% of 4 hours). DynamoDB capacity is provisioned, so reads do not cost money; the risk is throttling, and 0.33 RCU a second leaves the agent's own reads alone. Approving or rejecting is one `Invoke` of the Actor or one conditional `UpdateItem`, a handful a month.
+
+**Region.** Hobby functions run in a single region, `iad1` (Washington) unless the project says otherwise. Vercel's Montréal region `yul1` is listed as running in ca-central-1, the store's own region, so `dashboard/vercel.json` sets `"regions": ["yul1"]`. Responses are a few KB either way, far inside the 100 GB a month of AWS data transfer out that is always free.
+
+**GitHub Actions.** The dashboard CI job (install, lint, typecheck, tests, build) is about 2 minutes per pull request run. Twenty M8 pull requests with a re-run each is about 80 minutes of the 2,000.
+
+**Vercel builds.** Every push to a connected repository builds a deployment, and Hobby allows 100 a day. The project's `ignoreCommand` skips the build unless `dashboard/` changed.
 
 ## LLM providers (free tiers, not AWS)
 
@@ -585,6 +613,15 @@ Free plan end date from the Billing console after sign-up: **2027-03-18** (accou
 | 2027-02-15 | NightShift upgrade HARD DEADLINE | If not upgraded yet, upgrade now or decide on purpose to let the account close. Before closing: export results, journals, and postmortems so the Vercel replay mode keeps working without AWS. |
 
 If credits ever drop by more than $1 in a month, treat it as an incident: find the cause before doing anything else.
+
+## Sources checked 2026-10-03 (M8 step 1)
+
+- Vercel Hobby included usage, billing cycle and pausing: https://vercel.com/docs/plans/hobby
+- Vercel commercial usage and typical Hobby usage: https://vercel.com/docs/limits/fair-use-guidelines
+- Vercel OIDC token claims, issuer modes, token lifetimes, plan availability: https://vercel.com/docs/oidc/reference and https://vercel.com/docs/oidc/aws
+- Vercel function regions (Hobby: single region, default `iad1`) and the region list (`yul1` is ca-central-1): https://vercel.com/docs/functions/configuring-functions/region and https://vercel.com/docs/regions
+- IAM cost ("IAM is offered at no additional charge"): https://aws.amazon.com/iam/faqs/
+- CloudWatch API requests (1M free; GetMetricData, GetInsightRuleReport and GetMetricWidgetImage always charged): https://aws.amazon.com/cloudwatch/pricing/
 
 ## Sources checked 2026-09-22 (M3 step 1)
 
