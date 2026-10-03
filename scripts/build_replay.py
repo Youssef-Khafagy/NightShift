@@ -28,6 +28,7 @@ import argparse
 import json
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -243,6 +244,75 @@ def investigation(key: str, outcome: dict, investigations: Path) -> dict:
     }
 
 
+# The demo page replays the one recorded incident that went the whole way:
+# the M6 live check, where the agent's proposal was approved, the Actor
+# rolled orders back and the alarm recovered. Its journal was read back from
+# the investigations table (the agent ran in Lambda) into results/.
+DEMO_RUN = "01-bad-deploy-20260924T023013Z"
+# Said on the page, because the recorded answer is not flawless: it is the
+# M6 finding that led to the prompt's rule against unsupported claims.
+DEMO_NOTE = (
+    "Right about the cause, but not flawless: the summary also blames orders' reserved "
+    "concurrency, which none of the cited steps shows. That finding is why the prompt now "
+    "limits a summary to what its evidence shows."
+)
+
+
+def demo_record(results: Path, scenarios: dict) -> dict:
+    run = results / "chaos" / DEMO_RUN
+    result = json.loads((run / "result.json").read_text())
+    agent = result["agent"]
+    iid = agent["investigation_id"]
+    state = json.loads((results / "investigations" / f"{iid}.json").read_text())[
+        "state"
+    ]
+    report = json.loads((results / "investigations" / f"{iid}.report.json").read_text())
+    audit = result["decisions"][0]["audit"][0]
+    injected = datetime.fromisoformat(result["injected_at"]).timestamp()
+    started = datetime.fromisoformat(result["started"]).timestamp()
+    scenario = scenarios[result["scenario"]]
+    alarm, alarm_seconds = next(iter(result["alarms_fired"].items()))
+    return {
+        "run_id": result["run_id"],
+        "commit": result["commit"],
+        "provider": agent["provider"],
+        "model": agent["model"],
+        "investigation_id": iid,
+        "scenario": {
+            "id": result["scenario"],
+            "name": SCENARIO_NAMES[result["scenario"]],
+            "description": " ".join(scenario.description.split()),
+        },
+        "injected_at": result["injected_at"],
+        "warm_up_seconds": round(injected - started),
+        "page": {"alarm": alarm, "seconds": round(alarm_seconds)},
+        "answer": {
+            "seconds": agent["grade"]["diagnosis_seconds"],
+            "component": report["root_cause_component"],
+            "category": report["fault_category"],
+            "confidence": report["confidence"],
+            "summary": report["summary"],
+            "evidence": report["evidence"],
+            "actions": report.get("actions", []),
+            "correct": agent["grade"]["root_cause_correct"],
+            "tokens": agent["tokens"],
+            "note": DEMO_NOTE,
+        },
+        "steps": journal(state, set(report["evidence"])),
+        "approval": {
+            "action": audit["action"],
+            "approved_seconds": round(audit["at"] - injected),
+            "acted_seconds": round(audit["acted_at"] - injected),
+            "version_before": audit["before"]["version"],
+            "version_after": audit["after"]["version"],
+            "verification": audit["verification"]["outcome"],
+            "verified_after_seconds": audit["verification"]["seconds"],
+        },
+        "health": result["health"],
+        "postmortem": (run / "agent-postmortem.md").read_text(),
+    }
+
+
 def answer_line(outcome: dict) -> dict:
     """One configuration's answer, as the incidents table shows it."""
     g = outcome["grade"]
@@ -390,11 +460,13 @@ def build(results: Path, pass_name: str) -> dict[str, str]:
         "notes": (bench / "decisions.md").read_text(),
     }
 
+    files["demo.json"] = demo_record(results, scenarios)
+
     ids = {
         d["investigation_id"]
         for f in files.values()
         for d in f.get("investigations", [])
-    }
+    } | {files["demo.json"]["investigation_id"]}
     out = {}
     problems = []
     for name, value in sorted(files.items()):

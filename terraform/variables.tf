@@ -94,19 +94,14 @@ variable "operator_user_name" {
   default     = "youssef-admin"
 }
 
-variable "agent_trigger_enabled" {
-  description = "Whether alarms start investigations. Default false: every chaos run would otherwise spend LLM quota. Turn on for a run, off afterwards, like the queue consumer."
-  type        = bool
-  default     = false
-}
-
 variable "agent_provider" {
   description = "LLM provider the investigator Lambda uses: groq, gemini or mistral. The model defaults per provider (agent/config.py); set agent_model to override."
   type        = string
-  # Mistral ministral-14b (owner's choice for the M5 live check, 2026-09-23):
-  # 25 to 40 s per investigation and no daily cap seen, where Groq's 200K
-  # tokens a day holds about four investigations.
-  default = "mistral"
+  # Gemini Flash Lite since 2026-10-03: in benchmark pass m7 the agent was
+  # right 18 of 36 times on it against 5 of 36 on Mistral ministral-14b (the
+  # M5 choice), and 3 of 3 against 2 of 3 on the bad-deploy scenario the live
+  # demo stages. 500 requests a day free; an investigation uses about 10.
+  default = "gemini"
   validation {
     condition     = contains(["groq", "gemini", "mistral"], var.agent_provider)
     error_message = "agent_provider must be groq, gemini or mistral."

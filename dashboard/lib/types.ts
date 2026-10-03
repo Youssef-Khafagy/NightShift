@@ -196,3 +196,39 @@ export type Incident = {
   actor_invocations: number;
   investigations: Investigation[];
 };
+
+export type DemoRecord = {
+  run_id: string;
+  commit: string;
+  provider: string;
+  model: string;
+  investigation_id: string;
+  scenario: { id: number; name: string; description: string };
+  injected_at: string;
+  warm_up_seconds: number;
+  page: { alarm: string; seconds: number };
+  answer: {
+    seconds: number;
+    component: string;
+    category: string;
+    confidence: number;
+    summary: string;
+    evidence: number[];
+    actions: string[];
+    correct: boolean;
+    tokens: number;
+    note: string;
+  };
+  steps: Step[];
+  approval: {
+    action: string;
+    approved_seconds: number;
+    acted_seconds: number;
+    version_before: string;
+    version_after: string;
+    verification: string;
+    verified_after_seconds: number;
+  };
+  health: Record<string, boolean>;
+  postmortem: string;
+};

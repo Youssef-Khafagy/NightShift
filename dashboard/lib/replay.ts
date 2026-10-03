@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import type { Incident, ReplayIndex } from "./types";
+import type { DemoRecord, Incident, ReplayIndex } from "./types";
 
 const ROOT = path.join(process.cwd(), "public", "replay");
 
@@ -18,4 +18,8 @@ export function loadIndex(): ReplayIndex {
 
 export function loadIncident(entry: number): Incident {
   return read<Incident>(`incidents/${String(entry).padStart(2, "0")}.json`);
+}
+
+export function loadDemo(): DemoRecord {
+  return read<DemoRecord>("demo.json");
 }

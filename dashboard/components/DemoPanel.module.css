@@ -1,0 +1,54 @@
+.panel {
+  margin-bottom: 24px;
+}
+
+.stages {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: 1.6em 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.mark {
+  font-weight: 700;
+  text-align: center;
+}
+
+.done .mark {
+  color: var(--good-text);
+}
+
+.now .mark {
+  color: var(--accent);
+}
+
+.waiting {
+  color: var(--muted);
+}
+
+.title {
+  font-weight: 600;
+}
+
+.detail {
+  display: block;
+  font-size: 0.86rem;
+  color: var(--text-2);
+}
+
+.steps {
+  margin: 8px 0 0;
+  padding-left: 1.2em;
+}
+
+.steps li {
+  margin-bottom: 6px;
+}

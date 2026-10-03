@@ -156,9 +156,10 @@ def consumer_on(lam) -> bool:
 
 def run_vars(with_agent: bool) -> list[str]:
     """The Terraform variables a run sets, so "plan clean" means "nothing
-    but what this run turned on differs"."""
-    # The consumer is not among them: from M6 Terraform ignores its state.
-    return ["-var=agent_trigger_enabled=true"] if with_agent else []
+    but what this run turned on differs". None any more: Terraform ignores
+    the queue consumer's state (from M6) and the agent trigger's (from M8),
+    which scripts switch."""
+    return []
 
 
 def plan_clean(with_agent: bool = False) -> bool:
@@ -278,7 +279,7 @@ def agent_preflight() -> list[str]:
     )
     if rule["State"] != "ENABLED":
         problems.append(
-            "the alarm-to-agent rule is disabled; enable it through Terraform first"
+            "the alarm-to-agent rule is disabled; switch it on with scripts/trigger.py on"
         )
     ddb = boto3.client("dynamodb", region_name=REGION)
     lock = ddb.get_item(TableName=agent_wait.TABLE, Key=agent_wait.LOCK_KEY).get("Item")

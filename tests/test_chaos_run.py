@@ -35,10 +35,20 @@ def test_no_loads_is_not_an_error():
     assert dead_loads([]) == []
 
 
-def test_a_run_with_the_agent_plans_with_the_trigger_enabled():
+def test_switching_the_trigger_never_makes_the_plan_dirty():
     """On 2026-09-23 the first agent run refused to start: the plan check
-    knew the consumer was on for the run but not the trigger."""
+    knew the consumer was on but not the trigger. Since M8 Terraform ignores
+    the trigger's state, as it does the consumer's, so a run with the agent
+    plans with no extra variables, and the rule says so in Terraform."""
     from chaos.run import run_vars
 
     assert run_vars(False) == []
-    assert run_vars(True) == ["-var=agent_trigger_enabled=true"]
+    assert run_vars(True) == []
+    agent_tf = (
+        Path(__file__).resolve().parent.parent / "terraform" / "agent.tf"
+    ).read_text()
+    rule = agent_tf[
+        agent_tf.index('resource "aws_cloudwatch_event_rule" "alarm_to_agent"') :
+    ]
+    rule = rule[: rule.index("\n}\n")]
+    assert "ignore_changes = [state]" in rule

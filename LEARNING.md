@@ -116,7 +116,7 @@ Its first run found AWS Glue requests, which this project does not use. CloudTra
 
 ### Pause and destroy
 
-**Pause** (`scripts/pause.py`) brings idle usage to zero and proves it. Almost nothing here costs anything while unused, so pausing is small: make sure the queue trigger is off (through Terraform, never the CLI, so state never drifts), then check that nothing can start by itself (no EventBridge rules or schedules, no provisioned concurrency) and that the last 10 minutes show zero invocations and zero SQS polls. Its first live run correctly refused to call the store paused: a deploy's smoke test had run 6 minutes earlier. Ten quiet minutes later it passed.
+**Pause** (`scripts/pause.py`) brings idle usage to zero and proves it. Almost nothing here costs anything while unused, so pausing is small: make sure the queue trigger is off (with `scripts/consumer.py`, whose state Terraform ignores since M6, so a switch never shows as drift), then check that nothing can start by itself (no EventBridge rules or schedules, no provisioned concurrency) and that the last 10 minutes show zero invocations and zero SQS polls. Its first live run correctly refused to call the store paused: a deploy's smoke test had run 6 minutes earlier. Ten quiet minutes later it passed.
 
 **Destroy** (`scripts/destroy.py`) removes the 65 resources Terraform manages, but first writes a real destroy plan and groups it by consequence: data lost for good (the DSQL cluster, the cart and deployments tables), CI that stops working (the OIDC provider and CI roles, which CI itself can never recreate), paging that stops (alarms and the email subscription, which would need the confirmation click again), and everything else. It is a dry run unless `--apply`, and then needs the project name typed out; it applies the exact plan it showed. It runs locally only. What survives: the state bucket, the budgets, the IAM user and group, and the raised concurrency quota, because Terraform never owned them. In M3 it was only ever run as a dry run.
 
@@ -1048,6 +1048,16 @@ The public site shows recorded runs. The owner also needs the present: which ala
 
 **What went wrong getting it live.** The first CI apply after step 8 failed reading the Vercel identity provider: the CI role could read only the GitHub one. Nothing changed (Terraform reads everything before it plans), the fix was one ARN applied locally, and a test now checks every provider is readable. Then Vercel cancelled the redeploy meant to pick up the new settings, because a rule to skip builds that change nothing under `dashboard/` also skipped a redeploy, which changes no files. The rule was removed: two surprises for saving a minute of build time.
 
+### Demoing it
+
+**Two demos, for two situations.** The Demo page replays one real incident, the M6 live check, in nine scenes: the bad deploy, the page, the agent's 16 steps, its diagnosis, the approval, the rollback and the confirmed recovery. It is static like the rest of the public site, so it works in any interview with no AWS behind it, and it says on the page where the agent's summary claimed more than its evidence. The live run (`docs/demo.md`) stages the same fault on the real store: `scripts/demo.py prepare`, then `start` 45 minutes later, while the Live page tracks each stage and is where I approve.
+
+**Why the website has no "start an incident" button.** Starting one means deploying a broken version, which the dashboard's role must never be able to do: a public site holding that permission is one bug away from breaking the store on someone else's click. A Vercel function would also time out long before an incident finishes. So the laptop starts it, and the browser only reads and approves, which is all its role allows.
+
+**Why `prepare` comes 45 minutes early.** The runner refuses to inject until the store has been quiet for 45 minutes, so that the agent reads nothing left over from something else (section 20). Switching the queue consumer and the agent trigger on is itself a configuration change that CloudTrail records, so it has to happen before the quiet gap, not after.
+
+**Two changes it needed.** The agent trigger used to be switched by a Terraform variable, so every demo would have meant an apply. Terraform now ignores its state, as it already did for the queue consumer, and `scripts/trigger.py` switches it. And the deployed agent moved from Mistral to Gemini Flash Lite: the benchmark had it right 18 of 36 times against 5, and 3 of 3 against 2 on exactly the scenario the demo stages.
+
 ### Going public: the logs are part of the repository
 
 A public repository publishes more than its files: every commit on every branch, every pull request, and every Actions run log for its retention period. The checklist is `docs/going-public.md`. Two findings shaped it:
@@ -1195,7 +1205,8 @@ A public repository publishes more than its files: every commit on every branch,
 
 **`scripts/`: the commands**
 - `deploy.py`, `rollback.py`: move aliases forward or back, record them, smoke test.
-- `pause.py`, `destroy.py`, `consumer.py`: idle the store, tear it down, switch the queue consumer.
+- `pause.py`, `destroy.py`, `consumer.py`, `trigger.py`: idle the store, tear it down, switch the queue consumer, switch the alarm-to-agent trigger.
+- `demo.py`: the live demo: `prepare`, `start`, `stop`, `status`.
 - `approve.py`: approve or reject a proposed action from the terminal.
 - `load.py`: rate-capped traffic, dry run by default.
 - `smoke_checkout.py`, `trace_correlation.py`: one real checkout; one order traced across every service.
@@ -1224,8 +1235,8 @@ A public repository publishes more than its files: every commit on every branch,
 **`requirements/`**: pinned Python dependencies: `dev.txt` (laptop), `lambda-deps` and `agent-deps` (`.in` lists, `.lock` hashes).
 
 **`dashboard/`: the website**
-- `app/`: the pages (results, incidents, method, live) and the live API routes.
-- `components/`: charts, tables, the journal replay, tabs, markdown.
+- `app/`: the pages (demo, results, incidents, method, live) and the live API routes.
+- `components/`: charts, tables, the journal replay, the demo player, the live demo tracker, tabs, markdown.
 - `lib/`: data loading, formatting, and `live/` (login, AWS clients, approve and reject).
 - `public/replay/`: the public data, generated by `scripts/build_replay.py`.
 - `scripts/check-static.mjs`: fails the build if a public page could run code per request.
@@ -1235,7 +1246,7 @@ A public repository publishes more than its files: every commit on every branch,
 
 **`docs/`**
 - `decisions/`: one record per major decision, `log.md` for every smaller one.
-- `demo.md`: the 60-second demo script.
+- `demo.md`: how to demo it: the one-minute replay with its narration, and the live run.
 - `going-public.md`: what was checked and changed before the repository went public.
 - `history-rewrite.md`: how sensitive values were removed from git history.
 

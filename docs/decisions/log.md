@@ -2,6 +2,9 @@
 
 Every decision that shaped the project, newest first, with the one-line reason it was made. "Approved" means the owner signed it off; the larger ones also have a decision record in this folder. Kept as it was written at the time, so it shows how the plan changed: some entries are reversed by later ones.
 
+- 2026-10-03: two demos. The public Demo page replays the M6 live check (the one recorded incident that went through approval, rollback and recovery); a live run is started from the laptop (`scripts/demo.py`) and followed and approved on the Live page. Reason: the website must never hold the permission to break the store, and the replay works anywhere.
+- 2026-10-03: the alarm-to-agent trigger is switched by `scripts/trigger.py`, and Terraform ignores its state. Reason: a demo or a run should not need an apply, and an apply should not undo a switch (decision A from M6, extended).
+- 2026-10-03: the deployed agent runs on Gemini Flash Lite, not Mistral ministral-14b. Reason: pass m7 had it right 18 of 36 times against 5, and 3 of 3 against 2 on the scenario the live demo stages.
 - Approved 2026-10-03: M8 closed. Dashboard, live page, documentation and the public repository done and reviewed.
 - Owner 2026-10-03: finish M8 straight on main, no more pull requests; CI now runs on every push to main. Reason: owner's call, to finish without per-step PR round trips; the checks stay, local and in CI.
 - 2026-10-03: the `dsql_endpoint` and `dsql_cluster_identifier` outputs are sensitive. Reason: every Apply run printed them (25 run logs held the cluster ID), and the logs go public with the repo; scripts read them with `-raw`, which still works.

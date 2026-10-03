@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { DemoPanel } from "@/components/DemoPanel";
 import { Journal } from "@/components/Journal";
 import type { LiveApproval, LiveStatus } from "@/lib/live/status";
 
@@ -70,6 +71,7 @@ export function LiveView({ login, investigation }: { login: string; investigatio
         .{" "}
         {data ? `Checked ${data.checked_at.slice(11, 19)} UTC.` : "Loading."}
       </p>
+      <DemoPanel status={data} nowSeconds={nowSeconds} />
       {error && <p className="badge badge-bad">Could not read the live state: {error}</p>}
       {message && <p className="card">{message}</p>}
       {data && (

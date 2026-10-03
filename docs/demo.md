@@ -1,39 +1,73 @@
-# 60-second demo
+# Demo
 
-A screen recording of the public replay, with narration. Everything shown is a recorded run; the narration says so, and every sentence below rests on a fact listed under it.
+Two ways to show NightShift, depending on time and setting.
 
-## Setup
-
-- Browser at 1280 by 800, light theme, zoom 100%, no extensions visible. Start on the dashboard's results page, scrolled to the top.
-- Record the screen and voice together (Windows: Win+Alt+R with Xbox Game Bar, or OBS). Read the narration once aloud before recording; it is 150 words, about 60 seconds at a normal speaking pace of 150 a minute.
-- One take per shot is fine; cut between shots.
-
-## Shots and narration
-
-| Time | Screen | Narration |
+| | The replay | The live run |
 |---|---|---|
-| 0:00 to 0:08 | Results page, top: the title and the accuracy chart. | "NightShift is an AI on-call engineer for AWS. I built a small store, broke it on purpose 36 times, and had five configurations investigate every incident." |
-| 0:08 to 0:18 | Hover the Agent, Gemini row, then the Scripted runbook row. | "The Gemini agent was right half the time, a scripted runbook 58%. At this size, those can't be told apart." |
-| 0:18 to 0:24 | Scroll to "By scenario". Point at row 6, IAM regression: the agent column against the runbook's 0/3. | "They win in different places. Here's one the runbook can't do." |
-| 0:24 to 0:32 | Click "6. IAM regression", then Incident 10. Show the description and the "Paged with" card. | "Someone removed orders' permission to publish to its queue. Checkouts fail, and the page goes out two minutes later." |
-| 0:32 to 0:46 | Scroll to "Investigations, step by step", tab Agent, Gemini, press "Replay at 10x speed". Let it run; open step 15's result. | "The agent finds no deploy, checks recent changes, metrics and traces, then finds AccessDenied on the queue in orders' own logs." |
-| 0:46 to 0:54 | Scroll up to "The five answers". | "Orders, IAM regression, sixteen seconds after the page. It proposes nothing automatic, because no safe action fixes a permission. The runbook had no rule for this." |
-| 0:54 to 1:00 | The footer, then the Method page's "What these numbers do not show". | "Every number here comes from recorded runs, and this site can't call AWS or a model. The code, the costs and the mistakes are in the repo." |
+| What | One recorded incident, played on the website: https://night-shift-tau-amber.vercel.app/demo | A real incident staged on the real store, approved by you on the Live page |
+| How long | About a minute, or as long as you talk | 15 to 20 minutes, plus 45 minutes of preparation beforehand |
+| Needs | A browser | Your laptop with `aws login`, and the Live page signed in |
+| Risk | None: static files, no AWS, no model | Real traffic and a real fault, inside the free allowances; it can fail like anything real |
+| Use it for | Interviews, the README, a screen recording | When someone wants to see it happen for real |
 
-## What each line rests on
+## The replay (the 60-second demo)
 
-- **36 incidents, five configurations:** pass `m7`, commit `5085754`, 2026-09-30 to 2026-10-03 (`results/bench/m7/`).
-- **Half the time, 58%, can't be told apart:** agent-gemini 18 of 36, runbook 21 of 36; on the incidents only one got right, 5 against 8, McNemar exact p = 0.58 (dashboard results page, `results/bench/m7/summary.json`).
-- **Scenario 6 row:** agent-gemini 2 of 3, runbook 0 of 3.
-- **The incident:** entry 10, run `06-iam-regression-20261001T003124Z`. The permission removed is orders' `sqs:SendMessage` on `nightshift-placed-orders`. `nightshift-orders-errors` paged 122 seconds after the injection ("two minutes later").
-- **What the agent did:** its journal, steps 3 (deployments, found nothing), 6 (recent changes), 4, 5, 11, 12 and 14 (metrics), 8 (traces), 15 (orders' logs, the result containing `AccessDenied`).
-- **Sixteen seconds after the page:** the page at 122 s, the answer at 138 s after injection; `orders / iam_regression` at confidence 100.
-- **Nothing automatic:** its only proposal is text for a human ("restore permissions for the orders role to call sqs:SendMessage"), no allowlisted action. The scenario accepts no action; remediation graded correct.
-- **The runbook:** `insufficient_evidence`, "No runbook rule explains orders-errors without a recent deploy."
-- **Recorded runs, no AWS or model calls:** every page is prerendered from `dashboard/public/replay/`, and CI fails on any route that renders per request (`dashboard/scripts/check-static.mjs`).
+The Demo page tells one real incident in nine scenes: normal traffic, a broken deploy of orders, the alarm, the agent's 16 investigation steps, its diagnosis, the proposed rollback and its approval, the rollback and the confirmed recovery, and the postmortem. **Play** runs it in about a minute; **Next** and **Back** (or the arrow keys) let you talk over each scene. Everything on it comes from the record of the M6 live check on 2026-09-24.
 
-## Don't say
+To record the video: browser at 1280 by 800, open the Demo page, start the screen recording (Windows: Win+Alt+R), press Play, and read along:
 
-- That the agent beats the runbook. It doesn't, measurably.
-- That the agent is safe because it is accurate. Its safety is the read-only role, the allowlist and the human approval; it proposed something unsafe 4 times in the pass.
-- That this run was live. It is a replay of a recorded run.
+| Scene | Say |
+|---|---|
+| One real incident | "NightShift is an AI on-call engineer for AWS. This is a real incident on the store I built, replayed as it happened." |
+| Normal traffic | "The store is healthy, about one checkout a second." |
+| A broken version ships | "A deploy with a one-word typo goes out. Every checkout now tells the customer it failed." |
+| The page | "Ninety-six seconds later the alarm fires and pages the agent." |
+| The investigation | "It works through sixteen steps with read-only tools: metrics, logs, recent deployments." |
+| The diagnosis | "It names the cause: a bad deploy of orders, two minutes after the fault. Not perfect: it adds a claim its evidence doesn't show." |
+| A human approves | "It can only propose. I approve this one exact action." |
+| Rolled back, and checked | "A separate component rolls back and watches the alarm until it recovers." |
+| The postmortem | "And it writes the postmortem. How often is it right? Thirty-six incidents, against a scripted runbook, are on the Results page." |
+
+That is 136 words, about a minute at a normal speaking pace.
+
+Don't say: that it beats the runbook (it doesn't, measurably); that it is safe because it is accurate (it is safe because it can only read, can only propose from an allowlist, and needs your approval); that the replay is live.
+
+## The live run
+
+The website never starts a real incident: that would mean giving a public site permission to break the store. Your laptop starts it, the Live page follows it stage by stage, and you approve there.
+
+**At least 45 minutes before:**
+
+```bash
+aws login --profile nightshift-admin
+python scripts/demo.py prepare
+```
+
+This switches the queue consumer and the agent trigger on. The chaos runner then needs 45 quiet minutes before it will inject, so that nothing the agent reads is left over from something else. `python scripts/demo.py status` shows when the gap ends.
+
+**When you are ready:** open the Live page (https://night-shift-tau-amber.vercel.app/live), sign in, then:
+
+```bash
+python scripts/demo.py start
+```
+
+What happens, and roughly when:
+
+1. Three minutes of normal traffic. The Live page's tracker shows "Traffic".
+2. The broken version of orders ships. About a minute and a half later the orders-errors alarm fires.
+3. The agent investigates in Lambda for about a minute. Its journal appears on the Live page.
+4. It proposes `rollback_alias service=orders`. On the Live page: **Approve...**, then **Run exactly this action**.
+5. The Actor rolls orders back and watches the alarm, up to 10 minutes; usually about three.
+6. The runner recovers anything left, checks the store's health, and prints the result.
+
+**Afterwards:**
+
+```bash
+python scripts/demo.py stop
+```
+
+This switches the trigger and the consumer off. Ten minutes later, `python scripts/pause.py` proves the store is idle.
+
+**If something goes wrong:** the runner always recovers what it changed, even when interrupted (`python -m chaos.run --restore results/chaos/<run>/state.json` if it was killed). If the agent gets it wrong, say so: that is what the benchmark measures, and the Results page shows how often.
+
+**Cost:** at most about 1,260 checkouts, 5,900 Lambda invocations, 315 DSQL DPU and ten model calls, under 1% of each free allowance.

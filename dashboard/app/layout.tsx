@@ -22,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               NightShift
             </Link>
             <nav className={styles.nav} aria-label="Main">
+              <Link href="/demo">Demo</Link>
               <Link href="/">Results</Link>
               <Link href="/incidents">Incidents</Link>
               <Link href="/method">Method</Link>

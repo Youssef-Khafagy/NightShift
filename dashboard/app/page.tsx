@@ -43,6 +43,12 @@ export default function ResultsPage() {
         compared each answer with the ground truth.
       </p>
 
+      <p>
+        <Link href="/demo" className="button-primary">
+          Watch it handle an incident, end to end →
+        </Link>
+      </p>
+
       <AccuracyChart configs={index.configs} />
 
       <h2>What it says</h2>

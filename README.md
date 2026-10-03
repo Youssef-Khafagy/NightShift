@@ -4,6 +4,8 @@ An AI on-call engineer for AWS. It gets paged, investigates with read-only tools
 
 The benchmark is the point, not the store. A chaos framework breaks a small store on AWS in realistic ways, and a harness measures how often the agent is right against a scripted runbook and against the same model shown only the alarm.
 
+**Watch it handle an incident, end to end, in about a minute: https://night-shift-tau-amber.vercel.app/demo**
+
 Dashboard: https://night-shift-tau-amber.vercel.app (every incident and investigation, replayed from the recorded results).
 
 Status: all milestones, M0 to M8, are complete (2026-10-03). It is built to run inside AWS's Always Free allowances; see Cost.

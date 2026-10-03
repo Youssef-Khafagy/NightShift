@@ -38,6 +38,14 @@ export type LiveApproval = {
   decided_by: string | null;
 };
 
+export type LiveAudit = {
+  approval: string;
+  action: string;
+  outcome: string;
+  reason: string | null;
+  verification: string | null;
+};
+
 export type LiveStatus = {
   checked_at: string;
   alarms: LiveAlarm[];
@@ -61,6 +69,7 @@ export type LiveStatus = {
     actions: string[];
   } | null;
   approvals: LiveApproval[];
+  audits: LiveAudit[];
 };
 
 type Item = Record<string, AttributeValue>;
@@ -131,6 +140,19 @@ export function parseApproval(investigationId: string, raw: Item): LiveApproval 
   };
 }
 
+// The Actor's append-only record of what it did with one approval.
+export function parseAudit(raw: Item): LiveAudit {
+  const record = JSON.parse(s(raw, "record") ?? "{}") as Record<string, unknown>;
+  const verification = record.verification as { outcome?: string } | undefined;
+  return {
+    approval: String(record.approval ?? ""),
+    action: String(record.action ?? ""),
+    outcome: String(record.outcome ?? ""),
+    reason: (record.reason as string | undefined) ?? null,
+    verification: verification?.outcome ?? null,
+  };
+}
+
 export async function readStatus(
   c: Clients,
   requested: string | undefined,
@@ -166,22 +188,26 @@ export async function readStatus(
     investigation: null,
     report: null,
     approvals: [],
+    audits: [],
   };
 
   const id = requested ?? lock?.open_id;
   if (!id) return status;
 
-  const [checkpoint, report, approvals] = await Promise.all([
-    getItem(c, id, "checkpoint"),
-    getItem(c, id, "report"),
+  const itemsStarting = (prefix: string) =>
     c.ddb.send(
       new QueryCommand({
         TableName: TABLE,
         KeyConditionExpression: "investigation_id = :i AND begins_with(#t, :a)",
         ExpressionAttributeNames: { "#t": "item" },
-        ExpressionAttributeValues: { ":i": { S: id }, ":a": { S: "approval#" } },
+        ExpressionAttributeValues: { ":i": { S: id }, ":a": { S: prefix } },
       }),
-    ),
+    );
+  const [checkpoint, report, approvals, audits] = await Promise.all([
+    getItem(c, id, "checkpoint"),
+    getItem(c, id, "report"),
+    itemsStarting("approval#"),
+    itemsStarting("audit#"),
   ]);
 
   const state = JSON.parse(s(checkpoint, "state") ?? "null") as Record<string, unknown> | null;
@@ -207,5 +233,6 @@ export async function readStatus(
     };
   }
   status.approvals = (approvals.Items ?? []).map((raw) => parseApproval(id, raw));
+  status.audits = (audits.Items ?? []).map((raw) => parseAudit(raw));
   return status;
 }

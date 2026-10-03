@@ -128,10 +128,19 @@ resource "aws_lambda_function_event_invoke_config" "agent" {
 }
 
 # Alarm state changes are AWS service events on the default bus: free.
+#
+# Created disabled, then switched by scripts/trigger.py (and scripts/demo.py),
+# never by Terraform: every investigation spends LLM quota, so it is on only
+# for a run. Terraform ignores the state, like the queue consumer's (decision
+# A in M6), so switching it needs no apply and the next apply does not undo it.
 resource "aws_cloudwatch_event_rule" "alarm_to_agent" {
   name        = "${var.project}-alarm-to-agent"
   description = "Start an investigation when a project alarm enters ALARM."
-  state       = var.agent_trigger_enabled ? "ENABLED" : "DISABLED"
+  state       = "DISABLED"
+
+  lifecycle {
+    ignore_changes = [state]
+  }
 
   event_pattern = jsonencode({
     source      = ["aws.cloudwatch"]

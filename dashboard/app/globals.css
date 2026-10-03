@@ -12,6 +12,8 @@
   --axis: #c3c2b7;
   --border: rgba(11, 11, 11, 0.1);
   --accent: #2a78d6;
+  /* Filled buttons: darker than the accent so white text clears 4.5:1. */
+  --button: #1c5cab;
   --link: #1c5cab;
   --good: #0ca30c;
   --good-text: #006300;
@@ -41,6 +43,7 @@
     --axis: #383835;
     --border: rgba(255, 255, 255, 0.1);
     --accent: #3987e5;
+    --button: #256abf;
     --link: #86b6ef;
     --good: #0ca30c;
     --good-text: #3fc23f;
@@ -297,4 +300,18 @@ th.wrap-head {
 
 .nowrap {
   white-space: nowrap;
+}
+
+.button-primary {
+  display: inline-block;
+  background: var(--button);
+  color: #ffffff;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.button-primary:hover {
+  filter: brightness(1.08);
 }

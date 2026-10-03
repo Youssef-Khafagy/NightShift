@@ -42,6 +42,11 @@ function answer(s: Sent) {
     return { Item: undefined };
   }
   if (s.name === "QueryCommand") {
+    const values = s.input.ExpressionAttributeValues as Record<string, { S: string }>;
+    if (values[":a"].S === "audit#") {
+      const record = { approval: `${INV}/approval#1`, action: "pause_queue_consumer", outcome: "refused", reason: "expired" };
+      return { Items: [{ item: { S: "audit#approval#1#1#x" }, record: { S: JSON.stringify(record) } }] };
+    }
     const action = "pause_queue_consumer";
     return {
       Items: [
@@ -75,6 +80,9 @@ describe("the live status", () => {
     expect(status.investigation?.id).toBe(INV);
     expect(status.investigation?.steps[0].status).toBe("empty");
     expect(status.report).toBeNull();
+    expect(status.audits).toEqual([
+      { approval: `${INV}/approval#1`, action: "pause_queue_consumer", outcome: "refused", reason: "expired", verification: null },
+    ]);
   });
 
   it("flags an approval whose stored hash does not match its action", async () => {
