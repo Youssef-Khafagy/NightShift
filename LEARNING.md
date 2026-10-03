@@ -2,7 +2,7 @@
 
 How NightShift works and why it was built this way. It assumes you know Python and web development, and nothing about AWS or about this project.
 
-Read sections 1 and 2 first: what the project is, and the AWS vocabulary everything else uses. After that each section stands on its own. Every section says what the thing is, why it exists, what would break without it, and what went wrong before it was right. It ends with questions someone could ask me about that part, answered the way I would answer them.
+Read sections 1 and 2 first: what the project is, and the AWS vocabulary everything else uses. After that each section stands on its own. Every section says what the thing is, why it exists, what would break without it, and what went wrong before it was right. It ends with questions someone could ask me about that part, answered the way I would answer them. "ADR 0001" and similar point to the one-page decision records in `docs/decisions/`.
 
 **Contents**
 
@@ -34,7 +34,7 @@ Appendices: every file in one line, and the commands worth knowing.
 
 1. **A store.** Four small services that an order flows through: cart, checkout, fulfilment, and a fake payment provider. It exists to be broken.
 2. **A chaos framework.** It breaks the store on purpose in realistic ways (a bad deploy, a wrong setting, a removed permission, a malformed message) and writes down the right answer before anything investigates.
-3. **An agent.** An LLM in a loop. An alarm wakes it; it investigates with read-only tools, names the root cause, and proposes a fix. A separate component carries the fix out only after I approve that exact action.
+3. **An agent.** An LLM (a large language model, the kind behind ChatGPT) called in a loop. An alarm wakes it; it investigates with read-only tools, names the root cause, and proposes a fix. A separate component carries the fix out only after I approve that exact action.
 4. **A benchmark.** It stages 36 incidents and grades every answer against the recorded truth, next to two simpler ways of answering: a scripted runbook, and the same model shown only the alarm.
 
 The benchmark is the point. "The agent fixed a bug once" is a demo. "It is right this often, and here is what a shell script gets" is a result.
@@ -128,7 +128,7 @@ AWS rents out computers and ready-made services over an API. Everything you do, 
 | **Aurora DSQL** | A serverless SQL database that speaks PostgreSQL | Products, stock and orders |
 | **SQS** | A message queue: one side sends, another side receives later | Orders waiting to be paid |
 | **SNS** | Sends notifications, here as email | Paging me |
-| **CloudWatch** | Logs, *metrics* (numbers over time, like errors per minute) and *alarms* (rules on metrics) | Everything the agent reads, and everything that pages |
+| **CloudWatch** | Logs, *metrics* (numbers over time, like errors per minute) and *alarms* (rules on metrics that switch between OK and ALARM) | Everything the agent reads, and everything that pages |
 | **EventBridge** | Routes events between services by rule | "An alarm went off" starts the agent |
 | **SSM Parameter Store** | A small key-value store for settings, with encrypted values for secrets | Feature flags, a map of the system for the agent, the LLM API keys |
 | **CloudTrail** | A record of every API call made in the account | "What changed recently?", for the agent and for me |
@@ -180,7 +180,7 @@ Both set `IncludeCredit=false`. By default a budget measures *net* cost, after c
 
 ### Costs that hide in idle systems
 
-- **An enabled queue trigger polls forever.** Lambda's SQS poller makes about 648,000 requests a month per queue doing nothing, two thirds of the free allowance. So the consumer is off by default and switched on only for a run (`scripts/consumer.py`).
+- **A switched-on queue consumer polls forever.** The Lambda feature that hands queue messages to fulfillment (section 8) asks the queue for messages around the clock, even when it is empty: about 648,000 requests a month, two thirds of the free allowance, for no work. So the consumer is off by default and switched on only for a run (`scripts/consumer.py`).
 - **Searching logs bills every byte in the time range**, not the bytes that match. The agent gets 20 MB of log scanning per investigation, and searching, not writing, is most of the log budget.
 - **Tracing is not a sample at low traffic.** Lambda traces the first request each second plus 5% of the rest, so below one request a second nearly everything is traced. My projection had assumed a sample and was too low; traces grow with orders, not with time.
 
@@ -219,7 +219,7 @@ The LLM API keys live in a git-ignored `.env` file locally and as encrypted SSM 
 
 ### CI: OIDC instead of stored keys
 
-GitHub Actions never holds an AWS key. This is how it gets in, and the website uses the same mechanism:
+GitHub Actions never holds an AWS key. It uses OIDC (OpenID Connect), a standard way for one service to prove to another who is calling. This is how it works, and the website uses the same mechanism:
 
 1. The job asks GitHub for a short-lived token, a signed JWT that states facts about the run: which repository, which branch, which environment.
 2. It sends the token to AWS STS, asking to assume a role.
@@ -235,7 +235,7 @@ Two roles, because planning and applying carry different risks:
 
 ### What least privilege actually costs
 
-Hand-scoped permissions fail in specific ways, and each one happened:
+*Least privilege* means every identity gets only the permissions its job needs. Scoping permissions that tightly by hand fails in specific ways, and each one happened:
 
 - **One resource, two names.** CloudWatch Logs actions on a log group need `log-group:NAME`, while actions on its streams need `log-group:NAME:*`. The first apply failed until both were listed.
 - **Hidden resources.** Creating the first DSQL cluster makes AWS create a *service-linked role* on your behalf, which needs `iam:CreateServiceLinkedRole`. It is granted only for that one service, by condition.
@@ -247,7 +247,7 @@ orders could not call cart through cart's public URL: every request got 403 and 
 
 **What we got wrong.** Twice something looked fixed because a test passed seconds after a change, and both times the pass came from a cached decision. One wrong conclusion ("this resource policy is unnecessary") was committed and broke checkout. IAM and Lambda cache authorization decisions in both directions: a grant keeps working for a while after it is removed, and a denial keeps failing after the grant is added. A fast result proves nothing.
 
-**What came of it.** Internal calls use the Lambda Invoke API instead (ADR 0006), which is better anyway: an internal call has no reason to leave AWS. And a project rule: check permissions with the IAM policy simulator (`aws iam simulate-principal-policy`), which answers immediately from the policies themselves, and when results alternate between success and failure, stop changing things.
+**What came of it.** Internal calls use the Lambda Invoke API instead (ADR 0006), which is better anyway: an internal call has no reason to leave AWS. And a project rule: check permissions with the IAM policy simulator (`aws iam simulate-principal-policy`), which answers immediately from the policies themselves, and when results alternate between success and failure, stop changing things. Every role built after that was checked this way before it existed: 83 cases across the three that matter most (29 for the agent's read-only role, 28 for the Actor, 26 for the website's role), all as expected.
 
 **Questions about identity and access**
 
@@ -264,7 +264,7 @@ orders could not call cart through cart's public URL: every request got 403 and 
 
 **Why it exists.** Reproducibility and review. A change to the infrastructure is a commit with a plan attached, not a console click nobody remembers.
 
-**What would break without it.** The account would drift from anything written down, and nothing would catch a broken change before it reached the store.
+**What would break without it.** The account would *drift*: what exists would stop matching anything written down, and nothing would catch a broken change before it reached the store.
 
 ### State
 
@@ -283,7 +283,7 @@ Without it, a routine apply in the middle of an incident would silently undo a r
 ### Checks on every change, and a gated deploy
 
 - **Before a commit,** pre-commit hooks run formatting, linting (ruff), gitleaks, the account-ID block and `terraform fmt`.
-- **In CI,** on every pull request and every push to main: the same hooks, the Python tests on 3.12 and 3.14, mypy, `terraform validate`, tflint, a trivy security scan, a `terraform plan`, and the website's lint, type check, tests and build.
+- **In CI,** on every pull request and every push to main: the same hooks, the 404 Python tests on Python 3.12 and 3.14, the mypy type checker, `terraform validate`, tflint (a Terraform linter), a trivy security scan of the infrastructure code, a `terraform plan`, and the website's lint, type check, 52 tests and build. That is 456 automated tests (counted 2026-10-03).
 - **The deploy** (`.github/workflows/apply.yml`) starts only by hand. It waits in a GitHub *environment* called `production` until I approve the run, and the apply role trusts only tokens from that environment. It applies a *saved* plan, exactly what it showed and nothing found since. Then `scripts/deploy.py` moves each function's alias to its new version, records the move, and runs a smoke test (section 10).
 
 While the repository was private, GitHub's free plan offered no environments, so pressing "Run workflow" and typing `apply` was the whole gate. Going public made the stronger gate available.
@@ -336,7 +336,7 @@ All four services share one *layer*: a zip that Lambda unpacks onto the import p
 
 ### Concurrency
 
-*Concurrency* is how many copies of a function run at once. *Reserved concurrency* caps one function, which limits the blast radius of a loop or a retry storm. New accounts get 10 in total, and reserving any needs 100 left unreserved, so ours was raised to 1,000 (free: a limit, not a purchase).
+*Concurrency* is how many copies of a function run at once. *Reserved concurrency* caps one function: a request over the cap is *throttled*, refused with an error. That limits the blast radius of a loop or a retry storm. New accounts get 10 in total, and reserving any needs 100 left unreserved, so ours was raised to 1,000 (free: a limit, not a purchase).
 
 **What we got wrong.** Every function started capped at 2. At just one order a second, a load run was throttled in its first minute, when a slow first request held one of only two slots. orders and cart went to 5 and the throttles stopped.
 
@@ -369,6 +369,8 @@ All four services share one *layer*: a zip that Lambda unpacks onto the import p
 
 ### A DPU is transaction time, and a bug with no symptom
 
+A *DPU* is the unit DSQL bills its compute in; 100,000 a month are free.
+
 **The discovery.** Before measuring what an order costs, I looked at what the cluster had already billed. Four separate minutes each showed almost exactly 315 DPUs, and each was one read-only transaction that had read 104 bytes. No amount of work reads 104 bytes. A controlled experiment settled it: the same `SELECT 1`, committed immediately or held open for 60 seconds. The held one billed 60.06 DPUs. **One DPU per second a transaction stays open**, within 0.1%. A transaction costs money for being open, not for being busy; the free allowance is about 28 hours of open transaction time a month.
 
 **The bug.** psycopg's default, `autocommit=False`, opens a transaction on the first statement and holds it until someone commits. Four code paths never did. Lambda then froze the environment with the transaction still open on the server, and DSQL billed it until its 5-minute limit killed it: 315 DPUs each time, 1,590 in all from about six requests. One path held a transaction open *while calling the payment provider*, so a slow provider would have become a database bill.
@@ -391,7 +393,7 @@ price the cart → take the stock → write the order and its lines → record t
 ```
 
 - **The stock check that matters is the UPDATE.** `UPDATE inventory SET quantity = quantity - %s WHERE product_id = %s AND quantity >= %s`, then require that exactly one row changed. A `SELECT` beforehand cannot see a purchase happening at the same moment, so checking stock in Python would prevent nothing.
-- **Idempotency.** The client must send an `idempotency-key` header. The key is written last, in its own table where it is the primary key. A retried request collides on it, the whole transaction rolls back, and the handler returns the original order with 200 instead of 201. Without it, a network retry after a successful checkout would charge twice.
+- **Idempotency** (sending the same request twice has the same effect as sending it once). The client must send an `idempotency-key` header. The key is written last, in its own table where it is the primary key. A retried request collides on it, the whole transaction rolls back, and the handler returns the original order with 200 instead of 201. Without it, a network retry after a successful checkout would charge twice.
 - **Publish after commit.** A message sent inside the transaction could announce an order that then rolls back. Sent after, the worst case is an order stuck in `placed` with no message, which `scripts/replay_placed_orders.py` can find and resend. Losing work you can find beats inventing work that never happened.
 - **The schema follows the traffic.** Stock lives in its own `inventory` table, apart from `products`, because a product is read constantly and stock is written on every checkout; merged, unrelated purchases would conflict. Each order line copies the price, so an order records what was charged, not today's price.
 
@@ -417,7 +419,7 @@ Carts carry an expiry time, and DynamoDB's *TTL* deletes expired items for free.
 
 **Why it exists.** A slow or failing payment provider then slows fulfilment instead of checkout. And it makes queue failures possible for the agent to diagnose: a poison message, a backlog, a retry storm only exist with a queue in the middle.
 
-**What would break without care.** Queues deliver *at least once*, retry on failure, and give up silently; every setting below decides which of those happens.
+**What would break without care.** Queues deliver *at least once* (a message can arrive twice), retry on failure, and give up silently after enough failures; every setting below decides which of those happens.
 
 ### Settings that are not arbitrary
 
@@ -466,7 +468,7 @@ Each service reads `x-correlation-id` from the request, or creates one, and adds
 
 ### Metrics: free ones first, five paid-for ones by name
 
-Lambda and SQS publish metrics for free: invocations, errors, duration, throttles, queue age. Every alarm except two is built on those. The free *custom* metrics are limited to 10, and a custom metric is counted per unique combination of name and dimension values. One dimension that varies (say, a rejection reason) multiplies the count by its number of values. So the five business metrics (`CheckoutsPlaced`, `CheckoutsRejected`, `SerializationRetries`, `OrdersPaid`, `PaymentFailures`) are separate names with one fixed dimension, `service`, and reasons go in log lines (ADR 0011).
+Lambda and SQS publish metrics for free: invocations, errors, duration, throttles, queue age. Every alarm except two is built on those. The free *custom* metrics are limited to 10, and a custom metric is counted per unique combination of name and *dimension* values (a dimension is a label on a metric, such as `service=orders`). One dimension that varies (say, a rejection reason) multiplies the count by its number of values. So the five business metrics (`CheckoutsPlaced`, `CheckoutsRejected`, `SerializationRetries`, `OrdersPaid`, `PaymentFailures`) are separate names with one fixed dimension, `service`, and reasons go in log lines (ADR 0011).
 
 They are written as *EMF*, the embedded metric format: a JSON log line with a special block that CloudWatch turns into a metric. No extra API call, no extra permission. `tests/test_metrics.py` runs every code path that emits a metric and checks each one against the ledger in COST.md, so an unbudgeted metric or dimension fails CI.
 
@@ -632,6 +634,8 @@ Side alarms are part of the test. A slow provider also makes payments run out of
 
 **What it is.** A Python program, `agent/`, that is woken by an alarm, investigates with ten read-only tools, and ends with a structured answer: which component broke, which kind of fault it was, how confident it is, which steps are the evidence, and what to do about it. In AWS it runs as the `nightshift-agent` Lambda, started by an EventBridge rule when a `nightshift-*` alarm enters ALARM (the rule is off except during runs and demos, because every investigation spends LLM quota); on a laptop it runs as `python -m agent.investigate`. Both run the same code.
 
+**What an answer looks like.** The live check's answer (section 13): component `orders`, category `bad_deploy`, confidence 95, evidence steps 1, 3, 4, 7 and 8, proposed action `rollback_alias service=orders`. The component and category come from fixed lists, so grading is a comparison of words. Components: the four services, the queue (`placed-orders`), the database (`dsql`), the cart table (`cart-table`) and `none`. Categories: `bad_deploy`, `config_regression`, `timeout_regression`, `slow_dependency`, `poison_message`, `iam_regression`, `throttling`, `retry_storm`, two left from dropped scenarios (`hot_row_contention`, `missing_index`), `no_fault`, and `insufficient_evidence`, the honest "I can't tell". Each category has a one-line definition in `agent/vocabulary.py`, which every model is shown.
+
 **Why it exists.** It is what the benchmark measures. Everything before it exists so that this can be scored.
 
 **What would break without each part.** Without hard limits, a confused model loops until the free quota is gone. Without checkpoints, a timeout throws the investigation away. Without the read-only role, text planted in a log line could reach a write API. Without validation, "no fault, component orders" would go into the results as an answer.
@@ -667,7 +671,7 @@ Gemini, Mistral and Groq, behind one small interface over standard-library HTTPS
 
 ### Two roles, so the model's reach is small
 
-The tools run as the **Investigator role**: reads on this project's resources, plus explicit denies on IAM, assuming other roles, the Terraform state, every write, invoking functions and receiving queue messages, plus a permissions boundary, so even an admin policy attached by mistake would grant only reads. It was checked case by case with the policy simulator before it existed.
+The tools run as the **Investigator role**: reads on this project's resources, plus explicit denies on IAM, assuming other roles, the Terraform state, every write, invoking functions and receiving queue messages, plus a permissions boundary, so even an admin policy attached by mistake would grant only reads. It was checked with 29 policy-simulator cases before it existed.
 
 The Lambda's own role holds what the tools must never have: reading the API keys and writing checkpoints. It assumes the Investigator role for the tools, exactly as a laptop run does.
 
@@ -725,7 +729,7 @@ Each proposed action becomes a `pending` record with a hash of the investigation
 
 ### The Actor
 
-`nightshift-actor` has its own role: the five actions on exact resource ARNs, explicit denies on everything else, a permissions boundary, no public URL, one copy at a time, and no automatic retries. Only my login and the website's role can invoke it; the agent, the Investigator role and CI are explicitly denied.
+`nightshift-actor` has its own role: the five actions on exact resource ARNs, explicit denies on everything else, a permissions boundary, no public URL, one copy at a time, and no automatic retries, checked with 28 policy-simulator cases before it existed. Only my login and the website's role can invoke it; the agent, the Investigator role and CI are explicitly denied.
 
 For each action it takes a lock (one action at a time), spends from a budget of three an hour, consumes the approval, re-checks the action against the allowlist and the saved finding, acts while recording the before and after, then watches the alarm that started the investigation for up to 10 minutes. It reports `recovered`, `not_recovered` or `inconclusive`, honestly, and every step writes an append-only audit record.
 
@@ -802,6 +806,8 @@ Token budget 100K per investigation. Every incident passed its health checks, no
 | Unsafe proposals | 4 | 7 | 10 | 2 | 0 |
 | Mean tokens | 21.8K | 28.9K | 2.1K | 1.8K | 0 |
 | Mean time from injection to answer | 149 s | 167 s | 137 s | 140 s | 135 s |
+
+How to read the rows. *Hedged* means the answer was `insufficient_evidence`, which is counted apart from wrong (in scenario 14 it counts as right). *Correct remediation* means a proposed action was on the scenario's acceptable list; in 9 incidents (scenarios 5, 6 and 11) the right move is to propose nothing, so a configuration that never proposes anything scores 9. *Unsafe* means a proposed action was on the scenario's forbidden list, whether or not anything ran.
 
 | Scenario | agent-gemini | agent-mistral | alarm-only-gemini | alarm-only-mistral | runbook |
 |---|---|---|---|---|---|
