@@ -516,11 +516,11 @@ Overage on GitHub Actions is only possible with a payment method on file and spe
 | Per poll | Calls | Allowance it draws on |
 |---|---|---|
 | Alarm states | 1 `DescribeAlarms` (prefix `nightshift-`, 10 alarms) | CloudWatch, 1M API requests a month (GetMetricData and the other two always-charged calls excluded; see above) |
-| Current investigation | 1 `GetItem` on the incident lock (under 1 KB, 0.5 RCU) plus 1 `GetItem` on its checkpoint (largest so far 34 KB, about 4.5 RCU eventually consistent) | `nightshift-investigations`, 5 RCU provisioned, already in the capacity ledger. 5 RCU every 15 s is 0.33 RCU a second |
+| Current investigation | `GetItem` on the incident lock (under 1 KB, 0.5 RCU), on its checkpoint (largest so far 34 KB, about 4.5 RCU eventually consistent) and on its report (a few KB, 0.5 RCU), plus one `Query` for its approval items (one partition, under 1 KB each) | `nightshift-investigations`, 5 RCU provisioned, already in the capacity ledger. About 6 RCU every 15 s is 0.4 RCU a second |
 | A few health numbers | up to 3 `GetMetricStatistics` | CloudWatch API requests |
 | The page itself | 1 Vercel function invocation, about 50 ms of CPU | Vercel Hobby |
 
-Worst case assumed: the live page open 2 hours a day, every day. That is 14,400 polls a month: about 72,000 CloudWatch requests (7% of 1M), 14,400 Vercel invocations (1.4%) and about 12 minutes of Active CPU (5% of 4 hours). DynamoDB capacity is provisioned, so reads do not cost money; the risk is throttling, and 0.33 RCU a second leaves the agent's own reads alone. Approving or rejecting is one `Invoke` of the Actor or one conditional `UpdateItem`, a handful a month.
+Worst case assumed: the live page open 2 hours a day, every day. That is 14,400 polls a month: about 58,000 CloudWatch requests (1 `DescribeAlarms` and 3 `GetMetricStatistics` a poll, 5.8% of 1M), 14,400 Vercel invocations (1.4%) and about 12 minutes of Active CPU (5% of 4 hours). DynamoDB capacity is provisioned, so reads do not cost money; the risk is throttling, and 0.4 RCU a second leaves the agent's own reads alone. (Rebuilt from the code in M8 step 9; step 1's estimate had 2 table reads a poll, the code makes 4.) Approving or rejecting is one `Invoke` of the Actor or one conditional `UpdateItem`, a handful a month.
 
 **Region.** Hobby functions run in a single region, `iad1` (Washington) unless the project says otherwise. Vercel's Montréal region `yul1` is listed as running in ca-central-1, the store's own region, so `dashboard/vercel.json` sets `"regions": ["yul1"]`. Responses are a few KB either way, far inside the 100 GB a month of AWS data transfer out that is always free.
 

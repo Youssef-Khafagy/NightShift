@@ -9,12 +9,13 @@
 //
 // A route passes if it was prerendered with no revalidation, or if it is a
 // dynamic segment whose every value was prerendered and any other value is a
-// 404 (fallback: false). Only paths under PRIVATE may run per request; those
-// are the signed-in live pages, each of which checks the session itself.
+// 404 (fallback: false). Only paths under PRIVATE may run per request: the
+// owner's live page, its API routes and next-auth's sign-in routes. Each
+// live route checks the session itself (app/api/live/routes.test.ts).
 
 import { readFileSync } from "node:fs";
 
-const PRIVATE = [];
+const PRIVATE = ["/live", "/api/live", "/api/auth"];
 
 const routes = Object.values(
   JSON.parse(readFileSync(".next/app-path-routes-manifest.json", "utf8")),
@@ -22,8 +23,10 @@ const routes = Object.values(
 const prerender = JSON.parse(readFileSync(".next/prerender-manifest.json", "utf8"));
 
 const problems = [];
+const privateRoutes = [];
 for (const route of routes) {
   if (PRIVATE.some((prefix) => route === prefix || route.startsWith(`${prefix}/`))) {
+    privateRoutes.push(route);
     continue;
   }
   const page = prerender.routes[route];
@@ -44,4 +47,5 @@ if (problems.length) {
   console.error(`Public routes must be static:\n  ${problems.join("\n  ")}`);
   process.exit(1);
 }
-console.log(`${routes.length} routes, all static`);
+console.log(`${routes.length - privateRoutes.length} public routes, all static`);
+console.log(`${privateRoutes.length} owner-only routes run per request: ${privateRoutes.sort().join(", ")}`);

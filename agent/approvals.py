@@ -106,12 +106,25 @@ def consume(
         raise ApprovalRefused(
             "the approved hash is not this action's; it changed after it was shown"
         )
+    # A used approval stays used. The dashboard's role may write an
+    # approval's status (to reject it), so a compromised dashboard could set
+    # a used record back to pending and replay it. It cannot write
+    # approved_by, so a pending record that carries one was decided before
+    # and tampered with since. (It can clear rejected_by and un-reject, but
+    # that adds nothing: the same dashboard could have approved instead.)
+    decided = "approved_by" in record or "rejected_by" in record
+    if record.get("status") == "pending" and decided:
+        raise ApprovalRefused("already decided; its status was set back to pending")
     try:
         ddb.update_item(
             TableName=TABLE,
             Key=key(investigation_id, item),
             UpdateExpression="SET #s = :used, approved_by = :by, approved_at = :now",
-            ConditionExpression="#s = :pending AND expires_at > :now AND action_hash = :h",
+            ConditionExpression=(
+                "#s = :pending AND expires_at > :now AND action_hash = :h"
+                " AND attribute_not_exists(approved_by)"
+                " AND attribute_not_exists(rejected_by)"
+            ),
             ExpressionAttributeNames={"#s": "status"},
             ExpressionAttributeValues={
                 ":used": {"S": "used"},

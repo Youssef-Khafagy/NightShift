@@ -109,6 +109,30 @@ def test_a_rejected_approval_cannot_be_used(ddb):
         approvals.consume(ddb, "inv1", "approval#1", h, "owner", NOW)
 
 
+def test_a_decided_approval_set_back_to_pending_cannot_be_used(ddb):
+    """The dashboard role may write an approval's status (to reject it). If
+    that role were compromised it could set a used or rejected record back
+    to pending; the approver and rejecter fields, which it cannot write,
+    keep the decision final."""
+    h = pending(ddb)
+    approvals.consume(ddb, "inv1", "approval#1", h, "owner", NOW)
+    approvals.create_pending(ddb, "inv2", ["pause_queue_consumer"], NOW)
+    approvals.reject(ddb, "inv2", "approval#1", "owner", NOW)
+    for inv in ("inv1", "inv2"):
+        ddb.update_item(
+            TableName=approvals.TABLE,
+            Key=approvals.key(inv, "approval#1"),
+            UpdateExpression="SET #s = :p",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={":p": {"S": "pending"}},
+        )
+    with pytest.raises(approvals.ApprovalRefused, match="already decided"):
+        approvals.consume(ddb, "inv1", "approval#1", h, "owner", NOW + 1)
+    h2 = approvals.action_hash("inv2", "approval#1", "pause_queue_consumer")
+    with pytest.raises(approvals.ApprovalRefused, match="already decided"):
+        approvals.consume(ddb, "inv2", "approval#1", h2, "owner", NOW + 1)
+
+
 def test_a_resumed_investigation_does_not_reset_an_approval(ddb):
     h = pending(ddb)
     approvals.consume(ddb, "inv1", "approval#1", h, "owner", NOW)
