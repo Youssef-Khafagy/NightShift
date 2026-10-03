@@ -12,23 +12,22 @@ Two ways to show NightShift, depending on time and setting.
 
 ## The replay (the 60-second demo)
 
-The Demo page tells one real incident in nine scenes: normal traffic, a broken deploy of orders, the alarm, the agent's 16 investigation steps, its diagnosis, the proposed rollback and its approval, the rollback and the confirmed recovery, and the postmortem. **Play** runs it in about a minute; **Next** and **Back** (or the arrow keys) let you talk over each scene. Everything on it comes from the record of the M6 live check on 2026-09-24.
+The Demo page tells one real incident in eight scenes: a broken deploy of orders, the alarm, the agent's 16 investigation steps, its diagnosis, the approval, the rollback and the confirmed recovery, and the postmortem. A timeline across the top marks each moment, and a chart of orders' checkouts per minute (from CloudWatch) shows the failures start at the deploy and stop at the rollback. **Play** runs it in under a minute; **Next** and **Back** (or the arrow keys) let you talk over each scene. Everything on it comes from the record of the M6 live check on 2026-09-24.
 
 To record the video: browser at 1280 by 800, open the Demo page, start the screen recording (Windows: Win+Alt+R), press Play, and read along:
 
 | Scene | Say |
 |---|---|
 | One real incident | "NightShift is an AI on-call engineer for AWS. This is a real incident on the store I built, replayed as it happened." |
-| Normal traffic | "The store is healthy, about one checkout a second." |
-| A broken version ships | "A deploy with a one-word typo goes out. Every checkout now tells the customer it failed." |
-| The page | "Ninety-six seconds later the alarm fires and pages the agent." |
+| A bad deploy ships | "Checkouts are healthy. Then a deploy with a one-word typo goes out, and every checkout starts failing." |
+| Paged in 96 seconds | "Ninety-six seconds later the alarm fires and pages the agent." |
 | The investigation | "It works through sixteen steps with read-only tools: metrics, logs, recent deployments." |
-| The diagnosis | "It names the cause: a bad deploy of orders, two minutes after the fault. Not perfect: it adds a claim its evidence doesn't show." |
-| A human approves | "It can only propose. I approve this one exact action." |
-| Rolled back, and checked | "A separate component rolls back and watches the alarm until it recovers." |
+| The diagnosis | "It names the cause, a bad deploy of orders, about two minutes after the fault. Not perfect: one claim goes beyond its evidence." |
+| A human approves | "It can only propose. Nothing runs until I approve this exact action, and checkouts keep failing until I do." |
+| Rolled back and verified | "A separate component rolls back and watches the alarm until it recovers." |
 | The postmortem | "And it writes the postmortem. How often is it right? Thirty-six incidents, against a scripted runbook, are on the Results page." |
 
-That is 136 words, about a minute at a normal speaking pace.
+That is about 140 words, a little under a minute at a normal speaking pace.
 
 Don't say: that it beats the runbook (it doesn't, measurably); that it is safe because it is accurate (it is safe because it can only read, can only propose from an allowlist, and needs your approval); that the replay is live.
 

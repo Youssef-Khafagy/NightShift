@@ -231,4 +231,9 @@ export type DemoRecord = {
   };
   health: Record<string, boolean>;
   postmortem: string;
+  metrics: {
+    source: string;
+    function: string;
+    points: { at: number; requests: number; failed: number }[];
+  };
 };

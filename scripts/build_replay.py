@@ -310,6 +310,25 @@ def demo_record(results: Path, scenarios: dict) -> dict:
         },
         "health": result["health"],
         "postmortem": (run / "agent-postmortem.md").read_text(),
+        "metrics": demo_metrics(run, injected),
+    }
+
+
+def demo_metrics(run: Path, injected: float) -> dict:
+    """The incident's checkouts per minute (scripts/incident_metrics.py), each
+    minute placed by when it began, in seconds after the fault."""
+    m = json.loads((run / "metrics.json").read_text())
+    return {
+        "source": m["source"],
+        "function": m["function"],
+        "points": [
+            {
+                "at": round(datetime.fromisoformat(p["minute"]).timestamp() - injected),
+                "requests": p["invocations"],
+                "failed": p["errors"],
+            }
+            for p in m["points"]
+        ],
     }
 
 

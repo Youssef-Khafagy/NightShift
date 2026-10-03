@@ -1,0 +1,118 @@
+{
+  "source": "CloudWatch GetMetricStatistics, AWS/Lambda, Sum per 60 s",
+  "function": "nightshift-orders",
+  "run_id": "01-bad-deploy-20260924T023013Z",
+  "points": [
+    {
+      "minute": "2026-09-24T02:30:00Z",
+      "invocations": 38,
+      "errors": 0
+    },
+    {
+      "minute": "2026-09-24T02:31:00Z",
+      "invocations": 60,
+      "errors": 0
+    },
+    {
+      "minute": "2026-09-24T02:32:00Z",
+      "invocations": 60,
+      "errors": 0
+    },
+    {
+      "minute": "2026-09-24T02:33:00Z",
+      "invocations": 60,
+      "errors": 36
+    },
+    {
+      "minute": "2026-09-24T02:34:00Z",
+      "invocations": 60,
+      "errors": 60
+    },
+    {
+      "minute": "2026-09-24T02:35:00Z",
+      "invocations": 60,
+      "errors": 60
+    },
+    {
+      "minute": "2026-09-24T02:36:00Z",
+      "invocations": 60,
+      "errors": 60
+    },
+    {
+      "minute": "2026-09-24T02:37:00Z",
+      "invocations": 60,
+      "errors": 60
+    },
+    {
+      "minute": "2026-09-24T02:38:00Z",
+      "invocations": 59,
+      "errors": 59
+    },
+    {
+      "minute": "2026-09-24T02:39:00Z",
+      "invocations": 60,
+      "errors": 60
+    },
+    {
+      "minute": "2026-09-24T02:40:00Z",
+      "invocations": 61,
+      "errors": 61
+    },
+    {
+      "minute": "2026-09-24T02:41:00Z",
+      "invocations": 60,
+      "errors": 60
+    },
+    {
+      "minute": "2026-09-24T02:42:00Z",
+      "invocations": 60,
+      "errors": 60
+    },
+    {
+      "minute": "2026-09-24T02:43:00Z",
+      "invocations": 60,
+      "errors": 60
+    },
+    {
+      "minute": "2026-09-24T02:44:00Z",
+      "invocations": 60,
+      "errors": 10
+    },
+    {
+      "minute": "2026-09-24T02:45:00Z",
+      "invocations": 60,
+      "errors": 0
+    },
+    {
+      "minute": "2026-09-24T02:46:00Z",
+      "invocations": 60,
+      "errors": 0
+    },
+    {
+      "minute": "2026-09-24T02:47:00Z",
+      "invocations": 60,
+      "errors": 0
+    },
+    {
+      "minute": "2026-09-24T02:48:00Z",
+      "invocations": 60,
+      "errors": 0
+    },
+    {
+      "minute": "2026-09-24T02:49:00Z",
+      "invocations": 60,
+      "errors": 0
+    },
+    {
+      "minute": "2026-09-24T02:50:00Z",
+      "invocations": 60,
+      "errors": 0
+    },
+    {
+      "minute": "2026-09-24T02:51:00Z",
+      "invocations": 25,
+      "errors": 0
+    }
+  ],
+  "fetched_at": "2026-10-03T23:02:54Z"
+}

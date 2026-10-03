@@ -1,18 +1,21 @@
-// The demo page's script: one recorded incident as a sequence of scenes,
-// each with the moment it happened (seconds after the fault) and a caption.
+// The demo page's script: one recorded incident as a sequence of scenes.
 // Every number comes from the record; the words only say what it means.
 
-import { words } from "./format";
+import { day } from "./format";
 import type { DemoRecord, Step } from "./types";
 
-export type SceneKind = "intro" | "text" | "steps" | "answer" | "approval" | "recovered" | "postmortem";
+// What the right-hand side of the stage shows in each scene.
+export type Panel = "intro" | "chart" | "steps" | "answer" | "approval" | "recovered" | "postmortem";
 
 export type Scene = {
-  kind: SceneKind;
+  panel: Panel;
   title: string;
   caption: string;
-  at: number | null; // seconds after the fault; null for scenes outside the timeline
+  stop: number; // where the timeline's cursor sits, counted in stops (fractions fall between two)
+  reveal: number | null; // the chart shows the minutes that began before this many seconds after the fault
 };
+
+export type Stop = { label: string; at: number };
 
 const TOOLS: Record<string, string> = {
   get_alarm: "reads the alarm",
@@ -34,65 +37,117 @@ export function plainStep(step: Step): string {
   const what = TOOLS[step.tool] ?? step.tool;
   const a = step.args as Record<string, unknown>;
   const detail = a.metric ?? a.service ?? a.name;
-  return typeof detail === "string" ? `${what}: ${detail}` : what;
+  // Every alarm is named nightshift-*; the prefix says nothing here.
+  return typeof detail === "string" ? `${what}: ${detail.replace(/^nightshift-/, "")}` : what;
+}
+
+// A time relative to the fault: "+1:36", "−3:07", "0:00".
+export function clock(seconds: number): string {
+  const s = Math.abs(Math.round(seconds));
+  const sign = seconds < 0 ? "−" : seconds > 0 ? "+" : "";
+  return `${sign}${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+// A length of time in words: "8 min 31 s", "45 s".
+export function duration(seconds: number): string {
+  const s = Math.round(seconds);
+  return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${s % 60} s`;
+}
+
+// Text with `code` spans, split so the code can be set apart.
+export function inlineCode(text: string): { code: boolean; text: string }[] {
+  return text
+    .split("`")
+    .map((part, i) => ({ code: i % 2 === 1, text: part }))
+    .filter((part) => part.text !== "");
+}
+
+export function recoveredAt(d: DemoRecord): number {
+  return d.approval.acted_seconds + d.approval.verified_after_seconds;
+}
+
+// The moments the timeline marks, in order.
+export function stops(d: DemoRecord): Stop[] {
+  return [
+    { label: "traffic", at: -d.warm_up_seconds },
+    { label: "fault", at: 0 },
+    { label: "paged", at: d.page.seconds },
+    { label: "diagnosed", at: d.answer.seconds },
+    { label: "approved", at: d.approval.approved_seconds },
+    { label: "recovered", at: recoveredAt(d) },
+  ];
 }
 
 export function scenes(d: DemoRecord): Scene[] {
   const a = d.approval;
+  const alarm = d.page.alarm.replace("nightshift-", "");
+  const wait = a.approved_seconds - d.answer.seconds;
   return [
     {
-      kind: "intro",
+      panel: "intro",
       title: "One real incident",
-      caption: `Recorded on 24 September 2026 and replayed exactly as it happened. ${d.scenario.description}`,
-      at: null,
+      caption: `A bad deploy on the store I built, recorded on ${day(d.injected_at)} and replayed exactly as it happened.`,
+      stop: 0,
+      reveal: null,
     },
     {
-      kind: "text",
-      title: "Normal traffic",
-      caption: `The store takes about one checkout a second. Everything is healthy for ${Math.round(d.warm_up_seconds / 60)} minutes.`,
-      at: -d.warm_up_seconds,
+      panel: "chart",
+      title: "A bad deploy ships",
+      caption: "About one checkout a second, all succeeding. Then a new version of the orders service ships with a one-word typo, and every checkout starts failing.",
+      stop: 1,
+      reveal: 1,
     },
     {
-      kind: "text",
-      title: "A broken version ships",
-      caption: "A new version of the orders service goes out through the normal deploy path, with a one-word typo. From now on every checkout tells the customer it failed, even though the order went through.",
-      at: 0,
+      panel: "chart",
+      title: `Paged in ${d.page.seconds} seconds`,
+      caption: `The ${alarm} alarm fires and starts the agent, the way it would page an on-call engineer.`,
+      stop: 2,
+      reveal: d.page.seconds + 1,
     },
     {
-      kind: "text",
-      title: "The page",
-      caption: `${d.page.seconds} seconds later the ${d.page.alarm.replace("nightshift-", "")} alarm fires. The alarm starts the agent, as it would page an on-call engineer.`,
-      at: d.page.seconds,
-    },
-    {
-      kind: "steps",
+      panel: "steps",
       title: "The investigation",
-      caption: `The agent works through ${d.steps.length} steps with read-only tools: metrics, logs, deployments, configuration. It can look, not touch.`,
-      at: d.answer.seconds,
+      caption: `${d.steps.length} steps in under a minute, with read-only tools: metrics, logs, deployments, settings. It can look, but not touch.`,
+      stop: 2.5,
+      reveal: null,
     },
     {
-      kind: "answer",
+      panel: "answer",
       title: "The diagnosis",
-      caption: `${d.answer.component} / ${words(d.answer.category)}, confidence ${d.answer.confidence}, ${d.answer.seconds} seconds after the fault. It cites the steps that show it.`,
-      at: d.answer.seconds,
+      caption: `It names the right cause ${d.answer.seconds} seconds after the fault and cites the steps that show it. Not flawless: one claim goes beyond its evidence.`,
+      stop: 3,
+      reveal: null,
     },
     {
-      kind: "approval",
+      panel: "approval",
       title: "A human approves",
-      caption: `It proposes one action from a short allowlist: ${a.action}. Nothing runs until a person approves that exact action. The approval is single use and expires after 15 minutes.`,
-      at: a.approved_seconds,
+      caption: `It can only propose. Nothing ran until I approved this exact action, ${duration(wait)} after the diagnosis; checkouts failed until then.`,
+      stop: 4,
+      reveal: a.approved_seconds,
     },
     {
-      kind: "recovered",
-      title: "Rolled back, and checked",
-      caption: `A separate component, the Actor, moves orders back from version ${a.version_before} to ${a.version_after} and watches the alarm. ${a.verified_after_seconds} seconds later it is back to OK: ${a.verification}.`,
-      at: a.acted_seconds + a.verified_after_seconds,
+      panel: "recovered",
+      title: "Rolled back and verified",
+      caption: `A separate component, the Actor, rolls orders back from version ${a.version_before} to ${a.version_after} and watches the alarm. Failures stop; ${a.verified_after_seconds} seconds later it reports ${a.verification}.`,
+      stop: 5,
+      reveal: Infinity,
     },
     {
-      kind: "postmortem",
+      panel: "postmortem",
       title: "The postmortem",
-      caption: "The agent writes up what happened from its own record: the timeline, the cause, the fix.",
-      at: null,
+      caption: "It writes up the incident from its own record: the timeline, the cause, the fix, and what the investigation cost.",
+      stop: 5,
+      reveal: null,
     },
   ];
+}
+
+// How long a scene stays up when playing: long enough to read its caption.
+export function holdMs(scene: Scene): number {
+  return Math.min(8000, Math.max(4500, 1200 + scene.caption.length * 40));
+}
+
+// The bars a chart shows at a given reveal, oldest first.
+export function visiblePoints<T extends { at: number }>(points: T[], reveal: number): T[] {
+  return points.filter((p) => p.at < reveal);
 }

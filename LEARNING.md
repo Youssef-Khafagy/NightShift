@@ -919,7 +919,8 @@ The site never sees my GitHub password, and the registered callback URL stops an
 
 ### Demoing it
 
-- **The Demo page** replays one real incident, the live check from section 13, in nine scenes: the bad deploy, the page, the agent's 16 steps, its diagnosis, the approval, the rollback and the recovery. It is static, so it works in any interview with nothing behind it, and it says where the agent's summary claimed more than its evidence showed.
+- **The Demo page** replays one real incident, the live check from section 13, in eight scenes, in under a minute. A timeline across the top marks the moments (fault, paged, diagnosed, approved, recovered). Beside each scene's text is its evidence: a chart of the orders service's checkouts per minute, the agent's steps, its diagnosis, the approval and the recovery. It is static, so it works in any interview with nothing behind it, and it says where the agent's summary claimed more than its evidence showed.
+- **The chart is real data, saved in time.** The run recorded only totals (646 failed checkouts). CloudWatch keeps one-minute data for 15 days, so `scripts/incident_metrics.py` read the incident's requests and errors per minute (free `GetMetricStatistics`) nine days later and saved them in `results/`. They agree with the run's own count: 646 errors, from the deploy's minute to the rollback's. The chart shows what the approval gate costs: the diagnosis came at +2:18, my approval at +10:49, and checkouts failed until then.
 - **A live demo** stages the same fault on the real store. `python scripts/demo.py prepare` switches the queue consumer and the agent trigger on; 45 minutes later, `python scripts/demo.py start` runs scenario 1; the Live page tracks each stage, and I approve the rollback there; `python scripts/demo.py stop` switches everything off. Steps and narration are in `docs/demo.md`.
 
 **Why there is no "start an incident" button.** Starting one means deploying a broken version. A public website holding that permission would be one bug away from breaking the store on a stranger's click, and a Vercel function would time out long before an incident ends. So the laptop starts it, and the browser only reads and approves.
@@ -1082,6 +1083,7 @@ After publishing: secret scanning and push protection on; a rule on `main` that 
 - `migrate.py`, `grant_db_roles.py`, `seed_catalogue.py`: database schema, roles and synthetic data.
 - `replay_placed_orders.py`: resends orders left unpaid while payments were degraded.
 - `cost_check.py`, `measure_dpu.py`: every free allowance, month to date; what a checkout costs in DSQL.
+- `incident_metrics.py`: one staged incident's requests and errors per minute, from CloudWatch, for the Demo page's chart.
 - `lambda_deps.py`: builds the dependency layers reproducibly.
 - `llm_check.py`, `put_llm_keys.py`: test each LLM key; copy the keys into SSM.
 - `build_replay.py`: builds the website's public data, refusing anything that looks like an identifier.

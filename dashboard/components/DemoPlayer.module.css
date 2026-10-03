@@ -1,119 +1,305 @@
 .player {
-  padding: 20px;
+  padding: 22px 26px 20px;
 }
 
+/* The timeline: six moments, evenly spaced, filled up to the current scene. */
 .timeline {
   position: relative;
-  height: 40px;
-  margin: 4px 8px 20px;
+  height: 50px;
+  margin: 2px 34px 26px;
 }
 
-.track {
+.rail,
+.fill {
   position: absolute;
   left: 0;
-  right: 0;
-  top: 8px;
+  top: 6px;
   height: 2px;
+}
+
+.rail {
+  right: 0;
   background: var(--grid);
 }
 
-.mark {
+.fill {
+  background: var(--accent);
+  transition: width 0.6s ease;
+}
+
+.stop {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
+  line-height: 1.25;
 }
 
-.tick {
-  width: 2px;
-  height: 18px;
-  background: var(--axis);
+.dot,
+.dotOn {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--axis);
+  background: var(--surface);
+  margin-bottom: 6px;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
-.markLabel {
-  font-size: 0.72rem;
+.dotOn {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.stopLabel,
+.stopLabelOn {
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
 }
 
-.cursor {
-  position: absolute;
-  top: 2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 2px var(--surface);
-  transform: translateX(-50%);
-  transition: left 0.6s ease;
+.stopLabelOn {
+  color: var(--text);
 }
 
-.head {
-  min-height: 7.5em;
+.stopTime {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The stage: what happens on the left, the evidence on the right. A fixed
+   height, so the controls never move between scenes. */
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 8fr);
+  gap: 36px;
+}
+
+.text {
+  padding-top: 4px;
+}
+
+.count {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .title {
-  font-size: 1.5rem;
-  margin: 4px 0 8px;
+  font-size: 1.65rem;
+  line-height: 1.2;
+  margin: 6px 0 12px;
 }
 
 .caption {
-  font-size: 1.08rem;
-  max-width: 70ch;
+  font-size: 1.06rem;
+  color: var(--text-2);
+  margin: 0;
 }
 
-.body {
-  min-height: 12em;
+.panel {
+  height: 360px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
 }
 
+/* Intro: the loop, as five links in a chain. */
+.flow {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: flow;
+}
+
+.flow li {
+  position: relative;
+  counter-increment: flow;
+  padding: 0 0 16px 44px;
+  display: flex;
+  flex-direction: column;
+}
+
+.flow li::before {
+  content: counter(flow);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+}
+
+.flow li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 28px;
+  bottom: 2px;
+  width: 2px;
+  background: var(--grid);
+}
+
+.flow strong {
+  font-size: 0.98rem;
+}
+
+.flow span {
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+
+/* Cards: the diagnosis and the approval. */
+.card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  background: var(--page);
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.cardLabel {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.verdict {
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.meta {
+  font-size: 0.84rem;
+  color: var(--muted);
+  margin: 2px 0 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary {
+  font-size: 0.9rem;
+  margin: 0 0 10px;
+}
+
+.caveat {
+  font-size: 0.84rem;
+  color: var(--text-2);
+  margin: 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--warn);
+}
+
+.action {
+  display: inline-block;
+  font-size: 1.05rem;
+  padding: 4px 10px;
+  margin: 2px 0 10px;
+}
+
+.checks {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 0.88rem;
+  color: var(--text-2);
+}
+
+/* Steps: column by column, so nothing moves as they appear. */
 .steps {
   margin: 0;
-  padding-left: 1.6em;
-  columns: 2;
-  column-gap: 32px;
-  font-size: 0.92rem;
+  padding-left: 2em;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(8, auto);
+  column-gap: 40px;
+  row-gap: 5px;
+  font-size: 0.88rem;
+  align-content: center;
 }
 
-.steps li {
-  margin-bottom: 4px;
-  break-inside: avoid;
+.stepTime {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
-.answer {
-  border-left: 3px solid var(--accent);
-  padding: 4px 0 4px 14px;
+.cited {
+  margin-left: 6px;
+  font-size: 0.72rem;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--good-text);
+  color: var(--good-text);
+  white-space: nowrap;
 }
 
-.big {
-  font-size: 1.35rem;
-  font-weight: 700;
-  margin-bottom: 4px;
+/* Recovery: three numbers under the chart. */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.facts div {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  background: var(--page);
+}
+
+.facts b {
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.facts span {
+  font-size: 0.82rem;
+  color: var(--muted);
 }
 
 .postmortem {
-  max-height: 340px;
+  max-height: 290px;
   overflow: auto;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 12px 16px;
 }
 
 .next {
-  margin-top: 12px;
+  margin: 0;
   font-weight: 600;
 }
 
 .controls {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 22px;
 }
 
-.controls button {
+.controls > button {
   font: inherit;
   padding: 8px 16px;
   border-radius: 8px;
@@ -123,13 +309,12 @@
   cursor: pointer;
 }
 
-.controls button:disabled {
+.controls > button:disabled {
   opacity: 0.45;
   cursor: default;
 }
 
-.controls button:focus-visible,
-.dots button:focus-visible {
+.controls button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -142,19 +327,14 @@
   min-width: 7em;
 }
 
-.keys {
-  margin-left: auto;
-}
-
 .dots {
   display: flex;
   gap: 8px;
-  justify-content: center;
-  margin-top: 16px;
+  margin-left: auto;
 }
 
-.dot,
-.dotOn {
+.dotBtn,
+.dotOnBtn {
   width: 10px;
   height: 10px;
   padding: 0;
@@ -164,20 +344,59 @@
   background: var(--grid);
 }
 
-.dotOn {
+.dotOnBtn {
   background: var(--accent);
 }
 
-@media (max-width: 640px) {
-  .steps {
-    columns: 1;
+@media (max-width: 760px) {
+  .player {
+    padding: 18px 16px;
   }
 
-  .keys {
+  .timeline {
+    margin: 2px 22px 22px;
+  }
+
+  .stopTime {
     display: none;
   }
 
-  .head {
-    min-height: 9em;
+  .stopLabel,
+  .stopLabelOn {
+    font-size: 0.68rem;
+  }
+
+  .stage {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .panel {
+    height: auto;
+  }
+
+  .steps {
+    grid-auto-flow: row;
+    grid-template-rows: none;
+  }
+
+  .facts {
+    gap: 8px;
+  }
+
+  .facts div {
+    padding: 8px 10px;
+  }
+
+  .facts b {
+    font-size: 1.02rem;
+  }
+
+  .facts span {
+    font-size: 0.72rem;
+  }
+
+  .dots {
+    display: none;
   }
 }

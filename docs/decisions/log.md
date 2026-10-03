@@ -2,6 +2,7 @@
 
 Every decision that shaped the project, newest first, with the one-line reason it was made. "Approved" means the owner signed it off; the larger ones also have a decision record in this folder. Kept as it was written at the time, so it shows how the plan changed: some entries are reversed by later ones.
 
+- 2026-10-03: the Demo page charts the incident's real requests and errors per minute, read from CloudWatch with `GetMetricStatistics` (`scripts/incident_metrics.py`) and saved in `results/`. Reason: the replay was mostly text; a chart of the real failure and recovery tells the story at a glance, the run itself kept only totals, and CloudWatch drops one-minute data after 15 days.
 - 2026-10-03: two demos. The public Demo page replays the M6 live check (the one recorded incident that went through approval, rollback and recovery); a live run is started from the laptop (`scripts/demo.py`) and followed and approved on the Live page. Reason: the website must never hold the permission to break the store, and the replay works anywhere.
 - 2026-10-03: the alarm-to-agent trigger is switched by `scripts/trigger.py`, and Terraform ignores its state. Reason: a demo or a run should not need an apply, and an apply should not undo a switch (decision A from M6, extended).
 - 2026-10-03: the deployed agent runs on Gemini Flash Lite, not Mistral ministral-14b. Reason: pass m7 had it right 18 of 36 times against 5, and 3 of 3 against 2 on the scenario the live demo stages.

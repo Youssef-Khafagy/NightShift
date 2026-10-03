@@ -1,0 +1,153 @@
+.chart {
+  margin: 0;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 10px;
+}
+
+.legend {
+  display: flex;
+  gap: 14px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+
+.okSwatch {
+  background: var(--accent);
+}
+
+.badSwatch {
+  background: var(--bad);
+}
+
+.frame {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+}
+
+.yaxis {
+  position: relative;
+}
+
+.yaxis span {
+  position: absolute;
+  right: 6px;
+  font-size: 0.7rem;
+  line-height: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.plot {
+  position: relative;
+}
+
+.plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.grid {
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+
+.ok {
+  fill: var(--accent);
+}
+
+.bad {
+  fill: var(--bad);
+}
+
+.band {
+  fill: var(--accent);
+  opacity: 0.1;
+}
+
+.marker {
+  stroke: var(--text-2);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.markerLabel,
+.bandLabel {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.bandLabel {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.xaxis {
+  position: relative;
+  height: 18px;
+  margin: 6px 0 0 26px;
+}
+
+.xaxis span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* New bars grow up from the baseline, one after another. */
+.grow {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: grow 420ms ease-out both;
+}
+
+@keyframes grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* Too narrow for the labels to clear each other: the dashed lines stay,
+   and the scene's text says what they mark. */
+@media (max-width: 760px) {
+  .markerLabel,
+  .bandLabel {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grow {
+    animation: none;
+  }
+}
