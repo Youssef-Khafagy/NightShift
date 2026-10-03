@@ -1026,6 +1026,10 @@ The accuracy chart is a dot at each configuration's rate and a line across its 9
 
 ### The live half: one owner, signed in
 
+**Two different things share the site.** The public pages (Results, Incidents, Method) are recorded runs and never touch AWS. `/live` is my private control panel for the real store: alarms, the agent's current investigation, and Approve and Reject buttons for what it proposes, the same as `scripts/approve.py` but from a browser or phone. It costs nothing while closed and only shows something interesting during an incident.
+
+**The GitHub login, in five steps (OAuth).** (1) "Sign in with GitHub" sends my browser to GitHub with the app's client ID. (2) I log in on GitHub's own page and approve; the app may only read my public profile. (3) GitHub sends the browser back to the one callback URL registered for the app, with a one-time code. (4) The site's server swaps the code for my profile, proving who it is with the client secret, which lives only in Vercel's settings. (5) The site checks the profile's numeric ID is mine and sets an 8-hour signed cookie. The site never sees my GitHub password, and the locked callback URL is what stops anyone else from catching the code.
+
 The public site shows recorded runs. The owner also needs the present: which alarms are firing, what the agent is doing right now, and a way to approve or reject what it proposes without a terminal. That is `/live`, the only part of the site that runs code per request, and it is built so that being on the internet costs it nothing.
 
 **Who gets in.** GitHub sign-in through next-auth (Auth.js's stable release; its v5 is still a beta), allowed for exactly one account, checked by numeric GitHub ID rather than username, because a username can be renamed and then claimed by someone else. The GitHub scope is `read:user`, the least GitHub offers. The session is an encrypted cookie that lasts 8 hours, so there is no database to run.
@@ -1039,6 +1043,10 @@ The public site shows recorded runs. The owner also needs the present: which ala
 **What IAM cannot express.** `dynamodb:Attributes` limits which fields an update touches, not what it writes into them. So the dashboard role could set an approval's status back to `pending` after it was used, and replay it within its 15 minutes. The Actor now refuses a pending approval that already carries an `approved_by`, a field the dashboard role cannot write. The general point: least privilege in IAM narrows *what* can be touched; *which values* are valid is the application's job, enforced in the component that acts.
 
 **Approving from a browser is approve.py with a different front.** The page shows the action and its hash; Approve asks a second time ("Run exactly this action"); the route re-reads the record, refuses if it is no longer pending, has expired, or is not what was shown, and invokes the Actor asynchronously with the hash. The Actor checks all of it again in one conditional write. The live page polls every 15 seconds, only while the tab is visible, which COST.md budgets at under 6% of the free CloudWatch API requests even if it were open two hours a day.
+
+**Proven live (2026-10-03), without an incident.** Three labelled approvals for `pause_queue_consumer` under a test investigation. Approving the first went through the whole chain (GitHub login, Vercel function, OIDC to the role, the Actor), and the Actor consumed it and then refused, "no saved report to check the action against", before acting: the consumer stayed off. Rejecting the second worked through the attribute-limited permission, which the simulator could not fully prove, because it cannot know which attribute names DynamoDB puts in a real request. The expired third offered no buttons.
+
+**What went wrong getting it live.** The first CI apply after step 8 failed reading the Vercel identity provider: the CI role could read only the GitHub one. Nothing changed (Terraform reads everything before it plans), the fix was one ARN applied locally, and a test now checks every provider is readable. Then Vercel cancelled the redeploy meant to pick up the new settings, because a rule to skip builds that change nothing under `dashboard/` also skipped a redeploy, which changes no files. The rule was removed: two surprises for saving a minute of build time.
 
 ### Going public: the logs are part of the repository
 
@@ -1091,6 +1099,8 @@ A public repository publishes more than its files: every commit on every branch,
 | A results table labelled "after the page" for times the grader measures from injection | Reading the grader again to build the dashboard | Label corrected; the site says "from injection" (20, 21) |
 | A journal shortened before it was scrubbed kept two digits of the account ID | Scanning the data before publishing it | Scrub first, then shorten; the public data drops that field and scans for any ID (21) |
 | The deploy log printed the cluster ID on every apply | Searching all 142 run logs before going public | Outputs marked sensitive; scripts read them with `-raw` (21) |
+| The CI apply role could read only the GitHub OIDC provider, so the first apply after adding Vercel's failed | Apply run #31, AccessDenied on the read, nothing changed | Read added for every provider; a test checks each provider is listed (21) |
+| A skip-the-build rule cancelled the redeploy that would pick up new settings | Vercel showed "Canceled" | Rule removed: builds are cheap, surprises are not (21) |
 | A history scan that ran after its first command failed, and reported results computed from empty strings | The numbers made no sense (1,431 "matching" files) | Rerun as a strict script that refuses when a value is missing: the fail-loudly rule (6, 21) |
 
 ---
