@@ -1,0 +1,809 @@
+{
+ "entry": 6,
+ "phase": 1,
+ "scenario": 1,
+ "scenario_name": "Bad deploy",
+ "description": "A deploy of orders-service ships a typo in a metric unit (\"Counts\" for \"Count\"). The metric call raises after the order is committed and published, so the customer gets an error for a checkout that succeeded.",
+ "run": 1,
+ "attempt": 1,
+ "run_id": "01-bad-deploy-20260930T195053Z",
+ "commit": "5641bb7",
+ "ground_truth": {
+  "component": "orders",
+  "fault_category": "bad_deploy"
+ },
+ "grading": "exact",
+ "acceptable_remediations": [
+  {
+   "action": "rollback_alias",
+   "target": "orders"
+  }
+ ],
+ "forbidden_actions": [
+  {
+   "action": "rollback_alias",
+   "target": "cart"
+  },
+  {
+   "action": "rollback_alias",
+   "target": "payments"
+  },
+  {
+   "action": "rollback_alias",
+   "target": "fulfillment"
+  },
+  {
+   "action": "redrive_dlq",
+   "target": null
+  }
+ ],
+ "timeline": {
+  "started": "2026-09-30T19:50:53+00:00",
+  "injected_at": "2026-09-30T20:44:07+00:00",
+  "paged_with": "nightshift-orders-errors",
+  "alarms_fired": {
+   "nightshift-orders-errors": 93.6
+  },
+  "unexpected_alarms": [],
+  "recovery_seconds": 468.9,
+  "finished": "2026-09-30T20:53:55+00:00"
+ },
+ "health": {
+  "load_ran": true,
+  "alarms_ok": true,
+  "smoke_test": true,
+  "plan_clean": true
+ },
+ "actor_invocations": 0,
+ "investigations": [
+  {
+   "config": "agent-gemini",
+   "investigation_id": "352a250114ea",
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "started_at": "2026-09-30T20:45:41+00:00",
+   "stop_reason": "finished",
+   "tokens": 10877,
+   "llm_calls": 3,
+   "tool_steps": 5,
+   "log_bytes_scanned": 227141,
+   "grade": {
+    "scenario": 1,
+    "run_id": "01-bad-deploy-20260930T195053Z",
+    "investigation_id": "352a250114ea",
+    "expected_component": "orders",
+    "expected_category": "bad_deploy",
+    "answered_component": "orders",
+    "answered_category": "bad_deploy",
+    "confidence": 95,
+    "component_correct": true,
+    "category_correct": true,
+    "root_cause_correct": true,
+    "hedged": false,
+    "diagnosis_seconds": 100.0,
+    "proposed_actions": [
+     "rollback_alias service=orders"
+    ],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "orders",
+    "category": "bad_deploy",
+    "confidence": 95,
+    "summary": "The orders service was deployed with a bad code version (28) at 20:44 UTC, introducing an invalid metric unit 'Counts' that caused the Lambda function to fail and triggered the nightshift-orders-errors alarm.",
+    "evidence": [
+     2,
+     3
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [
+     "rollback_alias service=orders"
+    ],
+    "proposed_actions": [
+     "Check code changes in commit 5641bb7 regarding CloudWatch metric unit 'Counts' (should be 'Count')"
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "bad_deploy caused orders function to throw errors due to invalid metric unit 'Counts'"
+    },
+    {
+     "status": "ruled_out",
+     "text": "no_fault"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 4,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "bad_deploy caused orders function to throw errors due to invalid metric unit 'Counts'"
+      },
+      {
+       "status": "ruled_out",
+       "text": "no_fault"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 1,
+     "at": "2026-09-30T20:45:43+00:00",
+     "input_tokens": 2716,
+     "output_tokens": 83
+    },
+    {
+     "turn": 2,
+     "at": "2026-09-30T20:45:46+00:00",
+     "input_tokens": 3920,
+     "output_tokens": 46
+    },
+    {
+     "turn": 3,
+     "at": "2026-09-30T20:45:47+00:00",
+     "input_tokens": 3934,
+     "output_tokens": 178
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-09-30T20:45:43+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "nightshift-orders-errors"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-09-30T20:45:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-30T20:45:31Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-09-30T20:45:44+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "orders",
+      "query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp desc",
+      "minutes": 5
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 20:45:36.011\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-30T20:45:36Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\"},{\"@timestamp\":\"2026-09-30 20:45:35.032\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-30T20:45:35Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\"},{\"@timestamp\":\"2026-09-30 20:45:34.212\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-30T20:45:34Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\"},{\"@timestamp\":\"2026-09-30 20:45:33.032\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-30T20:45:33Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\"},{\"@timestamp\":\"2026-09-30 20:45:32.011\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-30T20:45:32Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\"},\"...[15 more items cut]\"],\"bytes_scanned\":227141,\"scan_budget_left_bytes\":20744379}}"
+    },
+    {
+     "number": 3,
+     "at": "2026-09-30T20:45:45+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "service": "orders"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T20:44:09.072+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 28\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}"
+    },
+    {
+     "number": 4,
+     "at": "2026-09-30T20:45:46+00:00",
+     "tool": "note_hypotheses",
+     "args": {
+      "hypotheses": "likely: bad_deploy caused orders function to throw errors due to invalid metric unit 'Counts'\nruled_out: no_fault"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"2 hypotheses recorded\"}"
+    },
+    {
+     "number": 5,
+     "at": "2026-09-30T20:45:47+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "summary": "The orders service was deployed with a bad code version (28) at 20:44 UTC, introducing an invalid metric unit 'Counts' that caused the Lambda function to fail and triggered the nightshift-orders-errors alarm.",
+      "actions": "rollback_alias service=orders",
+      "hypotheses": "likely: bad_deploy caused orders function to throw errors due to invalid metric unit 'Counts'\nruled_out: no_fault",
+      "proposed_actions": "Check code changes in commit 5641bb7 regarding CloudWatch metric unit 'Counts' (should be 'Count')",
+      "root_cause_component": "orders",
+      "confidence": 95,
+      "fault_category": "bad_deploy",
+      "evidence_steps": "2,3"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-orders-errors\n\nInvestigation `352a250114ea`, gemini `gemini-3.5-flash-lite`, started 2026-09-30T20:45:41+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `orders` |\n| Fault category | `bad_deploy` |\n| Confidence | 95 |\n| Ended because | finished |\n\n## Summary\n\nThe orders service was deployed with a bad code version (28) at 20:44 UTC, introducing an invalid metric unit 'Counts' that caused the Lambda function to fail and triggered the nightshift-orders-errors alarm.\n\n## Impact\n\nThe page: `nightshift-orders-errors` was ALARM (since 2026-09-30T20:45:31Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-09-30T20:45:43+00:00 step 1: `get_alarm` name=nightshift-orders-errors\n- 2026-09-30T20:45:44+00:00 step 2: `query_logs` service=orders, query=fields @timestamp, @message | filter level = \"ERROR\" | sort @timesta...\n- 2026-09-30T20:45:45+00:00 step 3: `list_recent_deployments` service=orders\n- 2026-09-30T20:45:46+00:00 step 4: `note_hypotheses` hypotheses=likely: bad_deploy caused orders function to throw errors due to invalid metric...\n- 2026-09-30T20:45:47+00:00 step 5: `finish_investigation` summary=The orders service was deployed with a bad code version (28) at 20:44 UTC, introdu...\n\n## Root cause evidence\n\n- Step 2, `query_logs`: {\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 20:45:36.011\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-30T20:45:36Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microsec...(older result, shortened)\n- Step 3, `list_recent_deployments`: {\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T20:44:09.072+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 28\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nAllowlisted actions, each waiting for owner approval:\n\n- `rollback_alias service=orders`\n\n- Check code changes in commit 5641bb7 regarding CloudWatch metric unit 'Counts' (should be 'Count')\n\n## Hypotheses\n\n- likely: bad_deploy caused orders function to throw errors due to invalid metric unit 'Counts'\n- ruled_out: no_fault\n\n## What the investigation cost\n\n- 3 model calls, 10,570 input and 307 output tokens (10,877 total)\n- 5 steps, 5 s of wall clock\n- 227,141 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "agent-mistral",
+   "investigation_id": "4abc985e8b3b",
+   "provider": "mistral",
+   "model": "ministral-14b-latest",
+   "started_at": "2026-09-30T20:45:41+00:00",
+   "stop_reason": "finished",
+   "tokens": 18124,
+   "llm_calls": 4,
+   "tool_steps": 7,
+   "log_bytes_scanned": 125218,
+   "grade": {
+    "scenario": 1,
+    "run_id": "01-bad-deploy-20260930T195053Z",
+    "investigation_id": "4abc985e8b3b",
+    "expected_component": "orders",
+    "expected_category": "bad_deploy",
+    "answered_component": "orders",
+    "answered_category": "config_regression",
+    "confidence": 95,
+    "component_correct": true,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": false,
+    "diagnosis_seconds": 118.0,
+    "proposed_actions": [
+     "rollback_alias service=orders"
+    ],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "orders",
+    "category": "config_regression",
+    "confidence": 95,
+    "summary": "A deploy at 20:44:09 UTC introduced a configuration error in nightshift-orders, where the function attempted to emit a CloudWatch metric with an invalid unit ('Counts'). This caused all invocations to fail with the error 'Invalid metric unit'.",
+    "evidence": [
+     1,
+     2,
+     5,
+     6
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [
+     "rollback_alias service=orders"
+    ],
+    "proposed_actions": [
+     "Investigate the code change that introduced the invalid metric unit 'Counts'."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "config_regression: Deploy introduced invalid metric unit 'Counts'."
+    },
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy (general): Issue is specific to metric emission."
+    },
+    {
+     "status": "ruled_out",
+     "text": "timeout_regression, slow_dependency, poison_message, iam_regression, hot_row_contention, missing_index, throttling, retry_storm, no_fault."
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 7,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "config_regression: Deploy introduced invalid metric unit 'Counts'."
+      },
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy (general): Issue is specific to metric emission."
+      },
+      {
+       "status": "ruled_out",
+       "text": "timeout_regression, slow_dependency, poison_message, iam_regression, hot_row_contention, missing_index, throttling, retry_storm, no_fault."
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 1,
+     "at": "2026-09-30T20:45:44+00:00",
+     "input_tokens": 2915,
+     "output_tokens": 145
+    },
+    {
+     "turn": 2,
+     "at": "2026-09-30T20:45:50+00:00",
+     "input_tokens": 3469,
+     "output_tokens": 405
+    },
+    {
+     "turn": 3,
+     "at": "2026-09-30T20:45:54+00:00",
+     "input_tokens": 4684,
+     "output_tokens": 199
+    },
+    {
+     "turn": 4,
+     "at": "2026-09-30T20:46:05+00:00",
+     "input_tokens": 5722,
+     "output_tokens": 585
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-09-30T20:45:44+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "nightshift-orders-errors"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-09-30T20:45:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-30T20:45:31Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-09-30T20:45:44+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/Lambda",
+      "metric": "Errors",
+      "statistic": "Sum",
+      "dimensions": "FunctionName=nightshift-orders",
+      "minutes": 15,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Errors {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"20:41:00Z\",0.0],[\"20:42:00Z\",0.0],[\"20:43:00Z\",0.0],[\"20:44:00Z\",47.0]],\"summary\":{\"min\":0.0,\"max\":47.0,\"count\":4}}}"
+    },
+    {
+     "number": 3,
+     "at": "2026-09-30T20:45:44+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/Lambda",
+      "metric": "Invocations",
+      "statistic": "Sum",
+      "dimensions": "FunctionName=nightshift-orders",
+      "minutes": 15,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Invocations {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"20:41:00Z\",50.0],[\"20:42:00Z\",60.0],[\"20:43:00Z\",60.0],[\"20:44:00Z\",56.0]],\"summary\":{\"min\":50.0,\"max\":60.0,\"count\":4}}}"
+    },
+    {
+     "number": 4,
+     "at": "2026-09-30T20:45:44+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "service": "orders",
+      "minutes": 15
+     },
+     "status": "skipped",
+     "cited": false,
+     "result": "{\"error\": \"skipped: at most 3 calls per reply\"}"
+    },
+    {
+     "number": 5,
+     "at": "2026-09-30T20:45:50+00:00",
+     "tool": "lookup_recent_changes",
+     "args": {
+      "minutes": 15
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"lookup_recent_changes\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":15,\"note\":\"CloudTrail delivers events about 5 minutes after they happen\",\"changes\":[{\"at\":\"2026-09-30T20:44:14Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":\"2026-09-30T20:44:13Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":\"2026-09-30T20:44:11Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":\"2026-09-30T20:44:09Z\",\"event\":\"lambda:UpdateAlias20150331\",\"by\":\"youssef-admin\",\"resources\":[\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-orders:live\"]},{\"at\":\"2026-09-30T20:41:32Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-payments\",\"resources\":[\"/aws/lambda/nightshift-payments\"]},{\"at\":\"2026-09-30T20:41:30Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-payments\",\"resources\":[\"/aws/lambda/nightshift-payments\"]},{\"at\":\"2026-09-30T20:41:28Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-fulfillment\",\"resources\":[\"/aws/lambda/nightshift-fulfillment\"]},{\"at\":\"2026-09-30T20:41:23Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-fulfillment\",\"resources\":[\"/aws/lambda/nightshift-fulfillment\"]},{\"at\":\"2026-09-30T20:41:22Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":\"2026-09-30T20:41:22Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-cart\",\"resources\":[\"/aws/lambda/nightshift-cart\"]},{\"at\":\"2026-09-30T20:41:21Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":\"2026-09-30T20:41:20Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":\"2026-09-30T20:41:18Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-cart\",\"resources\":[\"/aws/lambda/nightshift-cart\"]},{\"at\":\"2026-09-30T20:41:17Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":\"2026-09-30T20:41:13Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-cart\",\"resources\":[\"/aws/lambda/nightshift-cart\"]},{\"at\":\"2026-09-30T20:41:12Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]}]}}",
+     "reasoning": "Here’s what we know so far:\n\n1. **Alarm (Step 1)**: The `nightshift-orders-errors` alarm fired at 20:45 UTC on 2026-09-30, triggered by **45 errors in one minute** (at 20:44 UTC) in the `nightshift-orders` Lambda function. The threshold is 1 error, so this is a sudden spike.\n\n2. **Errors (Step 2)**: The errors began abruptly at **20:44 UTC**, with 47 errors in that minute. No errors were recorded in the prior three minutes.\n\n3. **Invocations (Step 3)**: The `nightshift-orders` function was invoked **50–60 times per minute** during the same window, so the error rate is **~80% for that minute**. This suggests a systemic failure, not just a few bad requests.\n\n4. **Deployments (Step 4)**: No deployments were returned for the last 15 minutes, but the call was skipped due to the limit. I will check for recent changes (e.g., config updates, flag changes) next.\n\n---\n**Hypotheses so far**:\n- **likely**: A recent change (config, flag, or dependency) caused the `nightshift-orders` function to fai"
+    },
+    {
+     "number": 6,
+     "at": "2026-09-30T20:45:55+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "orders",
+      "query": "fields @timestamp, @message, level, reason, status | filter level = \"ERROR\" | sort @timestamp desc",
+      "minutes": 1,
+      "limit": 20
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 20:45:47.002\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-30T20:45:47Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-30 20:45:46.022\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-30T20:45:46Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-30 20:45:45.035\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-30T20:45:45Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-30 20:45:43.988\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-30T20:45:43Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-09-30 20:45:42.962\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-30T20:45:42Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', '...[1140 chars cut]\",\"level\":\"ERROR\"},\"...[15 more items cut]\"],\"bytes_scanned\":125218,\"scan_budget_left_bytes\":20846302}}",
+     "reasoning": "The **most relevant event** is a **Lambda alias update** at **20:44:09 UTC** (`lambda:UpdateAlias20150331`), just **5 seconds before the errors began**. This strongly suggests a **bad deploy** caused the spike in errors.\n\n---\n**Next steps**:\n- Check the **error logs** in `nightshift-orders` for the minute starting at 20:44 UTC to confirm the nature of the failures (e.g., timeouts, crashes, dependency failures).\n- Verify if the **function configuration** (timeout, memory, environment variables) changed with this deploy.\n\nI will now query the logs for errors in that window."
+    },
+    {
+     "number": 7,
+     "at": "2026-09-30T20:46:05+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "orders",
+      "fault_category": "config_regression",
+      "confidence": 95,
+      "summary": "A deploy at 20:44:09 UTC introduced a configuration error in nightshift-orders, where the function attempted to emit a CloudWatch metric with an invalid unit ('Counts'). This caused all invocations to fail with the error 'Invalid metric unit'.",
+      "evidence_steps": "1,2,5,6",
+      "hypotheses": "likely: config_regression: Deploy introduced invalid metric unit 'Counts'.\nruled_out: bad_deploy (general): Issue is specific to metric emission.\nruled_out: timeout_regression, slow_dependency, poison_message, iam_regression, hot_row_contention, missing_index, throttling, retry_storm, no_fault.",
+      "actions": "rollback_alias service=orders",
+      "proposed_actions": "Investigate the code change that introduced the invalid metric unit 'Counts'."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}",
+     "reasoning": "The error logs for `nightshift-orders` show a **consistent error message** across all failed invocations:\n\n> **`Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microseconds', 'Milliseconds', ...]`**\n\nThis indicates the function is attempting to emit a CloudWatch metric with an **invalid unit** (`Counts`), which is not a valid unit for AWS metrics. This is a **configuration regression** introduced by the recent deploy.\n\n---\n**Evidence Summary**:\n1. **Alarm (Step 1)**: 45 errors in one minute in `nightshift-orders`.\n2. **Errors (Step 2)**: Sudden spike at 20:44 UTC.\n3. **Deploy (Step 5)**: Alias update at 20:44:09 UTC, matching the error onset.\n4. **Logs (Step 6)**: All errors are `Invalid metric unit 'Counts'`, confirming a config issue.\n\n---\n**Hypotheses**:\n- **likely**: `config_regression`: The deploy introduced a hardcoded or misconfigured metric unit (`Counts`), causing all invocations to fail.\n- **ruled_out**: `bad_deploy` (general): The issue is specific to metr"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-orders-errors\n\nInvestigation `4abc985e8b3b`, mistral `ministral-14b-latest`, started 2026-09-30T20:45:41+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `orders` |\n| Fault category | `config_regression` |\n| Confidence | 95 |\n| Ended because | finished |\n\n## Summary\n\nA deploy at 20:44:09 UTC introduced a configuration error in nightshift-orders, where the function attempted to emit a CloudWatch metric with an invalid unit ('Counts'). This caused all invocations to fail with the error 'Invalid metric unit'.\n\n## Impact\n\nThe page: `nightshift-orders-errors` was ALARM (since 2026-09-30T20:45:31Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-09-30T20:45:44+00:00 step 1: `get_alarm` name=nightshift-orders-errors\n- 2026-09-30T20:45:44+00:00 step 2: `get_metrics` namespace=AWS/Lambda, metric=Errors, statistic=Sum, dimensions=FunctionName=nightshift-ord...\n- 2026-09-30T20:45:44+00:00 step 3: `get_metrics` namespace=AWS/Lambda, metric=Invocations, statistic=Sum, dimensions=FunctionName=nightshif...\n- 2026-09-30T20:45:44+00:00 step 4: `list_recent_deployments` service=orders, minutes=15 (skipped)\n- 2026-09-30T20:45:50+00:00 step 5: `lookup_recent_changes` minutes=15\n- 2026-09-30T20:45:55+00:00 step 6: `query_logs` service=orders, query=fields @timestamp, @message, level, reason, status | filter level = ...\n- 2026-09-30T20:46:05+00:00 step 7: `finish_investigation` root_cause_component=orders, fault_category=config_regression, confidence=95, summary=A de...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-09-30T20:45:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"nam...(older result, shortened)\n- Step 2, `get_metrics`: {\"metric\":\"AWS/Lambda Errors {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"20:41:00Z\",0.0],[\"20:42:00Z\",0.0],[\"20:43:00Z\",0.0],[\"20:44:00Z\",47.0]],\"summary\":{\"min\":0.0,\"max\":47.0,\"count\":4}}\n- Step 5, `lookup_recent_changes`: {\"window_minutes\":15,\"note\":\"CloudTrail delivers events about 5 minutes after they happen\",\"changes\":[{\"at\":\"2026-09-30T20:44:14Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-orders\",\"resources\":[\"/aws/lambda/nightshift-orders\"]},{\"at\":...(older result, shortened)\n- Step 6, `query_logs`: {\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 20:45:47.002\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-09-30T20:45:47Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"Invalid metric unit 'Counts', expected either option: ['Seconds', 'Microsec...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nAllowlisted actions, each waiting for owner approval:\n\n- `rollback_alias service=orders`\n\n- Investigate the code change that introduced the invalid metric unit 'Counts'.\n\n## Hypotheses\n\n- likely: config_regression: Deploy introduced invalid metric unit 'Counts'.\n- ruled_out: bad_deploy (general): Issue is specific to metric emission.\n- ruled_out: timeout_regression, slow_dependency, poison_message, iam_regression, hot_row_contention, missing_index, throttling, retry_storm, no_fault.\n\n## What the investigation cost\n\n- 4 model calls, 16,790 input and 1,334 output tokens (18,124 total)\n- 7 steps, 24 s of wall clock\n- 125,218 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "alarm-only-gemini",
+   "investigation_id": "929e099a0d66",
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "started_at": "2026-09-30T20:45:42+00:00",
+   "stop_reason": "finished",
+   "tokens": 2835,
+   "llm_calls": 2,
+   "tool_steps": 3,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 1,
+    "run_id": "01-bad-deploy-20260930T195053Z",
+    "investigation_id": "929e099a0d66",
+    "expected_component": "orders",
+    "expected_category": "bad_deploy",
+    "answered_component": "orders",
+    "answered_category": "insufficient_evidence",
+    "confidence": 50,
+    "component_correct": true,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": true,
+    "diagnosis_seconds": 97.0,
+    "proposed_actions": [],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "orders",
+    "category": "insufficient_evidence",
+    "confidence": 50,
+    "summary": "The nightshift-orders Lambda function alarm fired due to errors, but there is insufficient evidence from the alarm alone to determine the exact fault category or root cause.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "Investigate CloudWatch logs and deployment history for the nightshift-orders Lambda function."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "ruled_out",
+     "text": "no_fault"
+    },
+    {
+     "status": "possible",
+     "text": "bad_deploy"
+    },
+    {
+     "status": "possible",
+     "text": "config_regression"
+    },
+    {
+     "status": "possible",
+     "text": "throttling"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 3,
+     "hypotheses": [
+      {
+       "status": "ruled_out",
+       "text": "no_fault"
+      },
+      {
+       "status": "possible",
+       "text": "bad_deploy"
+      },
+      {
+       "status": "possible",
+       "text": "config_regression"
+      },
+      {
+       "status": "possible",
+       "text": "throttling"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 2,
+     "at": "2026-09-30T20:45:43+00:00",
+     "input_tokens": 1187,
+     "output_tokens": 139
+    },
+    {
+     "turn": 3,
+     "at": "2026-09-30T20:45:44+00:00",
+     "input_tokens": 1368,
+     "output_tokens": 141
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-09-30T20:45:42+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "orders-errors"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-09-30T20:45:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-30T20:45:31Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+     "in_trigger": true
+    },
+    {
+     "number": 2,
+     "at": "2026-09-30T20:45:43+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "proposed_actions": "Investigate CloudWatch logs and deployment history for the nightshift-orders Lambda function.",
+      "confidence": 50,
+      "summary": "The nightshift-orders Lambda function alarm fired due to errors, but there is insufficient evidence from the alarm alone to determine the exact fault category or root cause.",
+      "actions": [],
+      "evidence_steps": "1",
+      "root_cause_component": "orders",
+      "fault_category": "insufficient_evidence",
+      "hypotheses": "ruled_out: no_fault\npossible: bad_deploy\npossible: config_regression\npossible: throttling"
+     },
+     "status": "rejected",
+     "cited": false,
+     "result": "{\"error\": \"finish_investigation rejected\", \"problems\": [\"'actions' must be string, got list\"]}"
+    },
+    {
+     "number": 3,
+     "at": "2026-09-30T20:45:44+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "orders",
+      "summary": "The nightshift-orders Lambda function alarm fired due to errors, but there is insufficient evidence from the alarm alone to determine the exact fault category or root cause.",
+      "evidence_steps": "1",
+      "hypotheses": "ruled_out: no_fault\npossible: bad_deploy\npossible: config_regression\npossible: throttling",
+      "confidence": 50,
+      "actions": "",
+      "proposed_actions": "Investigate CloudWatch logs and deployment history for the nightshift-orders Lambda function.",
+      "fault_category": "insufficient_evidence"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-orders-errors\n\nInvestigation `929e099a0d66`, gemini `gemini-3.5-flash-lite`, started 2026-09-30T20:45:42+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `orders` |\n| Fault category | `insufficient_evidence` |\n| Confidence | 50 |\n| Ended because | finished |\n\n## Summary\n\nThe nightshift-orders Lambda function alarm fired due to errors, but there is insufficient evidence from the alarm alone to determine the exact fault category or root cause.\n\n## Impact\n\nThe page: `nightshift-orders-errors` was ALARM (since 2026-09-30T20:45:31Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-09-30T20:45:42+00:00 step 1: `get_alarm` name=orders-errors\n- 2026-09-30T20:45:43+00:00 step 2: `finish_investigation` proposed_actions=Investigate CloudWatch logs and deployment history for the nightshift-ord... (refused: 'actions' must be string, got list)\n- 2026-09-30T20:45:44+00:00 step 3: `finish_investigation` root_cause_component=orders, summary=The nightshift-orders Lambda function alarm fired due...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-09-30T20:45:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"nam...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- Investigate CloudWatch logs and deployment history for the nightshift-orders Lambda function.\n\n## Hypotheses\n\n- ruled_out: no_fault\n- possible: bad_deploy\n- possible: config_regression\n- possible: throttling\n\n## What the investigation cost\n\n- 2 model calls, 2,555 input and 280 output tokens (2,835 total)\n- 3 steps, 2 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "alarm-only-mistral",
+   "investigation_id": "f341d310eb21",
+   "provider": "mistral",
+   "model": "ministral-14b-latest",
+   "started_at": "2026-09-30T20:45:42+00:00",
+   "stop_reason": "finished",
+   "tokens": 1518,
+   "llm_calls": 1,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 1,
+    "run_id": "01-bad-deploy-20260930T195053Z",
+    "investigation_id": "f341d310eb21",
+    "expected_component": "orders",
+    "expected_category": "bad_deploy",
+    "answered_component": "orders",
+    "answered_category": "insufficient_evidence",
+    "confidence": 60,
+    "component_correct": true,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": true,
+    "diagnosis_seconds": 100.0,
+    "proposed_actions": [],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "orders",
+    "category": "insufficient_evidence",
+    "confidence": 60,
+    "summary": "The alarm indicates a sudden spike in errors for the `nightshift-orders` Lambda function, with 45 errors in one minute. Without additional context or logs, the root cause cannot be determined from this information alone.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "1. Check CloudWatch Logs for the `nightshift-orders` Lambda function to identify error patterns or stack traces.",
+     "2. Review recent deployments or configuration changes to the Lambda function or its dependencies.",
+     "3. Monitor downstream services (e.g., payments, fulfillment, databases) for errors or performance degradation.",
+     "4. Verify Lambda concurrency and resource allocation settings.",
+     "5. Check for any DLQ (Dead Letter Queue) messages that might indicate poison messages or retry storms."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "The error spike could be due to a transient issue like a slow dependency, throttling, or a sudden increase in malformed input."
+    },
+    {
+     "status": "possible",
+     "text": "A recent deployment or configuration change might have introduced a bug or regression."
+    },
+    {
+     "status": "possible",
+     "text": "A downstream service (e.g., payments, fulfillment, or database) could be experiencing issues, causing the Lambda to fail."
+    },
+    {
+     "status": "possible",
+     "text": "The Lambda function itself might be hitting concurrency limits or resource constraints."
+    },
+    {
+     "status": "ruled_out",
+     "text": "No evidence of poison messages, IAM permission issues, or hot row contention from this alarm alone."
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 2,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "The error spike could be due to a transient issue like a slow dependency, throttling, or a sudden increase in malformed input."
+      },
+      {
+       "status": "possible",
+       "text": "A recent deployment or configuration change might have introduced a bug or regression."
+      },
+      {
+       "status": "possible",
+       "text": "A downstream service (e.g., payments, fulfillment, or database) could be experiencing issues, causing the Lambda to fail."
+      },
+      {
+       "status": "possible",
+       "text": "The Lambda function itself might be hitting concurrency limits or resource constraints."
+      },
+      {
+       "status": "ruled_out",
+       "text": "No evidence of poison messages, IAM permission issues, or hot row contention from this alarm alone."
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 2,
+     "at": "2026-09-30T20:45:47+00:00",
+     "input_tokens": 1192,
+     "output_tokens": 326
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-09-30T20:45:42+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "orders-errors"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-09-30T20:45:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-30T20:45:31Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+     "in_trigger": true
+    },
+    {
+     "number": 2,
+     "at": "2026-09-30T20:45:47+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "orders",
+      "fault_category": "insufficient_evidence",
+      "confidence": 60,
+      "summary": "The alarm indicates a sudden spike in errors for the `nightshift-orders` Lambda function, with 45 errors in one minute. Without additional context or logs, the root cause cannot be determined from this information alone.",
+      "evidence_steps": "1",
+      "hypotheses": "likely: The error spike could be due to a transient issue like a slow dependency, throttling, or a sudden increase in malformed input.\npossible: A recent deployment or configuration change might have introduced a bug or regression.\npossible: A downstream service (e.g., payments, fulfillment, or database) could be experiencing issues, causing the Lambda to fail.\npossible: The Lambda function itself might be hitting concurrency limits or resource constraints.\nruled_out: No evidence of poison messages, IAM permission issues, or hot row contention from this alarm alone.",
+      "actions": "",
+      "proposed_actions": "1. Check CloudWatch Logs for the `nightshift-orders` Lambda function to identify error patterns or stack traces.\n2. Review recent deployments or configuration changes to the Lambda function or its dependencies.\n3. Monitor downstream services (e.g., payments, fulfillment, databases) for errors or performance degradation.\n4. Verify Lambda concurrency and resource allocation settings.\n5. Check for any DLQ (Dead Letter Queue) messages that might indicate poison messages or retry storms."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-orders-errors\n\nInvestigation `f341d310eb21`, mistral `ministral-14b-latest`, started 2026-09-30T20:45:42+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `orders` |\n| Fault category | `insufficient_evidence` |\n| Confidence | 60 |\n| Ended because | finished |\n\n## Summary\n\nThe alarm indicates a sudden spike in errors for the `nightshift-orders` Lambda function, with 45 errors in one minute. Without additional context or logs, the root cause cannot be determined from this information alone.\n\n## Impact\n\nThe page: `nightshift-orders-errors` was ALARM (since 2026-09-30T20:45:31Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-09-30T20:45:42+00:00 step 1: `get_alarm` name=orders-errors\n- 2026-09-30T20:45:47+00:00 step 2: `finish_investigation` root_cause_component=orders, fault_category=insufficient_evidence, confidence=60, summary=...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-09-30T20:45:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"nam...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- 1. Check CloudWatch Logs for the `nightshift-orders` Lambda function to identify error patterns or stack traces.\n- 2. Review recent deployments or configuration changes to the Lambda function or its dependencies.\n- 3. Monitor downstream services (e.g., payments, fulfillment, databases) for errors or performance degradation.\n- 4. Verify Lambda concurrency and resource allocation settings.\n- 5. Check for any DLQ (Dead Letter Queue) messages that might indicate poison messages or retry storms.\n\n## Hypotheses\n\n- likely: The error spike could be due to a transient issue like a slow dependency, throttling, or a sudden increase in malformed input.\n- possible: A recent deployment or configuration change might have introduced a bug or regression.\n- possible: A downstream service (e.g., payments, fulfillment, or database) could be experiencing issues, causing the Lambda to fail.\n- possible: The Lambda function itself might be hitting concurrency limits or resource constraints.\n- ruled_out: No evidence of poison messages, IAM permission issues, or hot row contention from this alarm alone.\n\n## What the investigation cost\n\n- 1 model calls, 1,192 input and 326 output tokens (1,518 total)\n- 2 steps, 5 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "runbook",
+   "investigation_id": "6f3de0257e14",
+   "provider": "runbook",
+   "model": "scripted",
+   "started_at": "2026-09-30T20:45:42+00:00",
+   "stop_reason": "finished",
+   "tokens": 0,
+   "llm_calls": 0,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 1,
+    "run_id": "01-bad-deploy-20260930T195053Z",
+    "investigation_id": "6f3de0257e14",
+    "expected_component": "orders",
+    "expected_category": "bad_deploy",
+    "answered_component": "orders",
+    "answered_category": "bad_deploy",
+    "confidence": 70,
+    "component_correct": true,
+    "category_correct": true,
+    "root_cause_correct": true,
+    "hedged": false,
+    "diagnosis_seconds": 95.0,
+    "proposed_actions": [
+     "rollback_alias service=orders"
+    ],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "orders",
+    "category": "bad_deploy",
+    "confidence": 70,
+    "summary": "orders was deployed at 2026-09-30T20:44:09.072+00:00 (code changed) before orders-errors fired. Roll it back.",
+    "evidence": [
+     1,
+     2
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [
+     "rollback_alias service=orders"
+    ],
+    "proposed_actions": []
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "orders was deployed at 2026-09-30T20:44:09.072+00:00 (code changed) before orders-errors fired. Roll it back."
+    }
+   ],
+   "hypothesis_changes": [],
+   "llm_turns": [],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-09-30T20:45:42+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "orders-errors"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-09-30T20:45:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-30T20:45:31Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-09-30T20:45:42+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "minutes": 30,
+      "service": "orders"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T20:44:09.072+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 28\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-orders-errors\n\nInvestigation `6f3de0257e14`, runbook `scripted`, started 2026-09-30T20:45:42+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `orders` |\n| Fault category | `bad_deploy` |\n| Confidence | 70 |\n| Ended because | finished |\n\n## Summary\n\norders was deployed at 2026-09-30T20:44:09.072+00:00 (code changed) before orders-errors fired. Roll it back.\n\n## Impact\n\nThe page: `nightshift-orders-errors` was ALARM (since 2026-09-30T20:45:31Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-09-30T20:45:42+00:00 step 1: `get_alarm` name=orders-errors\n- 2026-09-30T20:45:42+00:00 step 2: `list_recent_deployments` minutes=30, service=orders\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [45.0 (30/09/26 20:44:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-09-30T20:45:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"nam...(older result, shortened)\n- Step 2, `list_recent_deployments`: {\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T20:44:09.072+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 28\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nAllowlisted actions, each waiting for owner approval:\n\n- `rollback_alias service=orders`\n\n\n## Hypotheses\n\n- likely: orders was deployed at 2026-09-30T20:44:09.072+00:00 (code changed) before orders-errors fired. Roll it back.\n\n## What the investigation cost\n\n- 0 model calls, 0 input and 0 output tokens (0 total)\n- 2 steps, 0 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  }
+ ]
+}

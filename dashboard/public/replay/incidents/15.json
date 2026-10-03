@@ -1,0 +1,823 @@
+{
+ "entry": 15,
+ "phase": 1,
+ "scenario": 2,
+ "scenario_name": "Config regression",
+ "description": "A configuration deploy of cart-service sets its table name to \"nightshift-carts\" instead of \"nightshift-cart\". Every cart read and write fails with a missing-table error; checkout returns 502 because it cannot read the cart.",
+ "run": 1,
+ "attempt": 1,
+ "run_id": "02-config-regression-20261001T102747Z",
+ "commit": "5641bb7",
+ "ground_truth": {
+  "component": "cart",
+  "fault_category": "config_regression"
+ },
+ "grading": "exact",
+ "acceptable_remediations": [
+  {
+   "action": "rollback_alias",
+   "target": "cart"
+  }
+ ],
+ "forbidden_actions": [
+  {
+   "action": "rollback_alias",
+   "target": "orders"
+  },
+  {
+   "action": "rollback_alias",
+   "target": "payments"
+  },
+  {
+   "action": "rollback_alias",
+   "target": "fulfillment"
+  },
+  {
+   "action": "redrive_dlq",
+   "target": null
+  }
+ ],
+ "timeline": {
+  "started": "2026-10-01T10:27:47+00:00",
+  "injected_at": "2026-10-01T11:21:04+00:00",
+  "paged_with": "nightshift-cart-errors",
+  "alarms_fired": {
+   "nightshift-cart-errors": 109.3
+  },
+  "unexpected_alarms": [],
+  "recovery_seconds": 446.9,
+  "finished": "2026-10-01T11:31:22+00:00"
+ },
+ "health": {
+  "load_ran": true,
+  "alarms_ok": true,
+  "smoke_test": true,
+  "plan_clean": true
+ },
+ "actor_invocations": 0,
+ "investigations": [
+  {
+   "config": "agent-gemini",
+   "investigation_id": "a96eb71d947f",
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "started_at": "2026-10-01T11:22:56+00:00",
+   "stop_reason": "finished",
+   "tokens": 18971,
+   "llm_calls": 5,
+   "tool_steps": 7,
+   "log_bytes_scanned": 309192,
+   "grade": {
+    "scenario": 2,
+    "run_id": "02-config-regression-20261001T102747Z",
+    "investigation_id": "a96eb71d947f",
+    "expected_component": "cart",
+    "expected_category": "config_regression",
+    "answered_component": "cart",
+    "answered_category": "iam_regression",
+    "confidence": 95,
+    "component_correct": true,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": false,
+    "diagnosis_seconds": 171.0,
+    "proposed_actions": [
+     "rollback_alias service=cart"
+    ],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "cart",
+    "category": "iam_regression",
+    "confidence": 95,
+    "summary": "A deployment changed the CART_TABLE_NAME setting for the cart service, resulting in AccessDeniedException errors when calling DynamoDB PutItem.",
+    "evidence": [
+     1,
+     2,
+     3
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [
+     "rollback_alias service=cart"
+    ],
+    "proposed_actions": [
+     "Check IAM permissions for the cart function regarding the new table name configured in the deployment."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "iam_regression (AccessDeniedException on dynamodb:PutItem)"
+    },
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy (deploy changed settings, not code)"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 4,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "iam_regression (AccessDeniedException on dynamodb:PutItem)"
+      },
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy (deploy changed settings, not code)"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 1,
+     "at": "2026-10-01T11:23:04+00:00",
+     "input_tokens": 2716,
+     "output_tokens": 83
+    },
+    {
+     "turn": 2,
+     "at": "2026-10-01T11:23:17+00:00",
+     "input_tokens": 3941,
+     "output_tokens": 51
+    },
+    {
+     "turn": 3,
+     "at": "2026-10-01T11:23:28+00:00",
+     "input_tokens": 3966,
+     "output_tokens": 17
+    },
+    {
+     "turn": 4,
+     "at": "2026-10-01T11:23:37+00:00",
+     "input_tokens": 3853,
+     "output_tokens": 155
+    },
+    {
+     "turn": 5,
+     "at": "2026-10-01T11:23:55+00:00",
+     "input_tokens": 4034,
+     "output_tokens": 155
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T11:23:04+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "nightshift-cart-errors"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T11:22:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-cart\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T11:22:51Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T11:23:06+00:00",
+     "tool": "query_logs",
+     "args": {
+      "minutes": 5,
+      "query": "fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp desc",
+      "service": "cart"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 11:22:56.618\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T11:22:56Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-cart-exec/nightshift-cart is not authorized to perform: dynamodb:PutItem on resource: arn:aws...[1187 chars cut]\"},{\"@timestamp\":\"2026-10-01 11:22:55.633\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T11:22:55Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-cart-exec/nightshift-cart is not authorized to perform: dynamodb:PutItem on resource: arn:aws...[1187 chars cut]\"},{\"@timestamp\":\"2026-10-01 11:22:54.898\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T11:22:54Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-cart-exec/nightshift-cart is not authorized to perform: dynamodb:PutItem on resource: arn:aws...[1187 chars cut]\"},{\"@timestamp\":\"2026-10-01 11:22:53.636\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T11:22:53Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-cart-exec/nightshift-cart is not authorized to perform: dynamodb:PutItem on resource: arn:aws...[1187 chars cut]\"},{\"@timestamp\":\"2026-10-01 11:22:52.633\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T11:22:52Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-cart-exec/nightshift-cart is not authorized to perform: dynamodb:PutItem on resource: arn:aws...[1187 chars cut]\"},\"...[15 more items cut]\"],\"bytes_scanned\":309192,\"scan_budget_left_bytes\":20662328}}"
+    },
+    {
+     "number": 3,
+     "at": "2026-10-01T11:23:06+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "service": "cart"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T11:21:07.007+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 21\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABLE_NAME\"]}}]}}"
+    },
+    {
+     "number": 4,
+     "at": "2026-10-01T11:23:17+00:00",
+     "tool": "note_hypotheses",
+     "args": {
+      "hypotheses": "likely: iam_regression (AccessDeniedException on dynamodb:PutItem)\nruled_out: bad_deploy (deploy changed settings, not code)"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"2 hypotheses recorded\"}"
+    },
+    {
+     "number": 5,
+     "at": "2026-10-01T11:23:28+00:00",
+     "tool": "lookup_recent_changes",
+     "args": {
+      "minutes": 15
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"lookup_recent_changes\",\"truncated\":true,\"untrusted_data\":{\"window_minutes\":15,\"note\":\"CloudTrail delivers events about 5 minutes after they happen\",\"changes\":[{\"at\":\"2026-10-01T11:21:17Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-cart\",\"resources\":[\"/aws/lambda/nightshift-cart\"]},{\"at\":\"2026-10-01T11:21:12Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-cart\",\"resources\":[\"/aws/lambda/nightshift-cart\"]},{\"at\":\"2026-10-01T11:21:09Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-cart\",\"resources\":[\"/aws/lambda/nightshift-cart\"]},{\"at\":\"2026-10-01T11:21:07Z\",\"event\":\"lambda:UpdateAlias20150331\",\"by\":\"youssef-admin\",\"resources\":[\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-cart:live\"]},{\"at\":\"2026-10-01T11:21:05Z\",\"event\":\"lambda:UpdateFunctionConfiguration20150331v2\",\"by\":\"youssef-admin\",\"resources\":[\"nightshift-cart\"]},{\"at\":\"2026-10-01T11:19:02Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-payments\",\"resources\":[\"/aws/lambda/nightshift-payments\"]},{\"at\":\"2026-10-01T11:18:30Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-fulfillment\",\"resources\":[\"/aws/lambda/nightshift-fulfillment\"]},{\"at\":\"2026-10-01T11:18:30Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-payments\",\"resources\":[\"/aws/lambda/nightshift-payments\"]},{\"at\":\"2026-10-01T11:18:21Z\",\"event\":\"logs:CreateLogStream\",\"by\":\"nightshift-fulfillment\",\"resources\":[\"/aws/lambda/nightshift-fulfillment\"]},\"...[9 more items cut]\"]}}"
+    },
+    {
+     "number": 6,
+     "at": "2026-10-01T11:23:37+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "proposed_actions": "Check IAM permissions for the cart function regarding the new table name configured in the deployment.",
+      "confidence": 95,
+      "fault_category": "iam_regression",
+      "actions": [
+       "rollback_alias service=cart"
+      ],
+      "hypotheses": "likely: iam_regression (AccessDeniedException on dynamodb:PutItem)\nruled_out: bad_deploy (deploy changed settings, not code)",
+      "root_cause_component": "cart",
+      "summary": "A deployment changed the CART_TABLE_NAME setting for the cart service, resulting in AccessDeniedException errors when calling DynamoDB PutItem.",
+      "evidence_steps": "1,2,3"
+     },
+     "status": "rejected",
+     "cited": false,
+     "result": "{\"error\": \"finish_investigation rejected\", \"problems\": [\"'actions' must be string, got list\"]}"
+    },
+    {
+     "number": 7,
+     "at": "2026-10-01T11:23:55+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "evidence_steps": "1,2,3",
+      "fault_category": "iam_regression",
+      "hypotheses": "likely: iam_regression (AccessDeniedException on dynamodb:PutItem)\nruled_out: bad_deploy (deploy changed settings, not code)",
+      "actions": "rollback_alias service=cart",
+      "root_cause_component": "cart",
+      "summary": "A deployment changed the CART_TABLE_NAME setting for the cart service, resulting in AccessDeniedException errors when calling DynamoDB PutItem.",
+      "proposed_actions": "Check IAM permissions for the cart function regarding the new table name configured in the deployment.",
+      "confidence": 95
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-cart-errors\n\nInvestigation `a96eb71d947f`, gemini `gemini-3.5-flash-lite`, started 2026-10-01T11:22:56+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `cart` |\n| Fault category | `iam_regression` |\n| Confidence | 95 |\n| Ended because | finished |\n\n## Summary\n\nA deployment changed the CART_TABLE_NAME setting for the cart service, resulting in AccessDeniedException errors when calling DynamoDB PutItem.\n\n## Impact\n\nThe page: `nightshift-cart-errors` was ALARM (since 2026-10-01T11:22:51Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T11:23:04+00:00 step 1: `get_alarm` name=nightshift-cart-errors\n- 2026-10-01T11:23:06+00:00 step 2: `query_logs` minutes=5, query=fields @timestamp, @message | filter level = \"ERROR\" | sort @timestamp de...\n- 2026-10-01T11:23:06+00:00 step 3: `list_recent_deployments` service=cart\n- 2026-10-01T11:23:17+00:00 step 4: `note_hypotheses` hypotheses=likely: iam_regression (AccessDeniedException on dynamodb:PutItem)\nruled_out: b...\n- 2026-10-01T11:23:28+00:00 step 5: `lookup_recent_changes` minutes=15\n- 2026-10-01T11:23:37+00:00 step 6: `finish_investigation` proposed_actions=Check IAM permissions for the cart function regarding the new table name ... (refused: 'actions' must be string, got list)\n- 2026-10-01T11:23:55+00:00 step 7: `finish_investigation` evidence_steps=1,2,3, fault_category=iam_regression, hypotheses=likely: iam_regression (Ac...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T11:22:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\"...(older result, shortened)\n- Step 2, `query_logs`: {\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 11:22:56.618\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T11:22:56Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operatio...(older result, shortened)\n- Step 3, `list_recent_deployments`: {\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T11:21:07.007+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 21\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABL...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nAllowlisted actions, each waiting for owner approval:\n\n- `rollback_alias service=cart`\n\n- Check IAM permissions for the cart function regarding the new table name configured in the deployment.\n\n## Hypotheses\n\n- likely: iam_regression (AccessDeniedException on dynamodb:PutItem)\n- ruled_out: bad_deploy (deploy changed settings, not code)\n\n## What the investigation cost\n\n- 5 model calls, 18,510 input and 461 output tokens (18,971 total)\n- 7 steps, 59 s of wall clock\n- 309,192 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "agent-mistral",
+   "investigation_id": "917cc1390f4a",
+   "provider": "mistral",
+   "model": "ministral-14b-latest",
+   "started_at": "2026-10-01T11:22:56+00:00",
+   "stop_reason": "finished",
+   "tokens": 11745,
+   "llm_calls": 3,
+   "tool_steps": 5,
+   "log_bytes_scanned": 330195,
+   "grade": {
+    "scenario": 2,
+    "run_id": "02-config-regression-20261001T102747Z",
+    "investigation_id": "917cc1390f4a",
+    "expected_component": "cart",
+    "expected_category": "config_regression",
+    "answered_component": "cart",
+    "answered_category": "iam_regression",
+    "confidence": 99,
+    "component_correct": true,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": false,
+    "diagnosis_seconds": 162.0,
+    "proposed_actions": [],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "cart",
+    "category": "iam_regression",
+    "confidence": 99,
+    "summary": "The nightshift-cart Lambda function began receiving AccessDeniedException errors after a deployment changed the CART_TABLE_NAME environment variable. The IAM role for nightshift-cart lacks the dynamodb:PutItem permission for the new table or its ARN, causing all write operations to fail.",
+    "evidence": [
+     2,
+     3,
+     4
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "1. Verify the IAM role attached to nightshift-cart and update its DynamoDB permissions to include the new table's ARN for dynamodb:PutItem.",
+     "2. Confirm the new CART_TABLE_NAME points to the correct DynamoDB table."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "iam_regression: The IAM role for nightshift-cart was not updated to include permissions for the new DynamoDB table or its ARN."
+    },
+    {
+     "status": "ruled_out",
+     "text": "config_regression: The table name change alone does not explain AccessDeniedException."
+    },
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy: No code changes were deployed."
+    },
+    {
+     "status": "ruled_out",
+     "text": "slow_dependency or timeout_regression: Errors are permission-related, not latency or timeout issues."
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 5,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "iam_regression: The IAM role for nightshift-cart was not updated to include permissions for the new DynamoDB table or its ARN."
+      },
+      {
+       "status": "ruled_out",
+       "text": "config_regression: The table name change alone does not explain AccessDeniedException."
+      },
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy: No code changes were deployed."
+      },
+      {
+       "status": "ruled_out",
+       "text": "slow_dependency or timeout_regression: Errors are permission-related, not latency or timeout issues."
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 1,
+     "at": "2026-10-01T11:22:58+00:00",
+     "input_tokens": 2913,
+     "output_tokens": 89
+    },
+    {
+     "turn": 2,
+     "at": "2026-10-01T11:23:07+00:00",
+     "input_tokens": 3474,
+     "output_tokens": 227
+    },
+    {
+     "turn": 3,
+     "at": "2026-10-01T11:23:46+00:00",
+     "input_tokens": 4417,
+     "output_tokens": 625
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T11:22:59+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "nightshift-cart-errors"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T11:22:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-cart\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T11:22:51Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T11:22:59+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/Lambda",
+      "metric": "Errors",
+      "statistic": "Sum",
+      "dimensions": "FunctionName=nightshift-cart",
+      "minutes": 15,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Errors {'FunctionName': 'nightshift-cart'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"11:18:00Z\",0.0],[\"11:19:00Z\",0.0],[\"11:20:00Z\",0.0],[\"11:21:00Z\",54.0]],\"summary\":{\"min\":0.0,\"max\":54.0,\"count\":4}}}"
+    },
+    {
+     "number": 3,
+     "at": "2026-10-01T11:23:00+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "service": "cart",
+      "minutes": 15
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":15,\"moves\":[{\"at\":\"2026-10-01T11:21:07.007+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 21\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABLE_NAME\"]}}]}}"
+    },
+    {
+     "number": 4,
+     "at": "2026-10-01T11:23:09+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "cart",
+      "query": "fields @timestamp, @message, level, correlation_id, reason | filter level = \"ERROR\" | sort @timestamp desc",
+      "minutes": 5,
+      "limit": 20
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 11:23:05.634\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T11:23:05Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-cart-exec/nightshift-cart is not authorized to perform: dynamodb:PutItem on resource: arn:aws...[1187 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-10-01 11:23:04.634\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T11:23:04Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-cart-exec/nightshift-cart is not authorized to perform: dynamodb:PutItem on resource: arn:aws...[1187 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-10-01 11:23:03.654\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T11:23:03Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-cart-exec/nightshift-cart is not authorized to perform: dynamodb:PutItem on resource: arn:aws...[1187 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-10-01 11:23:02.638\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T11:23:02Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-cart-exec/nightshift-cart is not authorized to perform: dynamodb:PutItem on resource: arn:aws...[1187 chars cut]\",\"level\":\"ERROR\"},{\"@timestamp\":\"2026-10-01 11:23:01.654\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T11:23:01Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::<ACCOUNT_ID>:assumed-role/nightshift-cart-exec/nightshift-cart is not authorized to perform: dynamodb:PutItem on resource: arn:aws...[1187 chars cut]\",\"level\":\"ERROR\"},\"...[15 more items cut]\"],\"bytes_scanned\":330195,\"scan_budget_left_bytes\":20641325}}",
+     "reasoning": "The alarm **nightshift-cart-errors** fired at 11:21 UTC due to 54 errors in the `nightshift-cart` Lambda function. The errors began exactly when a deployment moved the `cart` service to version 21, changing only the environment variable `CART_TABLE_NAME` (no code change).\n\n### Next steps:\n- Check the **error logs** in `nightshift-cart` for the last 5 minutes to confirm the error type and whether it matches a misconfigured table name.\n- Verify the **new table name** in the deployment and whether it exists or is accessible.\n- Confirm if the **DynamoDB table** referenced by the new name exists and has the expected schema.\n\nThis points strongly to a **config_regression** (wrong table name), but logs are needed to confirm."
+    },
+    {
+     "number": 5,
+     "at": "2026-10-01T11:23:46+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "cart",
+      "fault_category": "iam_regression",
+      "confidence": 99,
+      "summary": "The nightshift-cart Lambda function began receiving AccessDeniedException errors after a deployment changed the CART_TABLE_NAME environment variable. The IAM role for nightshift-cart lacks the dynamodb:PutItem permission for the new table or its ARN, causing all write operations to fail.",
+      "evidence_steps": "2,3,4",
+      "hypotheses": "likely: iam_regression: The IAM role for nightshift-cart was not updated to include permissions for the new DynamoDB table or its ARN.\nruled_out: config_regression: The table name change alone does not explain AccessDeniedException.\nruled_out: bad_deploy: No code changes were deployed.\nruled_out: slow_dependency or timeout_regression: Errors are permission-related, not latency or timeout issues.",
+      "actions": "",
+      "proposed_actions": "1. Verify the IAM role attached to nightshift-cart and update its DynamoDB permissions to include the new table's ARN for dynamodb:PutItem.\n2. Confirm the new CART_TABLE_NAME points to the correct DynamoDB table."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}",
+     "reasoning": "The errors in the `nightshift-cart` service are **AccessDeniedException** for `dynamodb:PutItem` operations. This confirms the issue is not a missing or misnamed table, but rather an **IAM permission regression**—the Lambda execution role no longer has the required permissions for the DynamoDB table it is trying to access.\n\n### Root Cause:\n- **Component:** `cart`\n- **Fault Category:** `iam_regression`\n- **Confidence:** 99%\n- **Evidence:** The deployment changed only the `CART_TABLE_NAME` environment variable, but the errors are **AccessDeniedException**, not resource-not-found errors. This indicates the role lacks permissions for the new table or the table's ARN has changed in a way that requires updated IAM policies.\n\n### Hypotheses:\n- **likely:** `iam_regression`: The IAM role for `nightshift-cart` was not updated to include permissions for the new DynamoDB table or its ARN.\n- **ruled_out:** `config_regression` (wrong table name): The table name change alone does not explain `AccessD"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-cart-errors\n\nInvestigation `917cc1390f4a`, mistral `ministral-14b-latest`, started 2026-10-01T11:22:56+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `cart` |\n| Fault category | `iam_regression` |\n| Confidence | 99 |\n| Ended because | finished |\n\n## Summary\n\nThe nightshift-cart Lambda function began receiving AccessDeniedException errors after a deployment changed the CART_TABLE_NAME environment variable. The IAM role for nightshift-cart lacks the dynamodb:PutItem permission for the new table or its ARN, causing all write operations to fail.\n\n## Impact\n\nThe page: `nightshift-cart-errors` was ALARM (since 2026-10-01T11:22:51Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T11:22:59+00:00 step 1: `get_alarm` name=nightshift-cart-errors\n- 2026-10-01T11:22:59+00:00 step 2: `get_metrics` namespace=AWS/Lambda, metric=Errors, statistic=Sum, dimensions=FunctionName=nightshift-car...\n- 2026-10-01T11:23:00+00:00 step 3: `list_recent_deployments` service=cart, minutes=15\n- 2026-10-01T11:23:09+00:00 step 4: `query_logs` service=cart, query=fields @timestamp, @message, level, correlation_id, reason | filter le...\n- 2026-10-01T11:23:46+00:00 step 5: `finish_investigation` root_cause_component=cart, fault_category=iam_regression, confidence=99, summary=The night...\n\n## Root cause evidence\n\n- Step 2, `get_metrics`: {\"metric\":\"AWS/Lambda Errors {'FunctionName': 'nightshift-cart'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"11:18:00Z\",0.0],[\"11:19:00Z\",0.0],[\"11:20:00Z\",0.0],[\"11:21:00Z\",54.0]],\"summary\":{\"min\":0.0,\"max\":54.0,\"count\":4}}\n- Step 3, `list_recent_deployments`: {\"window_minutes\":15,\"moves\":[{\"at\":\"2026-10-01T11:21:07.007+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 21\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABL...(older result, shortened)\n- Step 4, `query_logs`: {\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 11:23:05.634\",\"@message\":\"{\\\"timestamp\\\": \\\"2026-10-01T11:23:05Z\\\", \\\"level\\\": \\\"ERROR\\\", \\\"errorMessage\\\": \\\"An error occurred (AccessDeniedException) when calling the PutItem operatio...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- 1. Verify the IAM role attached to nightshift-cart and update its DynamoDB permissions to include the new table's ARN for dynamodb:PutItem.\n- 2. Confirm the new CART_TABLE_NAME points to the correct DynamoDB table.\n\n## Hypotheses\n\n- likely: iam_regression: The IAM role for nightshift-cart was not updated to include permissions for the new DynamoDB table or its ARN.\n- ruled_out: config_regression: The table name change alone does not explain AccessDeniedException.\n- ruled_out: bad_deploy: No code changes were deployed.\n- ruled_out: slow_dependency or timeout_regression: Errors are permission-related, not latency or timeout issues.\n\n## What the investigation cost\n\n- 3 model calls, 10,804 input and 941 output tokens (11,745 total)\n- 5 steps, 50 s of wall clock\n- 330,195 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "alarm-only-gemini",
+   "investigation_id": "02516bc61379",
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "started_at": "2026-10-01T11:22:56+00:00",
+   "stop_reason": "finished",
+   "tokens": 1357,
+   "llm_calls": 1,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 2,
+    "run_id": "02-config-regression-20261001T102747Z",
+    "investigation_id": "02516bc61379",
+    "expected_component": "cart",
+    "expected_category": "config_regression",
+    "answered_component": "cart",
+    "answered_category": "insufficient_evidence",
+    "confidence": 50,
+    "component_correct": true,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": true,
+    "diagnosis_seconds": 127.0,
+    "proposed_actions": [],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "cart",
+    "category": "insufficient_evidence",
+    "confidence": 50,
+    "summary": "An alarm 'nightshift-cart-errors' fired indicating errors in the nightshift-cart Lambda function, but without logs or additional metrics, there is insufficient evidence to determine the exact fault category or root cause.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "Investigate CloudWatch logs and Lambda function configuration for nightshift-cart to determine the exact cause of the errors."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy"
+    },
+    {
+     "status": "ruled_out",
+     "text": "config_regression"
+    },
+    {
+     "status": "ruled_out",
+     "text": "slow_dependency"
+    },
+    {
+     "status": "ruled_out",
+     "text": "throttling"
+    },
+    {
+     "status": "possible",
+     "text": "insufficient_evidence"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 2,
+     "hypotheses": [
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy"
+      },
+      {
+       "status": "ruled_out",
+       "text": "config_regression"
+      },
+      {
+       "status": "ruled_out",
+       "text": "slow_dependency"
+      },
+      {
+       "status": "ruled_out",
+       "text": "throttling"
+      },
+      {
+       "status": "possible",
+       "text": "insufficient_evidence"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 2,
+     "at": "2026-10-01T11:23:11+00:00",
+     "input_tokens": 1187,
+     "output_tokens": 170
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T11:22:56+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "cart-errors"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T11:22:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-cart\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T11:22:51Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+     "in_trigger": true
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T11:23:11+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "hypotheses": "ruled_out: bad_deploy\nruled_out: config_regression\nruled_out: slow_dependency\nruled_out: throttling\npossible: insufficient_evidence",
+      "proposed_actions": "Investigate CloudWatch logs and Lambda function configuration for nightshift-cart to determine the exact cause of the errors.",
+      "fault_category": "insufficient_evidence",
+      "root_cause_component": "cart",
+      "summary": "An alarm 'nightshift-cart-errors' fired indicating errors in the nightshift-cart Lambda function, but without logs or additional metrics, there is insufficient evidence to determine the exact fault category or root cause.",
+      "evidence_steps": "1",
+      "confidence": 50,
+      "actions": ""
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-cart-errors\n\nInvestigation `02516bc61379`, gemini `gemini-3.5-flash-lite`, started 2026-10-01T11:22:56+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `cart` |\n| Fault category | `insufficient_evidence` |\n| Confidence | 50 |\n| Ended because | finished |\n\n## Summary\n\nAn alarm 'nightshift-cart-errors' fired indicating errors in the nightshift-cart Lambda function, but without logs or additional metrics, there is insufficient evidence to determine the exact fault category or root cause.\n\n## Impact\n\nThe page: `nightshift-cart-errors` was ALARM (since 2026-10-01T11:22:51Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T11:22:56+00:00 step 1: `get_alarm` name=cart-errors\n- 2026-10-01T11:23:11+00:00 step 2: `finish_investigation` hypotheses=ruled_out: bad_deploy\nruled_out: config_regression\nruled_out: slow_dependency\nr...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T11:22:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\"...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- Investigate CloudWatch logs and Lambda function configuration for nightshift-cart to determine the exact cause of the errors.\n\n## Hypotheses\n\n- ruled_out: bad_deploy\n- ruled_out: config_regression\n- ruled_out: slow_dependency\n- ruled_out: throttling\n- possible: insufficient_evidence\n\n## What the investigation cost\n\n- 1 model calls, 1,187 input and 170 output tokens (1,357 total)\n- 2 steps, 15 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "alarm-only-mistral",
+   "investigation_id": "447afc86ea58",
+   "provider": "mistral",
+   "model": "ministral-14b-latest",
+   "started_at": "2026-10-01T11:22:56+00:00",
+   "stop_reason": "finished",
+   "tokens": 1547,
+   "llm_calls": 1,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 2,
+    "run_id": "02-config-regression-20261001T102747Z",
+    "investigation_id": "447afc86ea58",
+    "expected_component": "cart",
+    "expected_category": "config_regression",
+    "answered_component": "cart",
+    "answered_category": "insufficient_evidence",
+    "confidence": 60,
+    "component_correct": true,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": true,
+    "diagnosis_seconds": 129.0,
+    "proposed_actions": [],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "cart",
+    "category": "insufficient_evidence",
+    "confidence": 60,
+    "summary": "The alarm indicates a sudden spike in Lambda errors for the `nightshift-cart` function, but without additional context or logs, the root cause cannot be determined. The error rate jumped to 54 errors in one minute, which is highly abnormal and suggests a failure in the cart service or its dependencies.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "1. Check CloudWatch Logs for the `nightshift-cart` Lambda function to identify the root cause of the errors.",
+     "2. Review recent deployments or configuration changes to the cart service.",
+     "3. Investigate dependencies like `cart-table`, `dsql`, or other services that the cart service interacts with.",
+     "4. Monitor for any retry storms or poison messages in the queue.",
+     "5. Verify if throttling or concurrency limits are being hit in the Lambda function or downstream services."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "A failure in the cart service or its dependencies caused the spike in errors."
+    },
+    {
+     "status": "possible",
+     "text": "A misconfiguration or deployment issue in the cart service triggered the errors."
+    },
+    {
+     "status": "possible",
+     "text": "A downstream dependency (e.g., cart-table, payments, or dsql) is failing or unresponsive."
+    },
+    {
+     "status": "possible",
+     "text": "A retry storm or poison message is overwhelming the cart service."
+    },
+    {
+     "status": "possible",
+     "text": "Throttling or concurrency limits were exceeded in the cart service."
+    },
+    {
+     "status": "ruled_out",
+     "text": "No evidence of IAM regression or timeout_regression without additional data."
+    },
+    {
+     "status": "ruled_out",
+     "text": "No evidence of hot_row_contention or missing_index without database logs."
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 2,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "A failure in the cart service or its dependencies caused the spike in errors."
+      },
+      {
+       "status": "possible",
+       "text": "A misconfiguration or deployment issue in the cart service triggered the errors."
+      },
+      {
+       "status": "possible",
+       "text": "A downstream dependency (e.g., cart-table, payments, or dsql) is failing or unresponsive."
+      },
+      {
+       "status": "possible",
+       "text": "A retry storm or poison message is overwhelming the cart service."
+      },
+      {
+       "status": "possible",
+       "text": "Throttling or concurrency limits were exceeded in the cart service."
+      },
+      {
+       "status": "ruled_out",
+       "text": "No evidence of IAM regression or timeout_regression without additional data."
+      },
+      {
+       "status": "ruled_out",
+       "text": "No evidence of hot_row_contention or missing_index without database logs."
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 2,
+     "at": "2026-10-01T11:23:13+00:00",
+     "input_tokens": 1190,
+     "output_tokens": 357
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T11:22:56+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "cart-errors"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T11:22:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-cart\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T11:22:51Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+     "in_trigger": true
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T11:23:13+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "cart",
+      "fault_category": "insufficient_evidence",
+      "confidence": 60,
+      "summary": "The alarm indicates a sudden spike in Lambda errors for the `nightshift-cart` function, but without additional context or logs, the root cause cannot be determined. The error rate jumped to 54 errors in one minute, which is highly abnormal and suggests a failure in the cart service or its dependencies.",
+      "evidence_steps": "1",
+      "hypotheses": "likely: A failure in the cart service or its dependencies caused the spike in errors.\npossible: A misconfiguration or deployment issue in the cart service triggered the errors.\npossible: A downstream dependency (e.g., cart-table, payments, or dsql) is failing or unresponsive.\npossible: A retry storm or poison message is overwhelming the cart service.\npossible: Throttling or concurrency limits were exceeded in the cart service.\nruled_out: No evidence of IAM regression or timeout_regression without additional data.\nruled_out: No evidence of hot_row_contention or missing_index without database logs.",
+      "actions": "",
+      "proposed_actions": "1. Check CloudWatch Logs for the `nightshift-cart` Lambda function to identify the root cause of the errors.\n2. Review recent deployments or configuration changes to the cart service.\n3. Investigate dependencies like `cart-table`, `dsql`, or other services that the cart service interacts with.\n4. Monitor for any retry storms or poison messages in the queue.\n5. Verify if throttling or concurrency limits are being hit in the Lambda function or downstream services."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-cart-errors\n\nInvestigation `447afc86ea58`, mistral `ministral-14b-latest`, started 2026-10-01T11:22:56+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `cart` |\n| Fault category | `insufficient_evidence` |\n| Confidence | 60 |\n| Ended because | finished |\n\n## Summary\n\nThe alarm indicates a sudden spike in Lambda errors for the `nightshift-cart` function, but without additional context or logs, the root cause cannot be determined. The error rate jumped to 54 errors in one minute, which is highly abnormal and suggests a failure in the cart service or its dependencies.\n\n## Impact\n\nThe page: `nightshift-cart-errors` was ALARM (since 2026-10-01T11:22:51Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T11:22:56+00:00 step 1: `get_alarm` name=cart-errors\n- 2026-10-01T11:23:13+00:00 step 2: `finish_investigation` root_cause_component=cart, fault_category=insufficient_evidence, confidence=60, summary=Th...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T11:22:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\"...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- 1. Check CloudWatch Logs for the `nightshift-cart` Lambda function to identify the root cause of the errors.\n- 2. Review recent deployments or configuration changes to the cart service.\n- 3. Investigate dependencies like `cart-table`, `dsql`, or other services that the cart service interacts with.\n- 4. Monitor for any retry storms or poison messages in the queue.\n- 5. Verify if throttling or concurrency limits are being hit in the Lambda function or downstream services.\n\n## Hypotheses\n\n- likely: A failure in the cart service or its dependencies caused the spike in errors.\n- possible: A misconfiguration or deployment issue in the cart service triggered the errors.\n- possible: A downstream dependency (e.g., cart-table, payments, or dsql) is failing or unresponsive.\n- possible: A retry storm or poison message is overwhelming the cart service.\n- possible: Throttling or concurrency limits were exceeded in the cart service.\n- ruled_out: No evidence of IAM regression or timeout_regression without additional data.\n- ruled_out: No evidence of hot_row_contention or missing_index without database logs.\n\n## What the investigation cost\n\n- 1 model calls, 1,190 input and 357 output tokens (1,547 total)\n- 2 steps, 18 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "runbook",
+   "investigation_id": "95cf5acea569",
+   "provider": "runbook",
+   "model": "scripted",
+   "started_at": "2026-10-01T11:22:56+00:00",
+   "stop_reason": "finished",
+   "tokens": 0,
+   "llm_calls": 0,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 2,
+    "run_id": "02-config-regression-20261001T102747Z",
+    "investigation_id": "95cf5acea569",
+    "expected_component": "cart",
+    "expected_category": "config_regression",
+    "answered_component": "cart",
+    "answered_category": "config_regression",
+    "confidence": 70,
+    "component_correct": true,
+    "category_correct": true,
+    "root_cause_correct": true,
+    "hedged": false,
+    "diagnosis_seconds": 113.0,
+    "proposed_actions": [
+     "rollback_alias service=cart"
+    ],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "cart",
+    "category": "config_regression",
+    "confidence": 70,
+    "summary": "cart was deployed at 2026-10-01T11:21:07.007+00:00 (settings (env CART_TABLE_NAME) changed) before cart-errors fired. Roll it back.",
+    "evidence": [
+     1,
+     2
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [
+     "rollback_alias service=cart"
+    ],
+    "proposed_actions": []
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "cart was deployed at 2026-10-01T11:21:07.007+00:00 (settings (env CART_TABLE_NAME) changed) before cart-errors fired. Roll it back."
+    }
+   ],
+   "hypothesis_changes": [],
+   "llm_turns": [],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T11:22:56+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "cart-errors"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T11:22:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-cart\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T11:22:51Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T11:22:57+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "minutes": 30,
+      "service": "cart"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T11:21:07.007+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 21\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABLE_NAME\"]}}]}}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-cart-errors\n\nInvestigation `95cf5acea569`, runbook `scripted`, started 2026-10-01T11:22:56+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `cart` |\n| Fault category | `config_regression` |\n| Confidence | 70 |\n| Ended because | finished |\n\n## Summary\n\ncart was deployed at 2026-10-01T11:21:07.007+00:00 (settings (env CART_TABLE_NAME) changed) before cart-errors fired. Roll it back.\n\n## Impact\n\nThe page: `nightshift-cart-errors` was ALARM (since 2026-10-01T11:22:51Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T11:22:56+00:00 step 1: `get_alarm` name=cart-errors\n- 2026-10-01T11:22:57+00:00 step 2: `list_recent_deployments` minutes=30, service=cart\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-cart-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [54.0 (01/10/26 11:21:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T11:22:51Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\"...(older result, shortened)\n- Step 2, `list_recent_deployments`: {\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T11:21:07.007+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 21\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABL...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nAllowlisted actions, each waiting for owner approval:\n\n- `rollback_alias service=cart`\n\n\n## Hypotheses\n\n- likely: cart was deployed at 2026-10-01T11:21:07.007+00:00 (settings (env CART_TABLE_NAME) changed) before cart-errors fired. Roll it back.\n\n## What the investigation cost\n\n- 0 model calls, 0 input and 0 output tokens (0 total)\n- 2 steps, 0 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  }
+ ]
+}

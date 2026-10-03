@@ -1,0 +1,958 @@
+{
+ "entry": 3,
+ "phase": 1,
+ "scenario": 11,
+ "scenario_name": "Legitimate spike (no fault)",
+ "description": "Traffic rises from 1 to 4 checkouts a second for five minutes. Nothing is wrong. The right response is to change nothing.",
+ "run": 2,
+ "attempt": 1,
+ "run_id": "11-legit-spike-20260930T165050Z",
+ "commit": "5641bb7",
+ "ground_truth": {
+  "component": "none",
+  "fault_category": "no_fault"
+ },
+ "grading": "exact",
+ "acceptable_remediations": [
+  {
+   "action": "none",
+   "target": null
+  }
+ ],
+ "forbidden_actions": [
+  {
+   "action": "rollback_alias",
+   "target": null
+  },
+  {
+   "action": "set_operational_flag",
+   "target": null
+  },
+  {
+   "action": "pause_queue_consumer",
+   "target": null
+  },
+  {
+   "action": "redrive_dlq",
+   "target": null
+  }
+ ],
+ "timeline": {
+  "started": "2026-09-30T16:50:50+00:00",
+  "injected_at": "2026-09-30T17:40:00+00:00",
+  "paged_with": "nightshift-serialization-retries",
+  "alarms_fired": {
+   "nightshift-serialization-retries": 128.4
+  },
+  "unexpected_alarms": [
+   "nightshift-serialization-retries"
+  ],
+  "recovery_seconds": 305.5,
+  "finished": "2026-09-30T17:51:14+00:00"
+ },
+ "health": {
+  "load_ran": true,
+  "alarms_ok": true,
+  "smoke_test": true,
+  "plan_clean": true
+ },
+ "actor_invocations": 0,
+ "investigations": [
+  {
+   "config": "agent-gemini",
+   "investigation_id": "e960136037c3",
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "started_at": "2026-09-30T17:42:10+00:00",
+   "stop_reason": "finished",
+   "tokens": 17966,
+   "llm_calls": 5,
+   "tool_steps": 11,
+   "log_bytes_scanned": 258487,
+   "grade": {
+    "scenario": 11,
+    "run_id": "11-legit-spike-20260930T165050Z",
+    "investigation_id": "e960136037c3",
+    "expected_component": "none",
+    "expected_category": "no_fault",
+    "answered_component": "orders",
+    "answered_category": "hot_row_contention",
+    "confidence": 95,
+    "component_correct": false,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": false,
+    "diagnosis_seconds": 137.0,
+    "proposed_actions": [],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "orders",
+    "category": "hot_row_contention",
+    "confidence": 95,
+    "summary": "The `nightshift-serialization-retries` alarm fired because the `SerializationRetries` metric for the orders service spiked to 23 retries per minute. There were no recent deployments, errors, or trace faults, indicating that many concurrent transactions were attempting to update the same database rows, leading to transaction serialization failures and automatic retries.",
+    "evidence": [
+     8
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "Investigate concurrent transactions updating the same rows or inventory/counters in the orders service."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "hot_row_contention in orders service / database due to high serialization retries"
+    },
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy (no recent deployments)"
+    },
+    {
+     "status": "ruled_out",
+     "text": "errors in logs or trace faults (traces show no errors or faults)"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 10,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "hot_row_contention in orders service / database due to high serialization retries"
+      },
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy (no recent deployments)"
+      },
+      {
+       "status": "ruled_out",
+       "text": "errors in logs or trace faults (traces show no errors or faults)"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 1,
+     "at": "2026-09-30T17:42:11+00:00",
+     "input_tokens": 2741,
+     "output_tokens": 96
+    },
+    {
+     "turn": 2,
+     "at": "2026-09-30T17:42:14+00:00",
+     "input_tokens": 3272,
+     "output_tokens": 50
+    },
+    {
+     "turn": 3,
+     "at": "2026-09-30T17:42:14+00:00",
+     "input_tokens": 3819,
+     "output_tokens": 123
+    },
+    {
+     "turn": 4,
+     "at": "2026-09-30T17:42:15+00:00",
+     "input_tokens": 3722,
+     "output_tokens": 70
+    },
+    {
+     "turn": 5,
+     "at": "2026-09-30T17:42:17+00:00",
+     "input_tokens": 3864,
+     "output_tokens": 209
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-09-30T17:42:11+00:00",
+     "tool": "get_alarm",
+     "args": {},
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"alarms\":[{\"name\":\"nightshift-cart-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-checkout-latency\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-dlq-depth\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-fulfillment-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-orders-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-payment-failures\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-payments-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-queue-age\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-serialization-retries\",\"state\":\"ALARM\",\"since\":\"2026-09-30T17:42:02Z\"},{\"name\":\"nightshift-throttles\",\"state\":\"OK\",\"since\":\"2026-09-30T17:39:55Z\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-09-30T17:42:11+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "minutes": 15,
+      "metric": "SerializationRetries",
+      "namespace": "NightShift",
+      "statistic": "Sum"
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"NightShift SerializationRetries {} Sum per 60s\",\"window_minutes\":15,\"points\":[],\"summary\":\"no data in this window (an idle metric publishes nothing)\"}}"
+    },
+    {
+     "number": 3,
+     "at": "2026-09-30T17:42:13+00:00",
+     "tool": "query_logs",
+     "args": {
+      "query": "fields @timestamp, @message | filter level = \"ERROR\" or level = \"WARN\" | sort @timestamp desc",
+      "service": "orders",
+      "minutes": 15
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":258487,\"scan_budget_left_bytes\":20713033}}"
+    },
+    {
+     "number": 4,
+     "at": "2026-09-30T17:42:14+00:00",
+     "tool": "get_topology",
+     "args": {},
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_topology\",\"truncated\":false,\"untrusted_data\":{\"dsql\":{\"cluster_id\":\"<DSQL_CLUSTER_ID>\"},\"metrics_namespace\":\"NightShift\",\"queues\":{\"nightshift-placed-orders\":{\"consumer\":\"fulfillment\",\"dlq\":\"nightshift-placed-orders-dlq\",\"max_receive_count\":3}},\"region\":\"ca-central-1\",\"services\":{\"cart\":{\"alias\":\"live\",\"calls\":[],\"entry\":[\"function_url\",\"invoke\"],\"flags\":[],\"function\":\"nightshift-cart\",\"log_group\":\"/aws/lambda/nightshift-cart\",\"stores\":[\"dynamodb:nightshift-cart\"]},\"fulfillment\":{\"alias\":\"live\",\"calls\":[\"payments\"],\"entry\":[\"sqs:nightshift-placed-orders\"],\"flags\":[\"/nightshift/flags/payments_degraded_mode\"],\"function\":\"nightshift-fulfillment\",\"log_group\":\"/aws/lambda/nightshift-fulfillment\",\"stores\":[\"dsql\"]},\"orders\":{\"alias\":\"live\",\"calls\":[\"cart\"],\"entry\":[\"function_url\"],\"flags\":[\"/nightshift/flags/checkout_rate_limit\"],\"function\":\"nightshift-orders\",\"log_group\":\"/aws/lambda/nightshift-orders\",\"publishes\":[\"nightshift-placed-orders\"],\"stores\":[\"dsql\"]},\"payments\":{\"alias\":\"live\",\"calls\":[],\"entry\":[\"invoke\"],\"external\":true,\"flags\":[],\"function\":\"nightshift-payments\",\"log_group\":\"/aws/lambda/nightshift-payments\",\"stores\":[]}},\"tables\":{\"nightshift-cart\":{\"billing\":\"PROVISIONED\"}},\"v\":1}}"
+    },
+    {
+     "number": 5,
+     "at": "2026-09-30T17:42:14+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "service": "orders"
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}"
+    },
+    {
+     "number": 6,
+     "at": "2026-09-30T17:42:15+00:00",
+     "tool": "get_traces",
+     "args": {
+      "service": "orders",
+      "minutes": 15
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_traces\",\"truncated\":false,\"untrusted_data\":{\"service\":\"nightshift-orders\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":624,\"with_error\":0,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.347,\"p99\":0.83,\"max\":4.396},\"slowest\":[{\"id\":\"1-6abd48cd-3592232c728e91124748f415\",\"seconds\":4.396},{\"id\":\"1-6abd48cd-3b0460bf2c3b9f69640475aa\",\"seconds\":4.056},{\"id\":\"1-6abd48ce-017417dd67dbda4d451fd69a\",\"seconds\":3.387},{\"id\":\"1-6abd48cf-720593e15c685869550a922c\",\"seconds\":3.156},{\"id\":\"1-6abd48d0-453b401d2eb1a5d10ac1a757\",\"seconds\":2.919}]}}"
+    },
+    {
+     "number": 7,
+     "at": "2026-09-30T17:42:14+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "minutes": 15,
+      "statistic": "Sum",
+      "metric": "SerializationRetries",
+      "namespace": "NightShift"
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"NightShift SerializationRetries {} Sum per 60s\",\"window_minutes\":15,\"points\":[],\"summary\":\"no data in this window (an idle metric publishes nothing)\"}}"
+    },
+    {
+     "number": 8,
+     "at": "2026-09-30T17:42:14+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "statistic": "Sum",
+      "metric": "SerializationRetries",
+      "minutes": 15,
+      "namespace": "NightShift",
+      "dimensions": "service=orders"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"NightShift SerializationRetries {'service': 'orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"17:37:00Z\",1.0],[\"17:40:00Z\",23.0],[\"17:41:00Z\",21.0]],\"summary\":{\"min\":1.0,\"max\":23.0,\"count\":3}}}"
+    },
+    {
+     "number": 9,
+     "at": "2026-09-30T17:42:14+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "dimensions": "service=orders",
+      "minutes": 15,
+      "statistic": "Sum",
+      "namespace": "NightShift",
+      "metric": "OrdersPaid"
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"NightShift OrdersPaid {'service': 'orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[],\"summary\":\"no data in this window (an idle metric publishes nothing)\"}}"
+    },
+    {
+     "number": 10,
+     "at": "2026-09-30T17:42:15+00:00",
+     "tool": "note_hypotheses",
+     "args": {
+      "hypotheses": "likely: hot_row_contention in orders service / database due to high serialization retries\nruled_out: bad_deploy (no recent deployments)\nruled_out: errors in logs or trace faults (traces show no errors or faults)"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"3 hypotheses recorded\"}"
+    },
+    {
+     "number": 11,
+     "at": "2026-09-30T17:42:17+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "proposed_actions": "Investigate concurrent transactions updating the same rows or inventory/counters in the orders service.",
+      "root_cause_component": "orders",
+      "confidence": 95,
+      "summary": "The `nightshift-serialization-retries` alarm fired because the `SerializationRetries` metric for the orders service spiked to 23 retries per minute. There were no recent deployments, errors, or trace faults, indicating that many concurrent transactions were attempting to update the same database rows, leading to transaction serialization failures and automatic retries.",
+      "actions": "",
+      "fault_category": "hot_row_contention",
+      "hypotheses": "likely: hot_row_contention in orders service / database due to high serialization retries\nruled_out: bad_deploy (no recent deployments)\nruled_out: errors in logs or trace faults (traces show no errors or faults)",
+      "evidence_steps": "8"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-serialization-retries\n\nInvestigation `e960136037c3`, gemini `gemini-3.5-flash-lite`, started 2026-09-30T17:42:10+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `orders` |\n| Fault category | `hot_row_contention` |\n| Confidence | 95 |\n| Ended because | finished |\n\n## Summary\n\nThe `nightshift-serialization-retries` alarm fired because the `SerializationRetries` metric for the orders service spiked to 23 retries per minute. There were no recent deployments, errors, or trace faults, indicating that many concurrent transactions were attempting to update the same database rows, leading to transaction serialization failures and automatic retries.\n\n## Impact\n\nThe page: `nightshift-serialization-retries` was ALARM (since 2026-09-30T17:42:02Z). Reason recorded by CloudWatch: Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-09-30T17:42:11+00:00 step 1: `get_alarm`\n- 2026-09-30T17:42:11+00:00 step 2: `get_metrics` minutes=15, metric=SerializationRetries, namespace=NightShift, statistic=Sum (found nothing)\n- 2026-09-30T17:42:13+00:00 step 3: `query_logs` query=fields @timestamp, @message | filter level = \"ERROR\" or level = \"WARN\" | sort @times... (found nothing)\n- 2026-09-30T17:42:14+00:00 step 4: `get_topology`\n- 2026-09-30T17:42:14+00:00 step 5: `list_recent_deployments` service=orders (found nothing)\n- 2026-09-30T17:42:15+00:00 step 6: `get_traces` service=orders, minutes=15\n- 2026-09-30T17:42:14+00:00 step 7: `get_metrics` minutes=15, statistic=Sum, metric=SerializationRetries, namespace=NightShift (found nothing)\n- 2026-09-30T17:42:14+00:00 step 8: `get_metrics` statistic=Sum, metric=SerializationRetries, minutes=15, namespace=NightShift, dimensions=s...\n- 2026-09-30T17:42:14+00:00 step 9: `get_metrics` dimensions=service=orders, minutes=15, statistic=Sum, namespace=NightShift, metric=OrdersP... (found nothing)\n- 2026-09-30T17:42:15+00:00 step 10: `note_hypotheses` hypotheses=likely: hot_row_contention in orders service / database due to high serializati...\n- 2026-09-30T17:42:17+00:00 step 11: `finish_investigation` proposed_actions=Investigate concurrent transactions updating the same rows or inventory/c...\n\n## Root cause evidence\n\n- Step 8, `get_metrics`: {\"metric\":\"NightShift SerializationRetries {'service': 'orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"17:37:00Z\",1.0],[\"17:40:00Z\",23.0],[\"17:41:00Z\",21.0]],\"summary\":{\"min\":1.0,\"max\":23.0,\"count\":3}}\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- Investigate concurrent transactions updating the same rows or inventory/counters in the orders service.\n\n## Hypotheses\n\n- likely: hot_row_contention in orders service / database due to high serialization retries\n- ruled_out: bad_deploy (no recent deployments)\n- ruled_out: errors in logs or trace faults (traces show no errors or faults)\n\n## What the investigation cost\n\n- 5 model calls, 17,418 input and 548 output tokens (17,966 total)\n- 11 steps, 9 s of wall clock\n- 258,487 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "agent-mistral",
+   "investigation_id": "8fe4b9a8ef31",
+   "provider": "mistral",
+   "model": "ministral-14b-latest",
+   "started_at": "2026-09-30T17:42:10+00:00",
+   "stop_reason": "finished",
+   "tokens": 26814,
+   "llm_calls": 6,
+   "tool_steps": 10,
+   "log_bytes_scanned": 1340046,
+   "grade": {
+    "scenario": 11,
+    "run_id": "11-legit-spike-20260930T165050Z",
+    "investigation_id": "8fe4b9a8ef31",
+    "expected_component": "none",
+    "expected_category": "no_fault",
+    "answered_component": "orders",
+    "answered_category": "hot_row_contention",
+    "confidence": 95,
+    "component_correct": false,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": false,
+    "diagnosis_seconds": 163.0,
+    "proposed_actions": [],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "orders",
+    "category": "hot_row_contention",
+    "confidence": 95,
+    "summary": "Concurrent transactions in the orders service are updating the same row(s), causing serialization conflicts and retry storms. The spike in CheckoutsPlaced exacerbated the issue.",
+    "evidence": [
+     2,
+     3,
+     6
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "Investigate database schema for hot rows and optimize indexing."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "hot_row_contention"
+    },
+    {
+     "status": "possible",
+     "text": "retry_storm"
+    },
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy"
+    },
+    {
+     "status": "ruled_out",
+     "text": "config_regression"
+    },
+    {
+     "status": "ruled_out",
+     "text": "throttling"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 10,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "hot_row_contention"
+      },
+      {
+       "status": "possible",
+       "text": "retry_storm"
+      },
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy"
+      },
+      {
+       "status": "ruled_out",
+       "text": "config_regression"
+      },
+      {
+       "status": "ruled_out",
+       "text": "throttling"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 1,
+     "at": "2026-09-30T17:42:13+00:00",
+     "input_tokens": 2939,
+     "output_tokens": 170
+    },
+    {
+     "turn": 2,
+     "at": "2026-09-30T17:42:22+00:00",
+     "input_tokens": 3536,
+     "output_tokens": 549
+    },
+    {
+     "turn": 3,
+     "at": "2026-09-30T17:42:26+00:00",
+     "input_tokens": 3935,
+     "output_tokens": 56
+    },
+    {
+     "turn": 4,
+     "at": "2026-09-30T17:42:35+00:00",
+     "input_tokens": 4636,
+     "output_tokens": 457
+    },
+    {
+     "turn": 5,
+     "at": "2026-09-30T17:42:42+00:00",
+     "input_tokens": 5034,
+     "output_tokens": 430
+    },
+    {
+     "turn": 6,
+     "at": "2026-09-30T17:42:43+00:00",
+     "input_tokens": 4925,
+     "output_tokens": 147
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-09-30T17:42:14+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "nightshift-serialization-retries"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-serialization-retries\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\",\"since\":\"2026-09-30T17:42:02Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"SerializationRetries\",\"dimensions\":{\"service\":\"orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 10.0 for 2 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-30T17:42:02Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-09-30T17:42:14+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "NightShift",
+      "metric": "SerializationRetries",
+      "statistic": "Sum",
+      "dimensions": "service=orders",
+      "minutes": 30,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"NightShift SerializationRetries {'service': 'orders'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"17:37:00Z\",1.0],[\"17:40:00Z\",23.0],[\"17:41:00Z\",21.0]],\"summary\":{\"min\":1.0,\"max\":23.0,\"count\":3}}}"
+    },
+    {
+     "number": 3,
+     "at": "2026-09-30T17:42:14+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "NightShift",
+      "metric": "CheckoutsPlaced",
+      "statistic": "Sum",
+      "dimensions": "service=orders",
+      "minutes": 30,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"NightShift CheckoutsPlaced {'service': 'orders'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"17:37:00Z\",46.0],[\"17:38:00Z\",66.0],[\"17:39:00Z\",64.0],[\"17:40:00Z\",249.0],[\"17:41:00Z\",260.0]],\"summary\":{\"min\":46.0,\"max\":260.0,\"count\":5}}}"
+    },
+    {
+     "number": 4,
+     "at": "2026-09-30T17:42:14+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "NightShift",
+      "metric": "CheckoutsRejected",
+      "statistic": "Sum",
+      "dimensions": "service=orders",
+      "minutes": 30,
+      "period": 60
+     },
+     "status": "skipped",
+     "cited": false,
+     "result": "{\"error\": \"skipped: at most 3 calls per reply\"}"
+    },
+    {
+     "number": 5,
+     "at": "2026-09-30T17:42:24+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "orders",
+      "query": "fields @timestamp, level, message, correlation_id, order_id | filter level = \"ERROR\" and message like /serialization/ | sort @timestamp desc",
+      "minutes": 5,
+      "limit": 20
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":155381,\"scan_budget_left_bytes\":20816139}}",
+     "reasoning": "Here’s what we know so far:\n\n1. **Alarm Context (Step 1)**:\n   The `nightshift-serialization-retries` alarm is firing for the `orders` service, with a sudden spike in serialization retries (from 1 to 23 in one minute). The threshold is 10 retries, and the alarm triggered at 17:42 UTC.\n\n2. **Serialization Retries (Step 2)**:\n   The spike in retries is confirmed: 23 retries at 17:40 and 21 at 17:41, compared to just 1 at 17:37. This suggests a sudden issue with serialization in the `orders` service.\n\n3. **CheckoutsPlaced (Step 3)**:\n   There is a **massive spike in `CheckoutsPlaced`** at the same time (249 at 17:40, 260 at 17:41), compared to 46-66 before. This indicates a surge in traffic or a backlog being processed.\n\n### Hypotheses So Far:\n- **Possible retry storm**: The spike in `CheckoutsPlaced` may have overwhelmed the serialization process, causing retries to explode.\n- **Possible slow dependency**: If the `orders` service depends on another slow service (e.g., `payments`, `fulfil"
+    },
+    {
+     "number": 6,
+     "at": "2026-09-30T17:42:27+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "orders",
+      "query": "fields @timestamp, level, message, correlation_id, order_id | filter message like /serialization/ | sort @timestamp desc",
+      "minutes": 5,
+      "limit": 20
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 17:42:11.135\",\"level\":\"WARNING\",\"message\":\"serialization conflict, retrying\",\"correlation_id\":\"load-00e1cd91-415\"},{\"@timestamp\":\"2026-09-30 17:42:03.752\",\"level\":\"WARNING\",\"message\":\"serialization conflict, retrying\",\"correlation_id\":\"load-00e1cd91-391\"},{\"@timestamp\":\"2026-09-30 17:42:01.894\",\"level\":\"WARNING\",\"message\":\"serialization conflict, retrying\",\"correlation_id\":\"load-00e1cd91-385\"},{\"@timestamp\":\"2026-09-30 17:41:56.375\",\"level\":\"WARNING\",\"message\":\"serialization conflict, retrying\",\"correlation_id\":\"load-00e1cd91-367\"},{\"@timestamp\":\"2026-09-30 17:41:54.507\",\"level\":\"WARNING\",\"message\":\"serialization conflict, retrying\",\"correlation_id\":\"load-00e1cd91-361\"},{\"@timestamp\":\"2026-09-30 17:41:53.337\",\"level\":\"WARNING\",\"message\":\"serialization conflict, retrying\",\"correlation_id\":\"load-00e1cd91-356\"},{\"@timestamp\":\"2026-09-30 17:41:48.026\",\"level\":\"WARNING\",\"message\":\"serialization conflict, retrying\",\"correlation_id\":\"load-00e1cd91-340\"},{\"@timestamp\":\"2026-09-30 17:41:45.292\",\"level\":\"WARNING\",\"message\":\"serialization conflict, retrying\",\"correlation_id\":\"load-00e1cd91-331\"},{\"@timestamp\":\"2026-09-30 17:41:43.435\",\"level\":\"WARNING\",\"message\":\"serialization conflict, retrying\",\"correlation_id\":\"load-00e1cd91-325\"},{\"@timestamp\":\"2026-09-30 17:41:42.464\",\"level\":\"WARNING\",\"message\":\"serialization conflict, retrying\",\"correlation_id\":\"load-00e1cd91-322\"},\"...[10 more items cut]\"],\"bytes_scanned\":1184665,\"scan_budget_left_bytes\":19631474}}"
+    },
+    {
+     "number": 7,
+     "at": "2026-09-30T17:42:35+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "service": "orders",
+      "minutes": 15
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":15,\"moves\":[]}}",
+     "reasoning": "### Updated Analysis:\n\n#### Key Findings:\n1. **Serialization Conflicts (Step 6)**:\n   The logs show **repeated \"serialization conflict, retrying\"** messages in the `orders` service, matching the timing of the alarm. These conflicts are likely causing the retries to spike.\n\n2. **No Errors, Only Warnings**:\n   There are no `ERROR` logs for serialization, but the warnings confirm the issue is related to serialization conflicts, not failures.\n\n3. **Traffic Surge (Step 3)**:\n   The `CheckoutsPlaced` metric spiked dramatically at the same time, suggesting a sudden load increase or backlog processing.\n\n---\n\n### Hypotheses:\n- **Likely: Hot Row Contention**\n  The serialization conflicts suggest that multiple concurrent transactions are updating the **same row(s)** in the database (likely the `orders` table or a related resource). This is causing retries due to lock contention, and the surge in traffic exacerbates the issue.\n\n- **Possible: Retry Storm**\n  If the serialization conflicts trigger r"
+    },
+    {
+     "number": 8,
+     "at": "2026-09-30T17:42:35+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/DynamoDB",
+      "metric": "ThrottledRequests",
+      "statistic": "Sum",
+      "dimensions": "TableName=orders-table",
+      "minutes": 5,
+      "period": 60
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/DynamoDB ThrottledRequests {'TableName': 'orders-table'} Sum per 60s\",\"window_minutes\":5,\"points\":[],\"summary\":\"no data in this window (an idle metric publishes nothing)\"}}"
+    },
+    {
+     "number": 9,
+     "at": "2026-09-30T17:42:42+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "orders",
+      "fault_category": "hot_row_contention",
+      "confidence": 95,
+      "summary": "Concurrent transactions in the orders service are updating the same row(s), causing serialization conflicts and retry storms. The spike in CheckoutsPlaced exacerbated the issue.",
+      "evidence_steps": "2,3,6",
+      "hypotheses": "likely: hot_row_contention\npossible: retry_storm\nruled_out: bad_deploy\nruled_out: config_regression\nruled_out: throttling",
+      "actions": "pause_queue_consumer",
+      "proposed_actions": "Investigate database schema for hot rows and optimize indexing."
+     },
+     "status": "rejected",
+     "cited": false,
+     "result": "{\"error\": \"finish_investigation rejected\", \"problems\": [\"action 'pause_queue_consumer' does not fit the finding: pause_queue_consumer does not address a fault in orders\"]}",
+     "reasoning": "### Final Analysis:\n\n#### Evidence:\n1. **Serialization Conflicts (Step 6)**:\n   The logs confirm repeated \"serialization conflict, retrying\" events in the `orders` service, directly correlating with the spike in `SerializationRetries`.\n\n2. **No Recent Deployments (Step 7)**:\n   No deployments or configuration changes were made to the `orders` service in the last 15 minutes, ruling out a `bad_deploy` or `config_regression`.\n\n3. **No DynamoDB Throttling (Step 8)**:\n   No throttling events were detected on the `orders-table`, ruling out throttling as the cause.\n\n4. **Traffic Surge (Step 3)**:\n   The sudden spike in `CheckoutsPlaced` suggests increased load, but the issue is not traffic-related—it is **serialization contention** causing retries.\n\n---\n\n### Root Cause:\nThe **hot row contention** in the `orders` service is causing serialization conflicts, leading to repeated retries. This is likely due to concurrent transactions updating the same row(s) in the database, exacerbated by the tra"
+    },
+    {
+     "number": 10,
+     "at": "2026-09-30T17:42:43+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "orders",
+      "fault_category": "hot_row_contention",
+      "confidence": 95,
+      "summary": "Concurrent transactions in the orders service are updating the same row(s), causing serialization conflicts and retry storms. The spike in CheckoutsPlaced exacerbated the issue.",
+      "evidence_steps": "2,3,6",
+      "hypotheses": "likely: hot_row_contention\npossible: retry_storm\nruled_out: bad_deploy\nruled_out: config_regression\nruled_out: throttling",
+      "actions": "",
+      "proposed_actions": "Investigate database schema for hot rows and optimize indexing."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-serialization-retries\n\nInvestigation `8fe4b9a8ef31`, mistral `ministral-14b-latest`, started 2026-09-30T17:42:10+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `orders` |\n| Fault category | `hot_row_contention` |\n| Confidence | 95 |\n| Ended because | finished |\n\n## Summary\n\nConcurrent transactions in the orders service are updating the same row(s), causing serialization conflicts and retry storms. The spike in CheckoutsPlaced exacerbated the issue.\n\n## Impact\n\nThe page: `nightshift-serialization-retries` was ALARM (since 2026-09-30T17:42:02Z). Reason recorded by CloudWatch: Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-09-30T17:42:14+00:00 step 1: `get_alarm` name=nightshift-serialization-retries\n- 2026-09-30T17:42:14+00:00 step 2: `get_metrics` namespace=NightShift, metric=SerializationRetries, statistic=Sum, dimensions=service=order...\n- 2026-09-30T17:42:14+00:00 step 3: `get_metrics` namespace=NightShift, metric=CheckoutsPlaced, statistic=Sum, dimensions=service=orders, mi...\n- 2026-09-30T17:42:14+00:00 step 4: `get_metrics` namespace=NightShift, metric=CheckoutsRejected, statistic=Sum, dimensions=service=orders, ... (skipped)\n- 2026-09-30T17:42:24+00:00 step 5: `query_logs` service=orders, query=fields @timestamp, level, message, correlation_id, order_id | filter... (found nothing)\n- 2026-09-30T17:42:27+00:00 step 6: `query_logs` service=orders, query=fields @timestamp, level, message, correlation_id, order_id | filter...\n- 2026-09-30T17:42:35+00:00 step 7: `list_recent_deployments` service=orders, minutes=15 (found nothing)\n- 2026-09-30T17:42:35+00:00 step 8: `get_metrics` namespace=AWS/DynamoDB, metric=ThrottledRequests, statistic=Sum, dimensions=TableName=orde... (found nothing)\n- 2026-09-30T17:42:42+00:00 step 9: `finish_investigation` root_cause_component=orders, fault_category=hot_row_contention, confidence=95, summary=Con... (refused: action 'pause_queue_consumer' does not fit the finding: pause_queue_consumer does not address a fault in orders)\n- 2026-09-30T17:42:43+00:00 step 10: `finish_investigation` root_cause_component=orders, fault_category=hot_row_contention, confidence=95, summary=Con...\n\n## Root cause evidence\n\n- Step 2, `get_metrics`: {\"metric\":\"NightShift SerializationRetries {'service': 'orders'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"17:37:00Z\",1.0],[\"17:40:00Z\",23.0],[\"17:41:00Z\",21.0]],\"summary\":{\"min\":1.0,\"max\":23.0,\"count\":3}}\n- Step 3, `get_metrics`: {\"metric\":\"NightShift CheckoutsPlaced {'service': 'orders'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"17:37:00Z\",46.0],[\"17:38:00Z\",66.0],[\"17:39:00Z\",64.0],[\"17:40:00Z\",249.0],[\"17:41:00Z\",260.0]],\"summary\":{\"min\":46.0,\"max\":260.0,\"coun...(older result, shortened)\n- Step 6, `query_logs`: {\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-09-30 17:42:11.135\",\"level\":\"WARNING\",\"message\":\"serialization conflict, retrying\",\"correlation_id\":\"load-00e1cd91-415\"},{\"@timestamp\":\"2026-09-30 17:42:03.752\",\"level\":\"WARNING\",\"message\":\"s...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- Investigate database schema for hot rows and optimize indexing.\n\n## Hypotheses\n\n- likely: hot_row_contention\n- possible: retry_storm\n- ruled_out: bad_deploy\n- ruled_out: config_regression\n- ruled_out: throttling\n\n## What the investigation cost\n\n- 6 model calls, 25,005 input and 1,809 output tokens (26,814 total)\n- 10 steps, 38 s of wall clock\n- 1,340,046 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "alarm-only-gemini",
+   "investigation_id": "618358364373",
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "started_at": "2026-09-30T17:42:10+00:00",
+   "stop_reason": "finished",
+   "tokens": 1407,
+   "llm_calls": 1,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 11,
+    "run_id": "11-legit-spike-20260930T165050Z",
+    "investigation_id": "618358364373",
+    "expected_component": "none",
+    "expected_category": "no_fault",
+    "answered_component": "orders",
+    "answered_category": "hot_row_contention",
+    "confidence": 90,
+    "component_correct": false,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": false,
+    "diagnosis_seconds": 131.0,
+    "proposed_actions": [],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "orders",
+    "category": "hot_row_contention",
+    "confidence": 90,
+    "summary": "The orders service triggered the 'nightshift-serialization-retries' alarm due to high serialization retries (Sum >= 10.0 for 2 periods), indicating hot row contention in database transactions.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "Investigate database access patterns and transaction isolation levels in the orders service to reduce row contention."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "hot_row_contention - high serialization retries in orders service indicate concurrent updates to the same database row."
+    },
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy - no indication of bad deployment from serialization retries metric."
+    },
+    {
+     "status": "ruled_out",
+     "text": "throttling - metric is serialization retries, not throttling/rejections."
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 2,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "hot_row_contention - high serialization retries in orders service indicate concurrent updates to the same database row."
+      },
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy - no indication of bad deployment from serialization retries metric."
+      },
+      {
+       "status": "ruled_out",
+       "text": "throttling - metric is serialization retries, not throttling/rejections."
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 2,
+     "at": "2026-09-30T17:42:11+00:00",
+     "input_tokens": 1212,
+     "output_tokens": 195
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-09-30T17:42:10+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "serialization-retries"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-serialization-retries\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\",\"since\":\"2026-09-30T17:42:02Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"SerializationRetries\",\"dimensions\":{\"service\":\"orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 10.0 for 2 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-30T17:42:02Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+     "in_trigger": true
+    },
+    {
+     "number": 2,
+     "at": "2026-09-30T17:42:11+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "actions": "",
+      "summary": "The orders service triggered the 'nightshift-serialization-retries' alarm due to high serialization retries (Sum >= 10.0 for 2 periods), indicating hot row contention in database transactions.",
+      "hypotheses": "likely: hot_row_contention - high serialization retries in orders service indicate concurrent updates to the same database row.\nruled_out: bad_deploy - no indication of bad deployment from serialization retries metric.\nruled_out: throttling - metric is serialization retries, not throttling/rejections.",
+      "proposed_actions": "Investigate database access patterns and transaction isolation levels in the orders service to reduce row contention.",
+      "fault_category": "hot_row_contention",
+      "root_cause_component": "orders",
+      "confidence": 90,
+      "evidence_steps": "1"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-serialization-retries\n\nInvestigation `618358364373`, gemini `gemini-3.5-flash-lite`, started 2026-09-30T17:42:10+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `orders` |\n| Fault category | `hot_row_contention` |\n| Confidence | 90 |\n| Ended because | finished |\n\n## Summary\n\nThe orders service triggered the 'nightshift-serialization-retries' alarm due to high serialization retries (Sum >= 10.0 for 2 periods), indicating hot row contention in database transactions.\n\n## Impact\n\nThe page: `nightshift-serialization-retries` was ALARM (since 2026-09-30T17:42:02Z). Reason recorded by CloudWatch: Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-09-30T17:42:10+00:00 step 1: `get_alarm` name=serialization-retries\n- 2026-09-30T17:42:11+00:00 step 2: `finish_investigation` actions=, summary=The orders service triggered the 'nightshift-serialization-retries' alar...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-serialization-retries\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\",\"since\":\"2026-09-30T17:42:02Z\",\"m...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- Investigate database access patterns and transaction isolation levels in the orders service to reduce row contention.\n\n## Hypotheses\n\n- likely: hot_row_contention - high serialization retries in orders service indicate concurrent updates to the same database row.\n- ruled_out: bad_deploy - no indication of bad deployment from serialization retries metric.\n- ruled_out: throttling - metric is serialization retries, not throttling/rejections.\n\n## What the investigation cost\n\n- 1 model calls, 1,212 input and 195 output tokens (1,407 total)\n- 2 steps, 1 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "alarm-only-mistral",
+   "investigation_id": "9468a82d3539",
+   "provider": "mistral",
+   "model": "ministral-14b-latest",
+   "started_at": "2026-09-30T17:42:10+00:00",
+   "stop_reason": "finished",
+   "tokens": 1503,
+   "llm_calls": 1,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 11,
+    "run_id": "11-legit-spike-20260930T165050Z",
+    "investigation_id": "9468a82d3539",
+    "expected_component": "none",
+    "expected_category": "no_fault",
+    "answered_component": "orders",
+    "answered_category": "insufficient_evidence",
+    "confidence": 60,
+    "component_correct": false,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": true,
+    "diagnosis_seconds": 135.0,
+    "proposed_actions": [],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "orders",
+    "category": "insufficient_evidence",
+    "confidence": 60,
+    "summary": "The alarm indicates a spike in serialization retries for the 'orders' service, but without additional context or data (e.g., logs, metrics trends, or related alarms), the root cause cannot be determined. This could be due to a variety of issues such as throttling, retry storms, or dependency failures.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "1. Investigate recent deployments or configuration changes to the 'orders' service.",
+     "2. Check CloudWatch Logs for the 'orders' service for errors or warnings around the time the alarm triggered.",
+     "3. Review related metrics (e.g., error rates, latency, or dependency call failures) to identify patterns or anomalies.",
+     "4. Verify if there are any concurrent issues in downstream services (e.g., payments, fulfillment) that could cause retries.",
+     "5. Examine the dead-letter queue (DLQ) for failed messages, if applicable."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "insufficient_evidence"
+    },
+    {
+     "status": "possible",
+     "text": "throttling"
+    },
+    {
+     "status": "possible",
+     "text": "retry_storm"
+    },
+    {
+     "status": "possible",
+     "text": "slow_dependency"
+    },
+    {
+     "status": "possible",
+     "text": "hot_row_contention"
+    },
+    {
+     "status": "possible",
+     "text": "bad_deploy"
+    },
+    {
+     "status": "possible",
+     "text": "config_regression"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 2,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "insufficient_evidence"
+      },
+      {
+       "status": "possible",
+       "text": "throttling"
+      },
+      {
+       "status": "possible",
+       "text": "retry_storm"
+      },
+      {
+       "status": "possible",
+       "text": "slow_dependency"
+      },
+      {
+       "status": "possible",
+       "text": "hot_row_contention"
+      },
+      {
+       "status": "possible",
+       "text": "bad_deploy"
+      },
+      {
+       "status": "possible",
+       "text": "config_regression"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 2,
+     "at": "2026-09-30T17:42:15+00:00",
+     "input_tokens": 1216,
+     "output_tokens": 287
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-09-30T17:42:10+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "serialization-retries"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-serialization-retries\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\",\"since\":\"2026-09-30T17:42:02Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"SerializationRetries\",\"dimensions\":{\"service\":\"orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 10.0 for 2 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-30T17:42:02Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+     "in_trigger": true
+    },
+    {
+     "number": 2,
+     "at": "2026-09-30T17:42:15+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "orders",
+      "fault_category": "insufficient_evidence",
+      "confidence": 60,
+      "summary": "The alarm indicates a spike in serialization retries for the 'orders' service, but without additional context or data (e.g., logs, metrics trends, or related alarms), the root cause cannot be determined. This could be due to a variety of issues such as throttling, retry storms, or dependency failures.",
+      "evidence_steps": "1",
+      "hypotheses": "likely: insufficient_evidence\npossible: throttling\npossible: retry_storm\npossible: slow_dependency\npossible: hot_row_contention\npossible: bad_deploy\npossible: config_regression",
+      "actions": "",
+      "proposed_actions": "1. Investigate recent deployments or configuration changes to the 'orders' service.\n2. Check CloudWatch Logs for the 'orders' service for errors or warnings around the time the alarm triggered.\n3. Review related metrics (e.g., error rates, latency, or dependency call failures) to identify patterns or anomalies.\n4. Verify if there are any concurrent issues in downstream services (e.g., payments, fulfillment) that could cause retries.\n5. Examine the dead-letter queue (DLQ) for failed messages, if applicable."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-serialization-retries\n\nInvestigation `9468a82d3539`, mistral `ministral-14b-latest`, started 2026-09-30T17:42:10+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `orders` |\n| Fault category | `insufficient_evidence` |\n| Confidence | 60 |\n| Ended because | finished |\n\n## Summary\n\nThe alarm indicates a spike in serialization retries for the 'orders' service, but without additional context or data (e.g., logs, metrics trends, or related alarms), the root cause cannot be determined. This could be due to a variety of issues such as throttling, retry storms, or dependency failures.\n\n## Impact\n\nThe page: `nightshift-serialization-retries` was ALARM (since 2026-09-30T17:42:02Z). Reason recorded by CloudWatch: Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-09-30T17:42:10+00:00 step 1: `get_alarm` name=serialization-retries\n- 2026-09-30T17:42:15+00:00 step 2: `finish_investigation` root_cause_component=orders, fault_category=insufficient_evidence, confidence=60, summary=...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-serialization-retries\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\",\"since\":\"2026-09-30T17:42:02Z\",\"m...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- 1. Investigate recent deployments or configuration changes to the 'orders' service.\n- 2. Check CloudWatch Logs for the 'orders' service for errors or warnings around the time the alarm triggered.\n- 3. Review related metrics (e.g., error rates, latency, or dependency call failures) to identify patterns or anomalies.\n- 4. Verify if there are any concurrent issues in downstream services (e.g., payments, fulfillment) that could cause retries.\n- 5. Examine the dead-letter queue (DLQ) for failed messages, if applicable.\n\n## Hypotheses\n\n- likely: insufficient_evidence\n- possible: throttling\n- possible: retry_storm\n- possible: slow_dependency\n- possible: hot_row_contention\n- possible: bad_deploy\n- possible: config_regression\n\n## What the investigation cost\n\n- 1 model calls, 1,216 input and 287 output tokens (1,503 total)\n- 2 steps, 4 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "runbook",
+   "investigation_id": "13f9bb1be605",
+   "provider": "runbook",
+   "model": "scripted",
+   "started_at": "2026-09-30T17:42:10+00:00",
+   "stop_reason": "finished",
+   "tokens": 0,
+   "llm_calls": 0,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 11,
+    "run_id": "11-legit-spike-20260930T165050Z",
+    "investigation_id": "13f9bb1be605",
+    "expected_component": "none",
+    "expected_category": "no_fault",
+    "answered_component": "dsql",
+    "answered_category": "hot_row_contention",
+    "confidence": 70,
+    "component_correct": false,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": false,
+    "diagnosis_seconds": 130.0,
+    "proposed_actions": [],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "dsql",
+    "category": "hot_row_contention",
+    "confidence": 70,
+    "summary": "Checkout transactions are conflicting on the same rows.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": []
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "Checkout transactions are conflicting on the same rows."
+    }
+   ],
+   "hypothesis_changes": [],
+   "llm_turns": [],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-09-30T17:42:10+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "serialization-retries"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-serialization-retries\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\",\"since\":\"2026-09-30T17:42:02Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"SerializationRetries\",\"dimensions\":{\"service\":\"orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 10.0 for 2 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-09-30T17:42:02Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-09-30T17:42:10+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "minutes": 30,
+      "service": "orders"
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-serialization-retries\n\nInvestigation `13f9bb1be605`, runbook `scripted`, started 2026-09-30T17:42:10+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `dsql` |\n| Fault category | `hot_row_contention` |\n| Confidence | 70 |\n| Ended because | finished |\n\n## Summary\n\nCheckout transactions are conflicting on the same rows.\n\n## Impact\n\nThe page: `nightshift-serialization-retries` was ALARM (since 2026-09-30T17:42:02Z). Reason recorded by CloudWatch: Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-09-30T17:42:10+00:00 step 1: `get_alarm` name=serialization-retries\n- 2026-09-30T17:42:10+00:00 step 2: `list_recent_deployments` minutes=30, service=orders (found nothing)\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-serialization-retries\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 2 datapoints [19.0 (30/09/26 17:41:00), 23.0 (30/09/26 17:40:00)] were greater than or equal to the threshold (10.0).\",\"since\":\"2026-09-30T17:42:02Z\",\"m...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nNone proposed.\n\n## Hypotheses\n\n- likely: Checkout transactions are conflicting on the same rows.\n\n## What the investigation cost\n\n- 0 model calls, 0 input and 0 output tokens (0 total)\n- 2 steps, 0 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  }
+ ]
+}
