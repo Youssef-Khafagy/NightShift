@@ -55,7 +55,7 @@ flowchart LR
 
 - **The store** is four small services: cart (DynamoDB), orders (one Aurora DSQL transaction per checkout, then a message on SQS), fulfillment (reads the queue, charges the order, marks it paid) and a mock payment provider with configurable latency and errors. Every function is called through a `live` alias, so a rollback is one API call.
 - **Chaos** breaks it through real mechanisms only: a bad deploy through the real deploy path, a changed setting, a removed IAM permission, a poison message, real load. No flag in the application says "fault here", and the agent has no access to the scenarios or their answers.
-- **The agent** is a loop of about 65 lines around an LLM, with no agent framework and no SDKs. It reads alarms, metrics, logs, traces, deployments, CloudTrail changes, queue stats, function config, topology and flags, checkpoints every step to DynamoDB so a crash resumes where it stopped, and must cite the tool results its answer rests on.
+- **The agent** is a loop of about 75 lines around an LLM, with no agent framework and no SDKs. It reads alarms, metrics, logs, traces, deployments, CloudTrail changes, queue stats, function config, topology and flags, checkpoints every step to DynamoDB so a crash resumes where it stopped, and must cite the tool results its answer rests on.
 - **Acting** is separate. The agent can only propose. The Actor runs one of five reversible actions (roll back an alias, set one of two flags, pause or resume the queue consumer, redrive the dead-letter queue) after the owner approves that exact action, then watches the alarm and reports whether the system recovered.
 
 ### One incident, end to end
