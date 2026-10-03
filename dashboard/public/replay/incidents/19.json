@@ -7,7 +7,7 @@
  "run": 3,
  "attempt": 1,
  "run_id": "09-throttling-20261001T165502Z",
- "commit": "5641bb7",
+ "commit": "5085754",
  "ground_truth": {
   "component": "cart",
   "fault_category": "throttling"

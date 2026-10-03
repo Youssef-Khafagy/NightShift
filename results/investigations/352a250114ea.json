@@ -84,8 +84,8 @@
           "service": "orders"
         },
         "call_id": "call_871231",
-        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T20:44:09.072+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 28\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}",
-        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T20:44:09.072+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 28\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T20:44:09.072+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 28\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T20:44:09.072+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 28\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}",
         "reasoning": "",
         "provider_data": {},
         "in_trigger": false
@@ -116,7 +116,7 @@
           "summary": "The orders service was deployed with a bad code version (28) at 20:44 UTC, introducing an invalid metric unit 'Counts' that caused the Lambda function to fail and triggered the nightshift-orders-errors alarm.",
           "actions": "rollback_alias service=orders",
           "hypotheses": "likely: bad_deploy caused orders function to throw errors due to invalid metric unit 'Counts'\nruled_out: no_fault",
-          "proposed_actions": "Check code changes in commit 5641bb7 regarding CloudWatch metric unit 'Counts' (should be 'Count')",
+          "proposed_actions": "Check code changes in commit 5085754 regarding CloudWatch metric unit 'Counts' (should be 'Count')",
           "root_cause_component": "orders",
           "confidence": 95,
           "fault_category": "bad_deploy",
@@ -202,7 +202,7 @@
       "summary": "The orders service was deployed with a bad code version (28) at 20:44 UTC, introducing an invalid metric unit 'Counts' that caused the Lambda function to fail and triggered the nightshift-orders-errors alarm.",
       "actions": "rollback_alias service=orders",
       "hypotheses": "likely: bad_deploy caused orders function to throw errors due to invalid metric unit 'Counts'\nruled_out: no_fault",
-      "proposed_actions": "Check code changes in commit 5641bb7 regarding CloudWatch metric unit 'Counts' (should be 'Count')",
+      "proposed_actions": "Check code changes in commit 5085754 regarding CloudWatch metric unit 'Counts' (should be 'Count')",
       "root_cause_component": "orders",
       "confidence": 95,
       "fault_category": "bad_deploy",

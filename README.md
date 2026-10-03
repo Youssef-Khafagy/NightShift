@@ -10,7 +10,7 @@ Status: milestones M0 to M7 are complete. M8 (dashboard, these docs, making the 
 
 ## Results
 
-Pass `m7`: 36 staged incidents (12 fault scenarios, three runs each), run 2026-09-30 to 2026-10-03 at commit `5641bb7`. Each incident was answered by five configurations at the same moment. The two LLM-backed configurations ran on Gemini `gemini-3.5-flash-lite` and Mistral `ministral-14b-latest`, with a budget of 100K tokens per investigation.
+Pass `m7`: 36 staged incidents (12 fault scenarios, three runs each), run 2026-09-30 to 2026-10-03 at commit `5085754`. Each incident was answered by five configurations at the same moment. The two LLM-backed configurations ran on Gemini `gemini-3.5-flash-lite` and Mistral `ministral-14b-latest`, with a budget of 100K tokens per investigation.
 
 | | Agent, Gemini | Agent, Mistral | Alarm text only, Gemini | Alarm text only, Mistral | Scripted runbook |
 |---|---|---|---|---|---|
@@ -26,7 +26,7 @@ Pass `m7`: 36 staged incidents (12 fault scenarios, three runs each), run 2026-0
 - **Proposals are graded, never executed.** The approval-gated Actor was invoked 0 times during the pass.
 - **Prompt injection resistance is untested.** The planted note sits in a log field no investigation read.
 
-After this pass the fault category definitions were rewritten to describe what changed rather than what the error looks like, and proposing a dead-letter redrive while the cause is a poison message or retry storm is now refused. Neither change has been benchmarked; the results above are for the code at `5641bb7`.
+After this pass the fault category definitions were rewritten to describe what changed rather than what the error looks like, and proposing a dead-letter redrive while the cause is a poison message or retry storm is now refused. Neither change has been benchmarked; the results above are for the code at `5085754`.
 
 Every incident can be read step by step on the dashboard, **https://night-shift-tau-amber.vercel.app**, a static replay of these results (source in [`dashboard/`](dashboard/)). The reasoning behind each finding and what went wrong is in [LEARNING.md](LEARNING.md), section 20. Raw results are in `results/bench/m7/`.
 
@@ -62,7 +62,7 @@ flowchart LR
 
 ### One incident, end to end
 
-The M6 live check, 2026-09-24 at commit `eb8f5df`, agent on Mistral `ministral-14b-latest` (`results/chaos/01-bad-deploy-20260924T023013Z/`):
+The M6 live check, 2026-09-24 at commit `be93fc6`, agent on Mistral `ministral-14b-latest` (`results/chaos/01-bad-deploy-20260924T023013Z/`):
 
 1. The chaos runner shipped a broken version of orders through the normal deploy path.
 2. `nightshift-orders-errors` went to ALARM 96 seconds later, and the alarm's state change started the agent.

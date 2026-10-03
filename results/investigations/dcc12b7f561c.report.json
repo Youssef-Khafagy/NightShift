@@ -3,7 +3,7 @@
   "root_cause_component": "orders",
   "fault_category": "bad_deploy",
   "confidence": 95,
-  "summary": "A deploy of orders version 29 (SHA 5641bb7) introduced a bug causing repeated errors due to an invalid metric unit ('Counts'). The errors began immediately after the deploy and are confirmed by logs and traces.",
+  "summary": "A deploy of orders version 29 (SHA 5085754) introduced a bug causing repeated errors due to an invalid metric unit ('Counts'). The errors began immediately after the deploy and are confirmed by logs and traces.",
   "evidence": [
     4,
     5,

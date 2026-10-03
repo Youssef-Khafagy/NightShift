@@ -56,8 +56,8 @@
           "service": "orders"
         },
         "call_id": "baseline-66c5c4d6",
-        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T16:41:10.092+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 27\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}",
-        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T16:41:10.092+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 27\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T16:41:10.092+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 27\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T16:41:10.092+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 27\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}",
         "reasoning": "",
         "provider_data": {},
         "in_trigger": false

@@ -12,7 +12,7 @@
     "rollback_alias service=orders"
   ],
   "proposed_actions": [
-    "Check code changes in commit 5641bb7 regarding CloudWatch metric unit 'Counts' (should be 'Count')"
+    "Check code changes in commit 5085754 regarding CloudWatch metric unit 'Counts' (should be 'Count')"
   ],
   "stop_reason": "finished",
   "evidence_tools": {

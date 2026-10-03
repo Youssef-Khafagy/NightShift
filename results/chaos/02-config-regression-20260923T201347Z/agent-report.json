@@ -12,7 +12,7 @@
   ],
   "proposed_actions": [
     "1. Roll back cart to version 15.",
-    "2. Investigate the changes in commit 51b3252 to identify the cause of the timeout/regression.",
+    "2. Investigate the changes in commit c56ad3a to identify the cause of the timeout/regression.",
     "3. Monitor Lambda errors and duration post-rollback."
   ],
   "stop_reason": "finished",

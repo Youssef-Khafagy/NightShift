@@ -1,7 +1,7 @@
 {
   "what": "Scenario 7 redesign measurement: SerializationRetries per minute with base traffic 1/s plus one hot product at 3/s then 4/s (load.py --hot-product 0). Consumer on; orders reserved concurrency 5.",
   "date": "2026-09-28",
-  "commit_of_code_under_test": "b7c278c",
+  "commit_of_code_under_test": "3570690",
   "times_utc": {
     "start": "2026-09-28T01:31:16+00:00",
     "hot3_start": "2026-09-28T01:33:18+00:00",

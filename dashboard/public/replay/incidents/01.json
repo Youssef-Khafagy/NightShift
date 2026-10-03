@@ -7,7 +7,7 @@
  "run": 2,
  "attempt": 1,
  "run_id": "04-slow-dependency-20260930T145314Z",
- "commit": "5641bb7",
+ "commit": "5085754",
  "ground_truth": {
   "component": "payments",
   "fault_category": "slow_dependency"

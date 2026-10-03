@@ -102,8 +102,8 @@
           "service": "orders"
         },
         "call_id": "call_89738",
-        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T12:24:43.842+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 29\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}",
-        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T12:24:43.842+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 29\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T12:24:43.842+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 29\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T12:24:43.842+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 29\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}",
         "reasoning": "",
         "provider_data": {},
         "in_trigger": false

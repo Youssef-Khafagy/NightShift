@@ -6,7 +6,7 @@
     "component": "orders",
     "fault_category": "bad_deploy"
   },
-  "commit": "f7e0ed8",
+  "commit": "c4e1a37",
   "started": "2026-09-23T14:33:56+00:00",
   "injected_at": "2026-09-23T14:37:07+00:00",
   "alarms_fired": {

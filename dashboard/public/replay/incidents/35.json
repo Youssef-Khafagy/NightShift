@@ -7,7 +7,7 @@
  "run": 3,
  "attempt": 1,
  "run_id": "03-timeout-regression-20261002T223911Z",
- "commit": "5641bb7",
+ "commit": "5085754",
  "ground_truth": {
   "component": "fulfillment",
   "fault_category": "timeout_regression"

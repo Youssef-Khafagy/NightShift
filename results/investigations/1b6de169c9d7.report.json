@@ -14,7 +14,7 @@
     "rollback_alias service=orders"
   ],
   "proposed_actions": [
-    "Review commit 5641bb7 for the root cause of the failures."
+    "Review commit 5085754 for the root cause of the failures."
   ],
   "stop_reason": "finished",
   "evidence_tools": {

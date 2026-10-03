@@ -122,8 +122,8 @@
           "minutes": 30
         },
         "call_id": "tLUJDnOz5",
-        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T21:47:11.138+00:00\",\"service\":\"fulfillment\",\"kind\":\"deploy\",\"version\":\"7 -> 9\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env PAYMENT_TIMEOUT_SECONDS\"]}}]}}",
-        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T21:47:11.138+00:00\",\"service\":\"fulfillment\",\"kind\":\"deploy\",\"version\":\"7 -> 9\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env PAYM...(older result, shortened)",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T21:47:11.138+00:00\",\"service\":\"fulfillment\",\"kind\":\"deploy\",\"version\":\"7 -> 9\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env PAYMENT_TIMEOUT_SECONDS\"]}}]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-09-30T21:47:11.138+00:00\",\"service\":\"fulfillment\",\"kind\":\"deploy\",\"version\":\"7 -> 9\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env PAYM...(older result, shortened)",
         "reasoning": "",
         "provider_data": {},
         "in_trigger": false

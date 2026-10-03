@@ -3,7 +3,7 @@
   "root_cause_component": "orders",
   "fault_category": "bad_deploy",
   "confidence": 100,
-  "summary": "A recent deployment (version 27, commit 5641bb7) introduced code that passes an invalid metric unit 'Counts' to CloudWatch, causing the orders Lambda function to throw errors and triggering the alarm.",
+  "summary": "A recent deployment (version 27, commit 5085754) introduced code that passes an invalid metric unit 'Counts' to CloudWatch, causing the orders Lambda function to throw errors and triggering the alarm.",
   "evidence": [
     2,
     3
@@ -12,7 +12,7 @@
     "rollback_alias service=orders"
   ],
   "proposed_actions": [
-    "Verify code changes in git commit 5641bb7 for orders service regarding metric unit 'Counts' before redeploying."
+    "Verify code changes in git commit 5085754 for orders service regarding metric unit 'Counts' before redeploying."
   ],
   "stop_reason": "finished",
   "evidence_tools": {

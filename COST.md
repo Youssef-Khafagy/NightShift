@@ -397,7 +397,7 @@ Worst case if Lambda ingestion is not covered: about 0.42 GB x $0.50 = **~$0.21 
 
 ### Traffic generator live check (2026-09-22)
 
-`scripts/load.py --rate 1 --duration 60 --seed 20260922 --run`, run ID `363e7f2a`, commit `5c067d4`, consumer enabled only for the run. Raw summary in `results/load-live-check-2026-09-22.json`. Actuals from GetMetricStatistics over 22:49 to 22:55 UTC, after the queue had drained and a minute had passed.
+`scripts/load.py --rate 1 --duration 60 --seed 20260922 --run`, run ID `363e7f2a`, commit `3295956`, consumer enabled only for the run. Raw summary in `results/load-live-check-2026-09-22.json`. Actuals from GetMetricStatistics over 22:49 to 22:55 UTC, after the queue had drained and a minute had passed.
 
 | | Projected | Actual |
 |---|---|---|

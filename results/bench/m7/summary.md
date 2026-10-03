@@ -1,4 +1,4 @@
-Generated 2026-10-03T01:16:14+00:00; commit(s) 5641bb7.
+Generated 2026-10-03T01:16:14+00:00; commit(s) 5085754.
 
 | Metric | agent-gemini | agent-mistral | alarm-only-gemini | alarm-only-mistral | runbook |
 |---|---|---|---|---|---|

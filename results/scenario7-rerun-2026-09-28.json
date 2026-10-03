@@ -1,7 +1,7 @@
 {
   "what": "Re-run of scenario 7's hot rate after deploying the product_ids retry log line (orders version 26): base 1/s plus hot product 0 at 3/s for 180 s. Same load as the 3/s leg of results/scenario7-hot-rate-2026-09-28.json.",
   "date": "2026-09-28",
-  "commit": "adaa22f",
+  "commit": "60ffee2",
   "times_utc": {
     "start": "2026-09-28T02:22:16Z",
     "hot3_start": "2026-09-28T02:22:46Z",

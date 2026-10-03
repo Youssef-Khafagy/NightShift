@@ -67,6 +67,6 @@ def test_every_results_cell_matches_the_summary():
 
 
 def test_the_results_are_labelled_with_the_commit_they_came_from():
-    assert SUMMARY["commits"] == ["5641bb7"]
+    assert SUMMARY["commits"] == ["5085754"]
     assert not SUMMARY["mixed_commits"]
-    assert "at commit `5641bb7`" in README
+    assert "at commit `5085754`" in README

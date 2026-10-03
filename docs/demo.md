@@ -22,7 +22,7 @@ A screen recording of the public replay, with narration. Everything shown is a r
 
 ## What each line rests on
 
-- **36 incidents, five configurations:** pass `m7`, commit `5641bb7`, 2026-09-30 to 2026-10-03 (`results/bench/m7/`).
+- **36 incidents, five configurations:** pass `m7`, commit `5085754`, 2026-09-30 to 2026-10-03 (`results/bench/m7/`).
 - **Half the time, 58%, can't be told apart:** agent-gemini 18 of 36, runbook 21 of 36; on the incidents only one got right, 5 against 8, McNemar exact p = 0.58 (dashboard results page, `results/bench/m7/summary.json`).
 - **Scenario 6 row:** agent-gemini 2 of 3, runbook 0 of 3.
 - **The incident:** entry 10, run `06-iam-regression-20261001T003124Z`. The permission removed is orders' `sqs:SendMessage` on `nightshift-placed-orders`. `nightshift-orders-errors` paged 122 seconds after the injection ("two minutes later").

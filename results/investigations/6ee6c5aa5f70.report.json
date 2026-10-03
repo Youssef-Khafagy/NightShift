@@ -10,7 +10,7 @@
     6
   ],
   "proposed_actions": [
-    "Investigate commit `f7e0ed8` for changes in version 16 of the `cart` service.",
+    "Investigate commit `c4e1a37` for changes in version 16 of the `cart` service.",
     "Add error logging or X-Ray tracing to future deploys for better observability.",
     "Test version 16 in isolation to reproduce and fix the issue."
   ],

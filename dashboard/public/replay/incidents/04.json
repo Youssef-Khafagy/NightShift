@@ -7,7 +7,7 @@
  "run": 1,
  "attempt": 1,
  "run_id": "10-retry-storm-20260930T175115Z",
- "commit": "5641bb7",
+ "commit": "5085754",
  "ground_truth": {
   "component": "placed-orders",
   "fault_category": "retry_storm"

@@ -46,12 +46,12 @@ ru...
 - Step 1, `get_alarm`: {"name":"nightshift-cart-errors","state":"ALARM","reason":"Threshold Crossed: 1 datapoint [49.0 (23/09/26 20:17:00)] was greater than or equal to the threshold (1.0).","since":"2026-09-23T20:18:30Z","metric":{"namespace":"AWS/Lambda","name"...(older result, shortened)
 - Step 5, `query_logs`: "{\"error\": \"skipped: at most 3 calls per reply\"}"
 - Step 6, `get_metrics`: {"metric":"AWS/Lambda Duration {'FunctionName': 'nightshift-cart'} p99 per 60s","window_minutes":10,"points":[["20:08:00Z",48.845],["20:09:00Z",42.11],["20:13:00Z",309.571],["20:14:00Z",53.678],["20:15:00Z",52.389],["20:16:00Z",299.303],["2...(older result, shortened)
-- Step 8, `list_recent_deployments`: {"window_hours":2,"moves":[{"at":"2026-09-23T20:16:58.024+00:00","service":"cart","kind":"deploy","version":"15 -> 17","git_sha":"51b3252","actor":"youssef","reason":null}]}
+- Step 8, `list_recent_deployments`: {"window_hours":2,"moves":[{"at":"2026-09-23T20:16:58.024+00:00","service":"cart","kind":"deploy","version":"15 -> 17","git_sha":"c56ad3a","actor":"youssef","reason":null}]}
 
 ## Proposed fix (for a human to decide; the agent changed nothing)
 
 - 1. Roll back cart to version 15.
-- 2. Investigate the changes in commit 51b3252 to identify the cause of the timeout/regression.
+- 2. Investigate the changes in commit c56ad3a to identify the cause of the timeout/regression.
 - 3. Monitor Lambda errors and duration post-rollback.
 
 ## Hypotheses

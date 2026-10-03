@@ -7,7 +7,7 @@
  "run": 3,
  "attempt": 1,
  "run_id": "14-missing-telemetry-20261002T192508Z",
- "commit": "5641bb7",
+ "commit": "5085754",
  "ground_truth": {
   "component": "orders",
   "fault_category": "bad_deploy"

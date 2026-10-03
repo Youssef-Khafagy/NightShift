@@ -6,7 +6,7 @@
     "component": "payments",
     "fault_category": "slow_dependency"
   },
-  "commit": "f7e0ed8",
+  "commit": "c4e1a37",
   "started": "2026-09-23T14:57:07+00:00",
   "injected_at": "2026-09-23T15:00:19+00:00",
   "alarms_fired": {

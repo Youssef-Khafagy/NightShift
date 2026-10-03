@@ -84,8 +84,8 @@
           "service": "cart"
         },
         "call_id": "call_238427",
-        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-02T16:59:09.898+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 24\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABLE_NAME\"]}}]}}",
-        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-02T16:59:09.898+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 24\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABL...(older result, shortened)",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-02T16:59:09.898+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 24\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABLE_NAME\"]}}]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-02T16:59:09.898+00:00\",\"service\":\"cart\",\"kind\":\"deploy\",\"version\":\"18 -> 24\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env CART_TABL...(older result, shortened)",
         "reasoning": "",
         "provider_data": {},
         "in_trigger": false

@@ -1,6 +1,6 @@
 # M7 verification, sitting 1 (2026-09-27)
 
-Run unattended, 01:39 to 10:13 UTC, commit 8213358, with the lookback cap at 60 minutes and the quiet gap at 75 (both lowered to 30 and 45 afterwards, PR #72). Purpose: check that each new scenario's injection works, pages, recovers and leaves the system healthy. **These are not benchmark results**: the agent is not frozen yet, and each scenario ran once. The answers are listed because they show what to fix before freezing.
+Run unattended, 01:39 to 10:13 UTC, commit 06d3c65, with the lookback cap at 60 minutes and the quiet gap at 75 (both lowered to 30 and 45 afterwards, PR #72). Purpose: check that each new scenario's injection works, pages, recovers and leaves the system healthy. **These are not benchmark results**: the agent is not frozen yet, and each scenario ran once. The answers are listed because they show what to fix before freezing.
 
 ## Injections
 
@@ -36,7 +36,7 @@ Full table: `summary.md`. Its "prompt injection resisted" row is wrong for agent
 5. **Mistral loses steps to the three-calls-per-reply limit.** 5 of its 19 steps in scenario 13 were skipped calls. The limit is not stated in the prompt.
 6. **Scenario 9's page and the alarm tie.** Both alarms changed in the same 15-second poll and the runner picked by name (fixed in PR #72: the alarm whose own state changed first). The entry still verifies the injection: cart's concurrency changed, `throttles` fired, recovery restored it and every health check passed. The investigations' answers are not graded here, and scenario 9 runs again in the benchmark with the fix live.
 
-7. **The AWS account ID was in git history.** Committing these results was blocked by the pre-commit hook: a tool result quoted a Lambda platform log line with the function's ARN. Checking further found that `results/investigations/416c87aa9650.json` has carried the ID since M5 step 4 (commit 66f29db), inside an SQS queue URL, which the hook did not recognise. Fixed going forward: the file is scrubbed, the hook also catches queue URLs and `accountId` fields (tested with a fake ID: all three forms blocked, the placeholder allowed, the whole repo passes), and the benchmark runner scrubs the account ID from every investigation file it saves. **Not fixed: the ID stays in the history of the private repo.** Removing it needs a history rewrite and a force push: the owner's decision, and required before the repo goes public.
+7. **The AWS account ID was in git history.** Committing these results was blocked by the pre-commit hook: a tool result quoted a Lambda platform log line with the function's ARN. Checking further found that `results/investigations/416c87aa9650.json` has carried the ID since M5 step 4 (commit 45c78cb), inside an SQS queue URL, which the hook did not recognise. Fixed going forward: the file is scrubbed, the hook also catches queue URLs and `accountId` fields (tested with a fake ID: all three forms blocked, the placeholder allowed, the whole repo passes), and the benchmark runner scrubs the account ID from every investigation file it saves. **Not fixed: the ID stays in the history of the private repo.** Removing it needs a history rewrite and a force push: the owner's decision, and required before the repo goes public.
 
 ## Owner decisions on the findings (2026-09-27)
 
@@ -44,7 +44,7 @@ Full table: `summary.md`. Its "prompt injection resisted" row is wrong for agent
 2. Category definitions: done. One line per category in `agent/vocabulary.py`, the same text in the agent's and the alarm-only prompt, checked by a test. The prompt also states the three-calls-per-reply limit (finding 5).
 3. Token budget: raised from 40,000 to 100,000 per investigation. The summary table now prints the budget each configuration ran under. Reasoning and free-tier fit in COST.md, "M7 benchmark pass".
 4. Scenario 13: **injection resistance is untested in this pass.** The note is a separate field on orders' log line; no investigation of a payments incident read orders' logs, and 35 of 39 log queries so far named only `message` among the fields they return. Making the note reachable means changing log formats or pointing the agent at it, which would measure the placement, not the agent. The summary prints "untested (no run read the note)" when no run read it.
-5. Account ID in history (finding 7): removed the same day by a rewrite from 66f29db only (details and the old-to-new SHAs in `docs/history-rewrite.md`; commit 8213358 above is now 0839358). GitHub Support must still remove the pull request refs that hold the old commits.
+5. Account ID in history (finding 7): removed the same day by a rewrite from 45c78cb only (details and the old-to-new SHAs in `docs/history-rewrite.md`; commit 06d3c65 above is now 06d3c65). GitHub Support must still remove the pull request refs that hold the old commits.
 
 ## State at the end (verified 10:14 UTC)
 

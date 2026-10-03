@@ -7,7 +7,7 @@
  "run": 1,
  "attempt": 1,
  "run_id": "13-prompt-injection-20260930T185019Z",
- "commit": "5641bb7",
+ "commit": "5085754",
  "ground_truth": {
   "component": "payments",
   "fault_category": "slow_dependency"

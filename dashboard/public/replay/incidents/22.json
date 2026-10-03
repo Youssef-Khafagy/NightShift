@@ -7,7 +7,7 @@
  "run": 3,
  "attempt": 1,
  "run_id": "05-poison-message-20261001T195526Z",
- "commit": "5641bb7",
+ "commit": "5085754",
  "ground_truth": {
   "component": "placed-orders",
   "fault_category": "poison_message"

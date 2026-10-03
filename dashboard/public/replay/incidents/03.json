@@ -7,7 +7,7 @@
  "run": 2,
  "attempt": 1,
  "run_id": "11-legit-spike-20260930T165050Z",
- "commit": "5641bb7",
+ "commit": "5085754",
  "ground_truth": {
   "component": "none",
   "fault_category": "no_fault"

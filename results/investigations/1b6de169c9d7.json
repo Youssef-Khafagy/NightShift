@@ -86,8 +86,8 @@
           "minutes": 15
         },
         "call_id": "RhOVvCMhH",
-        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":15,\"moves\":[{\"at\":\"2026-09-30T16:41:10.092+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 27\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}",
-        "summary": "{\"window_minutes\":15,\"moves\":[{\"at\":\"2026-09-30T16:41:10.092+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 27\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":15,\"moves\":[{\"at\":\"2026-09-30T16:41:10.092+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 27\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}",
+        "summary": "{\"window_minutes\":15,\"moves\":[{\"at\":\"2026-09-30T16:41:10.092+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 27\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}",
         "reasoning": "",
         "provider_data": {},
         "in_trigger": false
@@ -172,7 +172,7 @@
         "call_id": "bsqBDHAA6",
         "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":93503,\"scan_budget_left_bytes\":20769733}}",
         "summary": "{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":93503,\"scan_budget_left_bytes\":20769733}",
-        "reasoning": "### Updated Analysis:\n- **Before the deploy (Step 2, 16:38\u201316:40)**: No Lambda errors.\n- **After the deploy (Step 5, 16:41\u201316:42)**:\n  - **94/116 traces failed** (81% error rate).\n  - **P99 duration = 2.68s**, max = 3.746s (likely exceeding Lambda timeout).\n  - **No faults or throttles**, but errors are unlogged in CloudWatch.\n- **Immediately after deploy (Step 7, 16:41\u201316:42)**:\n  - **60/60 traces failed** (100% error rate).\n  - **P99 duration = 0.392s**, max = 0.969s (no timeout issues here, but all traces failed).\n  - This suggests the errors are **not timeouts** but **unhandled exceptions or dependency failures** introduced by the new code.\n\n### Next Steps:\n8. Check the **slowest traces** (Step 5) for **subsegments** (e.g., calls to `payments` or `fulfillment`) to confirm if the failures are due to **slow dependencies** or **internal logic errors**.\n9. Review the **deployment diff** (commit `5641bb7`) for changes that could cause **unhandled exceptions** or **dependency issues**.\n\n",
+        "reasoning": "### Updated Analysis:\n- **Before the deploy (Step 2, 16:38\u201316:40)**: No Lambda errors.\n- **After the deploy (Step 5, 16:41\u201316:42)**:\n  - **94/116 traces failed** (81% error rate).\n  - **P99 duration = 2.68s**, max = 3.746s (likely exceeding Lambda timeout).\n  - **No faults or throttles**, but errors are unlogged in CloudWatch.\n- **Immediately after deploy (Step 7, 16:41\u201316:42)**:\n  - **60/60 traces failed** (100% error rate).\n  - **P99 duration = 0.392s**, max = 0.969s (no timeout issues here, but all traces failed).\n  - This suggests the errors are **not timeouts** but **unhandled exceptions or dependency failures** introduced by the new code.\n\n### Next Steps:\n8. Check the **slowest traces** (Step 5) for **subsegments** (e.g., calls to `payments` or `fulfillment`) to confirm if the failures are due to **slow dependencies** or **internal logic errors**.\n9. Review the **deployment diff** (commit `5085754`) for changes that could cause **unhandled exceptions** or **dependency issues**.\n\n",
         "provider_data": {},
         "in_trigger": false
       },
@@ -189,7 +189,7 @@
           "evidence_steps": "2,3,5,7",
           "hypotheses": "likely: bad_deploy\nruled_out: slow_dependency\nruled_out: config_regression\nruled_out: timeout_regression",
           "actions": "rollback_alias service=orders",
-          "proposed_actions": "Review commit 5641bb7 for the root cause of the failures."
+          "proposed_actions": "Review commit 5085754 for the root cause of the failures."
         },
         "call_id": "KbfmtclR5",
         "result": "{\"ok\": \"investigation closed\"}",
@@ -358,7 +358,7 @@
       "evidence_steps": "2,3,5,7",
       "hypotheses": "likely: bad_deploy\nruled_out: slow_dependency\nruled_out: config_regression\nruled_out: timeout_regression",
       "actions": "rollback_alias service=orders",
-      "proposed_actions": "Review commit 5641bb7 for the root cause of the failures."
+      "proposed_actions": "Review commit 5085754 for the root cause of the failures."
     }
   }
 }

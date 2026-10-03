@@ -82,8 +82,8 @@
           "service": "fulfillment"
         },
         "call_id": "call_962441",
-        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":60,\"moves\":[{\"at\":\"2026-09-27T04:44:01.786+00:00\",\"service\":\"fulfillment\",\"kind\":\"deploy\",\"version\":\"7 -> 8\",\"git_sha\":\"8213358\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env PAYMENT_TIMEOUT_SECONDS\"]}}]}}",
-        "summary": "{\"window_minutes\":60,\"moves\":[{\"at\":\"2026-09-27T04:44:01.786+00:00\",\"service\":\"fulfillment\",\"kind\":\"deploy\",\"version\":\"7 -> 8\",\"git_sha\":\"8213358\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env PAYM...(older result, shortened)",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":60,\"moves\":[{\"at\":\"2026-09-27T04:44:01.786+00:00\",\"service\":\"fulfillment\",\"kind\":\"deploy\",\"version\":\"7 -> 8\",\"git_sha\":\"06d3c65\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env PAYMENT_TIMEOUT_SECONDS\"]}}]}}",
+        "summary": "{\"window_minutes\":60,\"moves\":[{\"at\":\"2026-09-27T04:44:01.786+00:00\",\"service\":\"fulfillment\",\"kind\":\"deploy\",\"version\":\"7 -> 8\",\"git_sha\":\"06d3c65\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":false,\"settings_changed\":[\"env PAYM...(older result, shortened)",
         "reasoning": "",
         "provider_data": {
           "thoughtSignature": "EmAKXgFpFH0TYF/LUmtdcQgWrPf3rvL2/QMW5CXbAm6FjWgVYLJlM18ZceGX6TAQj58O9EESVlJTvrY5p54Fi0nxrtdUpB4jsueqkW02hyL/zYs2TQ48Zm1HKMkVxLm12Hw="

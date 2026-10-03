@@ -122,8 +122,8 @@
           "minutes": 30
         },
         "call_id": "LHohFJg7x",
-        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T12:24:43.842+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 29\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}",
-        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T12:24:43.842+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 29\",\"git_sha\":\"5641bb7\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}",
+        "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T12:24:43.842+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 29\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}}",
+        "summary": "{\"window_minutes\":30,\"moves\":[{\"at\":\"2026-10-01T12:24:43.842+00:00\",\"service\":\"orders\",\"kind\":\"deploy\",\"version\":\"26 -> 29\",\"git_sha\":\"5085754\",\"actor\":\"youssef\",\"reason\":null,\"changed\":{\"code_changed\":true,\"settings_changed\":[]}}]}",
         "reasoning": "",
         "provider_data": {},
         "in_trigger": false
@@ -158,7 +158,7 @@
         "call_id": "jGW4epZA6",
         "result": "{\"tool\":\"get_traces\",\"truncated\":false,\"untrusted_data\":{\"service\":\"nightshift-orders\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":261,\"with_error\":87,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.326,\"p99\":3.957,\"max\":5.183},\"slowest\":[{\"id\":\"1-6abe5058-39f68a3817e671e958b20939\",\"seconds\":5.183},{\"id\":\"1-6abe5059-156965cc3045dfdc0feccc5b\",\"seconds\":4.367},{\"id\":\"1-6abe5058-2190c7550306d9f10e780e83\",\"seconds\":4.132},{\"id\":\"1-6abe510d-5df99c5d3aaa9f181c44d57a\",\"seconds\":3.957},{\"id\":\"1-6abe510e-15c99e5331722ab45b523e00\",\"seconds\":3.733}]}}",
         "summary": "{\"service\":\"nightshift-orders\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":261,\"with_error\":87,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.326,\"p99\":3.957,\"max\":5.183},\"slowest\"...(older result, shortened)",
-        "reasoning": "The alarm **nightshift-orders-errors** fired at 2026-10-01 12:24:00, with **16 errors in the last minute** (Step 4). The errors began immediately after a **deploy of orders version 29 (SHA 5641bb7) at 12:24:43** (Step 5), which changed only the code (no settings). The logs show **repeated errors about \"Invalid metric unit 'Counts'\"**, which suggests a **configuration or code regression** in the new version (Step 6).\n\n### Hypotheses\n- **likely: bad_deploy**: The new code in version 29 introduced an error in metric handling, causing repeated failures.\n- **possible: config_regression**: If the error references a misconfigured metric unit, it could be a setting issue, but the deploy only changed code.\n- **ruled_out: timeout_regression, slow_dependency, poison_message, iam_regression, hot_row_contention, missing_index, throttling, retry_storm, no_fault**: No evidence of timeouts, dependency slowness, permission issues, or database contention. The errors are consistent with a code bug.\n\n### ",
+        "reasoning": "The alarm **nightshift-orders-errors** fired at 2026-10-01 12:24:00, with **16 errors in the last minute** (Step 4). The errors began immediately after a **deploy of orders version 29 (SHA 5085754) at 12:24:43** (Step 5), which changed only the code (no settings). The logs show **repeated errors about \"Invalid metric unit 'Counts'\"**, which suggests a **configuration or code regression** in the new version (Step 6).\n\n### Hypotheses\n- **likely: bad_deploy**: The new code in version 29 introduced an error in metric handling, causing repeated failures.\n- **possible: config_regression**: If the error references a misconfigured metric unit, it could be a setting issue, but the deploy only changed code.\n- **ruled_out: timeout_regression, slow_dependency, poison_message, iam_regression, hot_row_contention, missing_index, throttling, retry_storm, no_fault**: No evidence of timeouts, dependency slowness, permission issues, or database contention. The errors are consistent with a code bug.\n\n### ",
         "provider_data": {},
         "in_trigger": false
       },
@@ -171,7 +171,7 @@
           "root_cause_component": "orders",
           "fault_category": "bad_deploy",
           "confidence": 95,
-          "summary": "A deploy of orders version 29 (SHA 5641bb7) introduced a bug causing repeated errors due to an invalid metric unit ('Counts'). The errors began immediately after the deploy and are confirmed by logs and traces.",
+          "summary": "A deploy of orders version 29 (SHA 5085754) introduced a bug causing repeated errors due to an invalid metric unit ('Counts'). The errors began immediately after the deploy and are confirmed by logs and traces.",
           "evidence_steps": "4,5,6,7",
           "hypotheses": "likely: bad_deploy\nruled_out: config_regression\nruled_out: timeout_regression\nruled_out: slow_dependency\nruled_out: poison_message\nruled_out: iam_regression\nruled_out: hot_row_contention\nruled_out: missing_index\nruled_out: throttling\nruled_out: retry_storm\nruled_out: no_fault",
           "actions": "rollback_alias service=orders",
@@ -362,7 +362,7 @@
       "root_cause_component": "orders",
       "fault_category": "bad_deploy",
       "confidence": 95,
-      "summary": "A deploy of orders version 29 (SHA 5641bb7) introduced a bug causing repeated errors due to an invalid metric unit ('Counts'). The errors began immediately after the deploy and are confirmed by logs and traces.",
+      "summary": "A deploy of orders version 29 (SHA 5085754) introduced a bug causing repeated errors due to an invalid metric unit ('Counts'). The errors began immediately after the deploy and are confirmed by logs and traces.",
       "evidence_steps": "4,5,6,7",
       "hypotheses": "likely: bad_deploy\nruled_out: config_regression\nruled_out: timeout_regression\nruled_out: slow_dependency\nruled_out: poison_message\nruled_out: iam_regression\nruled_out: hot_row_contention\nruled_out: missing_index\nruled_out: throttling\nruled_out: retry_storm\nruled_out: no_fault",
       "actions": "rollback_alias service=orders",
