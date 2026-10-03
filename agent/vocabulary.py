@@ -45,39 +45,60 @@ COMPONENTS: list[str] = list(get_args(Component))
 # config_regression, a slow provider behind a caller's timeouts called
 # timeout_regression. One line each, because every token here is paid on
 # every call.
+#
+# Each category is defined by what changed, not by the error it produces.
+# Pass m7 (2026-10-03) showed the first wording described symptoms, and the
+# wrong answers fitted it word for word: a slow provider holds its
+# concurrency limit longer, so "a limit was reached" called it throttling;
+# a role scoped to the real table denies a wrong table name, so "calls are
+# denied" called it an IAM regression; and any changed setting read as a
+# config regression. The order of checks matters too, so the specific
+# setting categories say they come before config_regression.
 CATEGORY_MEANINGS: dict[str, str] = {
-    "bad_deploy": "new code was deployed and the service's errors began with it",
+    "bad_deploy": (
+        "a deploy changed the service's code and its errors began with it; a "
+        "deploy that changed only settings is not bad_deploy"
+    ),
     "config_regression": (
-        "a changed setting breaks the service, such as a wrong table name or "
-        "environment value; not a timeout and not a concurrency or capacity limit"
+        "a changed setting other than a timeout, queue setting or concurrency "
+        "limit broke the service, such as a wrong table name; calls denied "
+        "after such a change are this, not iam_regression"
     ),
     "timeout_regression": (
-        "a caller's timeout setting was lowered, so calls that used to succeed "
-        "are cut off; the component is the caller whose setting changed"
+        "a caller's timeout setting was lowered, so calls are cut off although "
+        "the callee is no slower; the component is the caller that changed"
     ),
     "slow_dependency": (
-        "a service or store that others call became slow; the component is the "
-        "slow one, not the callers whose timeouts are the symptom"
+        "a service or store that others call got slower with no change to its "
+        "callers; the component is the slow one, and throttles or timeouts in "
+        "front of it are symptoms"
     ),
     "poison_message": (
         "one malformed message fails every time it is processed and ends in "
         "the dead-letter queue, while other messages succeed"
     ),
-    "iam_regression": "a permission was removed or changed, so calls are denied",
+    "iam_regression": (
+        "a role's policy was changed and lost a permission the service uses; "
+        "denied calls alone are not enough without that policy change"
+    ),
     "hot_row_contention": (
         "many concurrent transactions update the same row, so the database "
-        "aborts and retries them"
+        "aborts and retries them; the retries concentrate on one item"
     ),
     "missing_index": "a query became slow because an index it relied on is gone",
     "throttling": (
-        "requests are rejected because a concurrency or capacity limit was "
-        "reached, whether traffic rose or the limit was lowered"
+        "traffic rose past a concurrency or capacity limit, or the limit was "
+        "lowered; not requests that got slower and held the limit longer"
     ),
     "retry_storm": (
-        "the same work is attempted over and over, for example messages "
-        "delivered again while still being processed, multiplying load"
+        "a queue or retry setting makes the same work run again and again, "
+        "such as messages redelivered while still being processed, so healthy "
+        "messages can reach the dead-letter queue"
     ),
-    "no_fault": "nothing is broken, for example more traffic handled correctly",
+    "no_fault": (
+        "nothing changed and nothing is broken; more traffic handled "
+        "correctly, even with some retries or a stray throttle"
+    ),
     "insufficient_evidence": "the evidence does not show the cause",
 }
 

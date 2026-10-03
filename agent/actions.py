@@ -134,6 +134,11 @@ FLAG_COMPONENTS = {
     "checkout_rate_limit": ("orders", "cart", "dsql", "cart-table"),
 }
 NOT_A_DIAGNOSIS = ("no_fault", "insufficient_evidence")
+# Faults where the dead-letter queue's messages fail again if redriven: a
+# poison message fails every time, and a retry storm redelivers anything put
+# back. Pass m7 measured the gap: twice the agent named the poison message
+# correctly and proposed redriving it, and the queue-side rule let it through.
+REDRIVE_REPEATS = ("poison_message", "retry_storm")
 
 
 def misfit(action: Action, component: str, category: str) -> str | None:
@@ -152,4 +157,9 @@ def misfit(action: Action, component: str, category: str) -> str | None:
     queue_actions = ("pause_queue_consumer", "resume_queue_consumer", "redrive_dlq")
     if action.name in queue_actions and component not in QUEUE_SIDE:
         return f"{action.name} does not address a fault in {component}"
+    if action.name == "redrive_dlq" and category in REDRIVE_REPEATS:
+        return (
+            f"redrive_dlq while the cause is {category} sends the messages back "
+            "to fail again; it belongs after the cause is fixed"
+        )
     return None
