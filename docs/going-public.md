@@ -12,6 +12,12 @@ A public GitHub repository publishes more than its files: every commit on every 
 | DSQL cluster ID | The database's hostname. Connecting needs an IAM-signed token, so it opens nothing, but it is not needed in public | 4 result files, 4 commits, 25 Actions logs (the apply workflow printed it) |
 | The owner's alert email | Spam and phishing | 5 current files, 3 commits from the first milestone, 4 Actions logs |
 
+**It had been public all along.** The working notes said the repository was private from its creation on 2026-09-19. During this migration `gh repo view` reported it public, and GitHub's event log showed it had been made public on its first day, at 04:47 UTC. Everything in the table above was therefore readable for 14 days: the account ID (in history until 2026-09-27, and in 23 pull requests after that), the cluster ID, the alert email, the IAM user name. The old repository was made private the moment this was seen. Then, to find out whether anything worse had been exposed:
+
+- gitleaks over all 305 commits, including the 92 pull-request refs: no API keys, tokens or private keys, ever.
+- Forks 0, stars 0, watchers 0; Software Heritage held no copy.
+- None of the exposed values is a credential. The AWS user has MFA and no access keys; the root user has MFA and no access keys; the LLM keys were only ever in a git-ignored `.env` and in SSM.
+
 ## What was done
 
 1. **The values left the current files.** The cluster ID was scrubbed from the four result files; the Terraform outputs that print it are sensitive, so logs show `<sensitive>`. The alert email moved to a Terraform variable with no default, set from a GitHub secret in CI and a git-ignored `terraform.tfvars` locally; the budget files hold a placeholder. A missing value stops the plan instead of replacing the subscription.
