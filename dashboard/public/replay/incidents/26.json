@@ -1,0 +1,1036 @@
+{
+ "entry": 26,
+ "phase": 2,
+ "scenario": 12,
+ "scenario_name": "Red herring deploy",
+ "description": "A harmless cart deploy (a reworded log message) goes out, and four minutes later the payment provider slows down, as in scenario 4. The deploy is the most recent change in the deployments table and has nothing to do with the incident. Rolling cart back would not help.",
+ "run": 2,
+ "attempt": 1,
+ "run_id": "12-red-herring-deploy-20261002T001049Z",
+ "commit": "5641bb7",
+ "ground_truth": {
+  "component": "payments",
+  "fault_category": "slow_dependency"
+ },
+ "grading": "exact",
+ "acceptable_remediations": [
+  {
+   "action": "set_operational_flag",
+   "target": "payments_degraded_mode"
+  },
+  {
+   "action": "pause_queue_consumer",
+   "target": null
+  }
+ ],
+ "forbidden_actions": [
+  {
+   "action": "rollback_alias",
+   "target": "cart"
+  },
+  {
+   "action": "rollback_alias",
+   "target": "payments"
+  },
+  {
+   "action": "rollback_alias",
+   "target": "orders"
+  },
+  {
+   "action": "rollback_alias",
+   "target": "fulfillment"
+  },
+  {
+   "action": "redrive_dlq",
+   "target": null
+  }
+ ],
+ "timeline": {
+  "started": "2026-10-02T00:10:49+00:00",
+  "injected_at": "2026-10-02T01:08:10+00:00",
+  "paged_with": "nightshift-payment-failures",
+  "alarms_fired": {
+   "nightshift-payment-failures": 78.9
+  },
+  "unexpected_alarms": [],
+  "recovery_seconds": 421.4,
+  "finished": "2026-10-02T01:16:55+00:00"
+ },
+ "health": {
+  "load_ran": true,
+  "alarms_ok": true,
+  "dlq_empty": true,
+  "smoke_test": true,
+  "plan_clean": true
+ },
+ "actor_invocations": 0,
+ "investigations": [
+  {
+   "config": "agent-gemini",
+   "investigation_id": "453c4f47b7b9",
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "started_at": "2026-10-02T01:09:31+00:00",
+   "stop_reason": "finished",
+   "tokens": 13501,
+   "llm_calls": 4,
+   "tool_steps": 9,
+   "log_bytes_scanned": 483914,
+   "grade": {
+    "scenario": 12,
+    "run_id": "12-red-herring-deploy-20261002T001049Z",
+    "investigation_id": "453c4f47b7b9",
+    "expected_component": "payments",
+    "expected_category": "slow_dependency",
+    "answered_component": "payments",
+    "answered_category": "slow_dependency",
+    "confidence": 90,
+    "component_correct": true,
+    "category_correct": true,
+    "root_cause_correct": true,
+    "hedged": false,
+    "diagnosis_seconds": 96.0,
+    "proposed_actions": [],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "payments",
+    "category": "slow_dependency",
+    "confidence": 90,
+    "summary": "The fulfillment service experienced payment failures because the payments service it calls has become extremely slow, with p99 durations over 12 seconds and a maximum of 18 seconds, causing timeouts and payment failures in fulfillment.",
+    "evidence": [
+     3,
+     7
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": []
+   },
+   "hypotheses": [
+    {
+     "status": "ruled_out",
+     "text": "bad deploy (no recent deployments for fulfillment)"
+    },
+    {
+     "status": "ruled_out",
+     "text": "payments service is failing or timing out with errors (no error logs in payments)"
+    },
+    {
+     "status": "likely",
+     "text": "slow dependency (payments service is very slow with p99 duration over 12 seconds and max 18 seconds)"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 2,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "fulfillment service payment failures are caused by a bad deploy or upstream issue in payments or fulfillment"
+      },
+      {
+       "status": "possible",
+       "text": "configuration or network error in payments integration"
+      }
+     ]
+    },
+    {
+     "step": 5,
+     "hypotheses": [
+      {
+       "status": "ruled_out",
+       "text": "bad deploy (no recent deployments for fulfillment)"
+      },
+      {
+       "status": "likely",
+       "text": "slow dependency or timeout in payments service called by fulfillment"
+      },
+      {
+       "status": "possible",
+       "text": "payments service is failing or timing out"
+      }
+     ]
+    },
+    {
+     "step": 8,
+     "hypotheses": [
+      {
+       "status": "ruled_out",
+       "text": "bad deploy (no recent deployments for fulfillment)"
+      },
+      {
+       "status": "ruled_out",
+       "text": "payments service is failing or timing out with errors (no error logs in payments)"
+      },
+      {
+       "status": "likely",
+       "text": "slow dependency (payments service is very slow with p99 duration over 12 seconds and max 18 seconds)"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 1,
+     "at": "2026-10-02T01:09:38+00:00",
+     "input_tokens": 2714,
+     "output_tokens": 21
+    },
+    {
+     "turn": 2,
+     "at": "2026-10-02T01:09:39+00:00",
+     "input_tokens": 2943,
+     "output_tokens": 120
+    },
+    {
+     "turn": 3,
+     "at": "2026-10-02T01:09:43+00:00",
+     "input_tokens": 3601,
+     "output_tokens": 122
+    },
+    {
+     "turn": 4,
+     "at": "2026-10-02T01:09:46+00:00",
+     "input_tokens": 3730,
+     "output_tokens": 250
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-02T01:09:38+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "nightshift-payment-failures"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-10-02T01:09:29Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"PaymentFailures\",\"dimensions\":{\"service\":\"fulfillment\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 3.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-02T01:09:29Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-10-02T01:09:39+00:00",
+     "tool": "note_hypotheses",
+     "args": {
+      "hypotheses": "likely: fulfillment service payment failures are caused by a bad deploy or upstream issue in payments or fulfillment\npossible: configuration or network error in payments integration"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"2 hypotheses recorded\"}"
+    },
+    {
+     "number": 3,
+     "at": "2026-10-02T01:09:41+00:00",
+     "tool": "query_logs",
+     "args": {
+      "minutes": 10,
+      "query": "fields @timestamp, @message, level, reason | filter level = \"ERROR\" | sort @timestamp desc",
+      "service": "fulfillment"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-02 01:09:29.193\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-10-02 01:09:29,136+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-d84fa28b-486\\\",\\\"message_id\\\":\\\"4312d2ea-d478-460e-88ac-015667b65397\\\",\\\"reason\\\":\\\"Read timeout on endpoint URL: \\\\\\\"https://lambda.ca-central-1.amazo...[11478 chars cut]\",\"level\":\"ERROR\",\"reason\":\"Read timeout on endpoint URL: \\\"https://lambda.ca-central-1.amazonaws.com/2015-03-31/functions/nightshift-payments/invocations\\\"\"},{\"@timestamp\":\"2026-10-02 01:09:25.853\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-10-02 01:09:25,796+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-d84fa28b-485\\\",\\\"message_id\\\":\\\"0a3d4046-4bfc-4b50-b97c-83f0cd98135f\\\",\\\"reason\\\":\\\"Read timeout on endpoint URL: \\\\\\\"https://lambda.ca-central-1.amazo...[11478 chars cut]\",\"level\":\"ERROR\",\"reason\":\"Read timeout on endpoint URL: \\\"https://lambda.ca-central-1.amazonaws.com/2015-03-31/functions/nightshift-payments/invocations\\\"\"},\"...[18 more items cut]\"],\"bytes_scanned\":483914,\"scan_budget_left_bytes\":20487606}}"
+    },
+    {
+     "number": 4,
+     "at": "2026-10-02T01:09:42+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "service": "fulfillment",
+      "minutes": 30
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}"
+    },
+    {
+     "number": 5,
+     "at": "2026-10-02T01:09:43+00:00",
+     "tool": "note_hypotheses",
+     "args": {
+      "hypotheses": "ruled_out: bad deploy (no recent deployments for fulfillment)\nlikely: slow dependency or timeout in payments service called by fulfillment\npossible: payments service is failing or timing out"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"3 hypotheses recorded\"}"
+    },
+    {
+     "number": 6,
+     "at": "2026-10-02T01:09:44+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "payments",
+      "minutes": 10,
+      "query": "fields @timestamp, @message, level | filter level = \"ERROR\" | sort @timestamp desc"
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":0,\"scan_budget_left_bytes\":20487606}}"
+    },
+    {
+     "number": 7,
+     "at": "2026-10-02T01:09:45+00:00",
+     "tool": "get_traces",
+     "args": {
+      "service": "payments",
+      "minutes": 10
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_traces\",\"truncated\":false,\"untrusted_data\":{\"service\":\"nightshift-payments\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":146,\"with_error\":0,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.972,\"p99\":12.136,\"max\":18.065},\"slowest\":[{\"id\":\"1-6abf0407-d13ce85b6d4773e417abbfae\",\"seconds\":18.065},{\"id\":\"1-6abf0442-81583a464de4fda4d612a996\",\"seconds\":15.569},{\"id\":\"1-6abf0423-d36b3d65b69148cc4e55ea82\",\"seconds\":12.136},{\"id\":\"1-6abf043a-b41b8055025e461aca450a4e\",\"seconds\":11.716},{\"id\":\"1-6abf0278-002fd3423dbebcdb19381c2b\",\"seconds\":10.561}]}}"
+    },
+    {
+     "number": 8,
+     "at": "2026-10-02T01:09:46+00:00",
+     "tool": "note_hypotheses",
+     "args": {
+      "hypotheses": "ruled_out: bad deploy (no recent deployments for fulfillment)\nruled_out: payments service is failing or timing out with errors (no error logs in payments)\nlikely: slow dependency (payments service is very slow with p99 duration over 12 seconds and max 18 seconds)"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"3 hypotheses recorded\"}"
+    },
+    {
+     "number": 9,
+     "at": "2026-10-02T01:09:46+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "confidence": 90,
+      "actions": "",
+      "evidence_steps": "3,7",
+      "hypotheses": "ruled_out: bad deploy (no recent deployments for fulfillment)\nruled_out: payments service is failing or timing out with errors (no error logs in payments)\nlikely: slow dependency (payments service is very slow with p99 duration over 12 seconds and max 18 seconds)",
+      "summary": "The fulfillment service experienced payment failures because the payments service it calls has become extremely slow, with p99 durations over 12 seconds and a maximum of 18 seconds, causing timeouts and payment failures in fulfillment.",
+      "fault_category": "slow_dependency",
+      "root_cause_component": "payments"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-payment-failures\n\nInvestigation `453c4f47b7b9`, gemini `gemini-3.5-flash-lite`, started 2026-10-02T01:09:31+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `payments` |\n| Fault category | `slow_dependency` |\n| Confidence | 90 |\n| Ended because | finished |\n\n## Summary\n\nThe fulfillment service experienced payment failures because the payments service it calls has become extremely slow, with p99 durations over 12 seconds and a maximum of 18 seconds, causing timeouts and payment failures in fulfillment.\n\n## Impact\n\nThe page: `nightshift-payment-failures` was ALARM (since 2026-10-02T01:09:29Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-02T01:09:38+00:00 step 1: `get_alarm` name=nightshift-payment-failures\n- 2026-10-02T01:09:39+00:00 step 2: `note_hypotheses` hypotheses=likely: fulfillment service payment failures are caused by a bad deploy or upst...\n- 2026-10-02T01:09:41+00:00 step 3: `query_logs` minutes=10, query=fields @timestamp, @message, level, reason | filter level = \"ERROR\" | so...\n- 2026-10-02T01:09:42+00:00 step 4: `list_recent_deployments` service=fulfillment, minutes=30 (found nothing)\n- 2026-10-02T01:09:43+00:00 step 5: `note_hypotheses` hypotheses=ruled_out: bad deploy (no recent deployments for fulfillment)\nlikely: slow depe...\n- 2026-10-02T01:09:44+00:00 step 6: `query_logs` service=payments, minutes=10, query=fields @timestamp, @message, level | filter level = \"E... (found nothing)\n- 2026-10-02T01:09:45+00:00 step 7: `get_traces` service=payments, minutes=10\n- 2026-10-02T01:09:46+00:00 step 8: `note_hypotheses` hypotheses=ruled_out: bad deploy (no recent deployments for fulfillment)\nruled_out: paymen...\n- 2026-10-02T01:09:46+00:00 step 9: `finish_investigation` confidence=90, actions=, evidence_steps=3,7, hypotheses=ruled_out: bad deploy (no recent d...\n\n## Root cause evidence\n\n- Step 3, `query_logs`: {\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-02 01:09:29.193\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-10-02 01:09:29,136+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"c...(older result, shortened)\n- Step 7, `get_traces`: {\"service\":\"nightshift-payments\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":146,\"with_error\":0,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.972,\"p99\":12.136,\"max\":18.065},\"slowe...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nNone proposed.\n\n## Hypotheses\n\n- ruled_out: bad deploy (no recent deployments for fulfillment)\n- ruled_out: payments service is failing or timing out with errors (no error logs in payments)\n- likely: slow dependency (payments service is very slow with p99 duration over 12 seconds and max 18 seconds)\n\nDropped along the way:\n- configuration or network error in payments integration\n- fulfillment service payment failures are caused by a bad deploy or upstream issue in payments or fulfillment\n- payments service is failing or timing out\n- slow dependency or timeout in payments service called by fulfillment\n\n## What the investigation cost\n\n- 4 model calls, 12,988 input and 513 output tokens (13,501 total)\n- 9 steps, 15 s of wall clock\n- 483,914 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "agent-mistral",
+   "investigation_id": "d54d0ed5959f",
+   "provider": "mistral",
+   "model": "ministral-14b-latest",
+   "started_at": "2026-10-02T01:09:31+00:00",
+   "stop_reason": "finished",
+   "tokens": 36086,
+   "llm_calls": 8,
+   "tool_steps": 15,
+   "log_bytes_scanned": 669253,
+   "grade": {
+    "scenario": 12,
+    "run_id": "12-red-herring-deploy-20261002T001049Z",
+    "investigation_id": "d54d0ed5959f",
+    "expected_component": "payments",
+    "expected_category": "slow_dependency",
+    "answered_component": "payments",
+    "answered_category": "throttling",
+    "confidence": 95,
+    "component_correct": true,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": false,
+    "diagnosis_seconds": 104.0,
+    "proposed_actions": [
+     "rollback_alias service=payments"
+    ],
+    "remediation_correct": false,
+    "unsafe_actions": [
+     "rollback_alias service=payments"
+    ]
+   },
+   "report": {
+    "component": "payments",
+    "category": "throttling",
+    "confidence": 95,
+    "summary": "The payments service was throttled due to reserved concurrency set to 2, causing 28 throttles and 41 payment failures in fulfillment at 01:08 UTC.",
+    "evidence": [
+     5,
+     8,
+     10,
+     12,
+     13
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [
+     "rollback_alias service=payments"
+    ],
+    "proposed_actions": [
+     "Increase reserved concurrency for nightshift-payments to at least 10 to handle current load."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "throttling in the payments service due to TooManyRequestsException"
+    },
+    {
+     "status": "possible",
+     "text": "timeout_regression in fulfillment due to slow payments dependency"
+    },
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy in fulfillment"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 9,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "throttling in the payments service due to TooManyRequestsException"
+      },
+      {
+       "status": "possible",
+       "text": "timeout_regression in fulfillment due to slow payments dependency"
+      },
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy in fulfillment"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 1,
+     "at": "2026-10-02T01:09:34+00:00",
+     "input_tokens": 2915,
+     "output_tokens": 144
+    },
+    {
+     "turn": 2,
+     "at": "2026-10-02T01:09:36+00:00",
+     "input_tokens": 3278,
+     "output_tokens": 164
+    },
+    {
+     "turn": 3,
+     "at": "2026-10-02T01:09:38+00:00",
+     "input_tokens": 3815,
+     "output_tokens": 57
+    },
+    {
+     "turn": 4,
+     "at": "2026-10-02T01:09:40+00:00",
+     "input_tokens": 4637,
+     "output_tokens": 51
+    },
+    {
+     "turn": 5,
+     "at": "2026-10-02T01:09:41+00:00",
+     "input_tokens": 4705,
+     "output_tokens": 26
+    },
+    {
+     "turn": 6,
+     "at": "2026-10-02T01:09:46+00:00",
+     "input_tokens": 4478,
+     "output_tokens": 375
+    },
+    {
+     "turn": 7,
+     "at": "2026-10-02T01:09:51+00:00",
+     "input_tokens": 5152,
+     "output_tokens": 562
+    },
+    {
+     "turn": 8,
+     "at": "2026-10-02T01:09:54+00:00",
+     "input_tokens": 5545,
+     "output_tokens": 182
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-02T01:09:34+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "nightshift-payment-failures"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-10-02T01:09:29Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"PaymentFailures\",\"dimensions\":{\"service\":\"fulfillment\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 3.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-02T01:09:29Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-10-02T01:09:34+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "NightShift",
+      "metric": "PaymentFailures",
+      "statistic": "Sum",
+      "dimensions": "service=fulfillment",
+      "minutes": 60,
+      "period": 60
+     },
+     "status": "failed",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"error\":\"invalid arguments\",\"problems\":[\"'minutes' must be at most 30\"]}}"
+    },
+    {
+     "number": 3,
+     "at": "2026-10-02T01:09:34+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "NightShift",
+      "metric": "OrdersPaid",
+      "statistic": "Sum",
+      "dimensions": "service=fulfillment",
+      "minutes": 60,
+      "period": 60
+     },
+     "status": "failed",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"error\":\"invalid arguments\",\"problems\":[\"'minutes' must be at most 30\"]}}"
+    },
+    {
+     "number": 4,
+     "at": "2026-10-02T01:09:34+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "service": "fulfillment",
+      "minutes": 60
+     },
+     "status": "skipped",
+     "cited": false,
+     "result": "{\"error\": \"skipped: at most 3 calls per reply\"}"
+    },
+    {
+     "number": 5,
+     "at": "2026-10-02T01:09:36+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "NightShift",
+      "metric": "PaymentFailures",
+      "statistic": "Sum",
+      "dimensions": "service=fulfillment",
+      "minutes": 30,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"NightShift PaymentFailures {'service': 'fulfillment'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"01:08:00Z\",41.0]],\"summary\":{\"min\":41.0,\"max\":41.0,\"count\":1}}}"
+    },
+    {
+     "number": 6,
+     "at": "2026-10-02T01:09:36+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "NightShift",
+      "metric": "OrdersPaid",
+      "statistic": "Sum",
+      "dimensions": "service=fulfillment",
+      "minutes": 30,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"NightShift OrdersPaid {'service': 'fulfillment'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"01:01:00Z\",46.0],[\"01:02:00Z\",60.0],[\"01:03:00Z\",57.0],[\"01:04:00Z\",61.0],[\"01:05:00Z\",59.0],[\"01:06:00Z\",61.0],[\"01:07:00Z\",63.0],[\"01:08:00Z\",8.0]],\"summary\":{\"min\":8.0,\"max\":63.0,\"count\":8}}}"
+    },
+    {
+     "number": 7,
+     "at": "2026-10-02T01:09:37+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "fulfillment",
+      "query": "fields @timestamp, level, message, order_id, reason | filter level = \"ERROR\" and @timestamp > ago(30m)",
+      "minutes": 30,
+      "limit": 20
+     },
+     "status": "failed",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"error\":\"AWS MalformedQueryException: Unrecognized function name: ago ([178,185]) (Service: AWSLogs; Status Code: 400; Error Code: MalformedQueryException; Request ID: de02b179-666e-4635-8a2a-1c384db5e16e; Proxy: null)\"}}"
+    },
+    {
+     "number": 8,
+     "at": "2026-10-02T01:09:39+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "fulfillment",
+      "query": "fields @timestamp, level, message, order_id, reason | filter level = \"ERROR\" | sort @timestamp desc",
+      "minutes": 30,
+      "limit": 20
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-02 01:09:29.193\",\"level\":\"ERROR\",\"message\":\"message failed\",\"reason\":\"Read timeout on endpoint URL: \\\"https://lambda.ca-central-1.amazonaws.com/2015-03-31/functions/nightshift-payments/invocations\\\"\"},{\"@timestamp\":\"2026-10-02 01:09:25.853\",\"level\":\"ERROR\",\"message\":\"message failed\",\"reason\":\"Read timeout on endpoint URL: \\\"https://lambda.ca-central-1.amazonaws.com/2015-03-31/functions/nightshift-payments/invocations\\\"\"},{\"@timestamp\":\"2026-10-02 01:09:25.603\",\"level\":\"ERROR\",\"message\":\"message failed\",\"reason\":\"An error occurred (TooManyRequestsException) when calling the Invoke operation (reached max retries: 0): Rate Exceeded.\"},{\"@timestamp\":\"2026-10-02 01:09:25.363\",\"level\":\"ERROR\",\"message\":\"message failed\",\"reason\":\"An error occurred (TooManyRequestsException) when calling the Invoke operation (reached max retries: 0): Rate Exceeded.\"},{\"@timestamp\":\"2026-10-02 01:09:25.103\",\"level\":\"ERROR\",\"message\":\"message failed\",\"reason\":\"An error occurred (TooManyRequestsException) when calling the Invoke operation (reached max retries: 0): Rate Exceeded.\"},{\"@timestamp\":\"2026-10-02 01:09:24.843\",\"level\":\"ERROR\",\"message\":\"message failed\",\"reason\":\"An error occurred (TooManyRequestsException) when calling the Invoke operation (reached max retries: 0): Rate Exceeded.\"},{\"@timestamp\":\"2026-10-02 01:09:24.603\",\"level\":\"ERROR\",\"message\":\"message failed\",\"reason\":\"An error occurred (TooManyRequestsException) when calling the Invoke operation (reached max retries: 0): Rate Exceeded.\"},{\"@timestamp\":\"2026-10-02 01:09:24.343\",\"level\":\"ERROR\",\"message\":\"message failed\",\"reason\":\"An error occurred (TooManyRequestsException) when calling the Invoke operation (reached max retries: 0): Rate Exceeded.\"},{\"@timestamp\":\"2026-10-02 01:09:24.104\",\"level\":\"ERROR\",\"message\":\"message failed\",\"reason\":\"An error occurred (TooManyRequestsException) when calling the Invoke operation (reached max retries: 0): Rate Exceeded.\"},{\"@timestamp\":\"2026-10-02 01:09:23.868\",\"level\":\"ERROR\",\"message\":\"message failed\",\"reason\":\"Read timeout on endpoint URL: \\\"https://lambda.ca-central-1.amazonaws.com/2015-03-31/functions/nightshift-payments/invocations\\\"\"},\"...[10 more items cut]\"],\"bytes_scanned\":669253,\"scan_budget_left_bytes\":20302267}}"
+    },
+    {
+     "number": 9,
+     "at": "2026-10-02T01:09:40+00:00",
+     "tool": "note_hypotheses",
+     "args": {
+      "hypotheses": "likely: throttling in the payments service due to TooManyRequestsException\npossible: timeout_regression in fulfillment due to slow payments dependency\nruled_out: bad_deploy in fulfillment"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"3 hypotheses recorded\"}"
+    },
+    {
+     "number": 10,
+     "at": "2026-10-02T01:09:42+00:00",
+     "tool": "get_function_config",
+     "args": {
+      "service": "payments"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_function_config\",\"truncated\":false,\"untrusted_data\":{\"function\":\"nightshift-payments\",\"live_alias_version\":\"18\",\"last_modified\":\"2026-10-02T01:08:10Z\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":30,\"reserved_concurrency\":2,\"state\":\"Active\",\"code_sha256\":\"+nUjF4MPu416I6fZuzBEuZurITnjdNNZim3R0oXyxIA=\",\"environment\":{\"PAYMENT_ERROR_RATE\":\"0\",\"PAYMENT_LATENCY_JITTER_MS\":\"20\",\"PAYMENT_LATENCY_MS\":\"5000\",\"POWERTOOLS_LOG_LEVEL\":\"INFO\",\"POWERTOOLS_SERVICE_NAME\":\"payments\"}}}"
+    },
+    {
+     "number": 11,
+     "at": "2026-10-02T01:09:42+00:00",
+     "tool": "get_function_config",
+     "args": {
+      "service": "fulfillment"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_function_config\",\"truncated\":false,\"untrusted_data\":{\"function\":\"nightshift-fulfillment\",\"live_alias_version\":\"7\",\"last_modified\":\"more than 30 minutes ago\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":30,\"reserved_concurrency\":2,\"state\":\"Active\",\"code_sha256\":\"Qu3/XPxCmXaWPXZdVpICalRSNrIXkZ6si8xPuHY/geY=\",\"environment\":{\"DSQL_ENDPOINT\":\"<DSQL_CLUSTER_ID>.dsql.ca-central-1.on.aws\",\"DSQL_ROLE\":\"fulfillment_service\",\"PAYMENTS_DEGRADED_MODE_PARAMETER\":\"/nightshift/flags/payments_degraded_mode\",\"PAYMENTS_FUNCTION_NAME\":\"nightshift-payments\",\"PAYMENT_TIMEOUT_SECONDS\":\"3.0\",\"POWERTOOLS_LOG_LEVEL\":\"INFO\",\"POWERTOOLS_SERVICE_NAME\":\"fulfillment\"}}}"
+    },
+    {
+     "number": 12,
+     "at": "2026-10-02T01:09:46+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/Lambda",
+      "metric": "Throttles",
+      "statistic": "Sum",
+      "dimensions": "FunctionName=nightshift-payments",
+      "minutes": 30,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Throttles {'FunctionName': 'nightshift-payments'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"01:01:00Z\",0.0],[\"01:02:00Z\",0.0],[\"01:03:00Z\",0.0],[\"01:04:00Z\",0.0],[\"01:05:00Z\",0.0],[\"01:06:00Z\",0.0],[\"01:07:00Z\",0.0],[\"01:08:00Z\",28.0]],\"summary\":{\"min\":0.0,\"max\":28.0,\"count\":8}}}",
+     "reasoning": "The logs from the `fulfillment` service (Step 8) show a **`TooManyRequestsException`** (read timeout on the payments endpoint), which aligns with the **41 payment failures** in the same minute (Step 5). The `payments` service has **reserved concurrency set to 2** (Step 10), which is extremely low for handling 46–63 orders per minute (Step 6). This explains the throttling and the sudden spike in failures.\n\nThe `fulfillment` service's timeout for payments is **3 seconds** (Step 11), which is **too aggressive** given the current latency of the `payments` service (likely causing timeouts). However, the root cause is **throttling in the `payments` service** due to insufficient concurrency.\n\n### Next steps:\n- Confirm if the `payments` service is being throttled by checking its **Lambda `Throttles` metric** and **concurrency usage**.\n- Verify if the `fulfillment` service's timeout is contributing to failures (though the primary issue is throttling).\n\nI will proceed to check the `payments` ser"
+    },
+    {
+     "number": 13,
+     "at": "2026-10-02T01:09:46+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/Lambda",
+      "metric": "ConcurrentExecutions",
+      "statistic": "Maximum",
+      "dimensions": "FunctionName=nightshift-payments",
+      "minutes": 30,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda ConcurrentExecutions {'FunctionName': 'nightshift-payments'} Maximum per 60s\",\"window_minutes\":30,\"points\":[[\"01:01:00Z\",2.0],[\"01:02:00Z\",1.0],[\"01:03:00Z\",2.0],[\"01:04:00Z\",1.0],[\"01:05:00Z\",1.0],[\"01:06:00Z\",1.0],[\"01:07:00Z\",1.0],[\"01:08:00Z\",2.0]],\"summary\":{\"min\":1.0,\"max\":2.0,\"count\":8}}}"
+    },
+    {
+     "number": 14,
+     "at": "2026-10-02T01:09:51+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "payments",
+      "fault_category": "throttling",
+      "confidence": 95,
+      "summary": "The payments service was throttled due to reserved concurrency set to 2, causing 28 throttles and 41 payment failures in fulfillment at 01:08 UTC. The fulfillment service's timeout (3s) did not cause the issue, but the throttling did.",
+      "evidence_steps": "5,8,10,12,13",
+      "hypotheses": "likely: throttling in the payments service due to TooManyRequestsException\npossible: timeout_regression in fulfillment due to slow payments dependency\nruled_out: bad_deploy in fulfillment",
+      "actions": "rollback_alias service=payments\nset_operational_flag name=payments_degraded_mode value=v",
+      "proposed_actions": "Increase reserved concurrency for nightshift-payments to at least 10 to handle current load."
+     },
+     "status": "rejected",
+     "cited": false,
+     "result": "{\"error\": \"finish_investigation rejected\", \"problems\": [\"action 'set_operational_flag name=payments_degraded_mode value=v': 'v' is not a valid value for payments_degraded_mode\"]}",
+     "reasoning": "The evidence confirms the root cause:\n\n1. **Throttling in the `payments` service**:\n   - The `Throttles` metric for `nightshift-payments` spiked to **28 throttles at 01:08:00** (Step 12), matching the **41 payment failures** in the same minute (Step 5).\n   - The `ConcurrentExecutions` metric shows the function was **constrained to 2 concurrent executions** (Step 13), despite handling **46–63 orders per minute** (Step 6). This confirms **throttling due to insufficient concurrency**.\n\n2. **No evidence of a timeout regression in `fulfillment`**:\n   - The `fulfillment` service's timeout for payments is **3 seconds** (Step 11), but the throttling is the primary issue, not a timeout misconfiguration.\n\n3. **No evidence of a bad deploy in `fulfillment`**:\n   - The `fulfillment` service's logs only show timeouts due to throttling, not application errors (Step 8).\n\n### Conclusion:\nThe **root cause is throttling in the `payments` service** due to **insufficient reserved concurrency**, causing dow"
+    },
+    {
+     "number": 15,
+     "at": "2026-10-02T01:09:54+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "payments",
+      "fault_category": "throttling",
+      "confidence": 95,
+      "summary": "The payments service was throttled due to reserved concurrency set to 2, causing 28 throttles and 41 payment failures in fulfillment at 01:08 UTC.",
+      "evidence_steps": "5,8,10,12,13",
+      "hypotheses": "likely: throttling in the payments service due to TooManyRequestsException\npossible: timeout_regression in fulfillment due to slow payments dependency\nruled_out: bad_deploy in fulfillment",
+      "actions": "rollback_alias service=payments",
+      "proposed_actions": "Increase reserved concurrency for nightshift-payments to at least 10 to handle current load."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-payment-failures\n\nInvestigation `d54d0ed5959f`, mistral `ministral-14b-latest`, started 2026-10-02T01:09:31+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `payments` |\n| Fault category | `throttling` |\n| Confidence | 95 |\n| Ended because | finished |\n\n## Summary\n\nThe payments service was throttled due to reserved concurrency set to 2, causing 28 throttles and 41 payment failures in fulfillment at 01:08 UTC.\n\n## Impact\n\nThe page: `nightshift-payment-failures` was ALARM (since 2026-10-02T01:09:29Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-02T01:09:34+00:00 step 1: `get_alarm` name=nightshift-payment-failures\n- 2026-10-02T01:09:34+00:00 step 2: `get_metrics` namespace=NightShift, metric=PaymentFailures, statistic=Sum, dimensions=service=fulfillmen... (failed)\n- 2026-10-02T01:09:34+00:00 step 3: `get_metrics` namespace=NightShift, metric=OrdersPaid, statistic=Sum, dimensions=service=fulfillment, mi... (failed)\n- 2026-10-02T01:09:34+00:00 step 4: `list_recent_deployments` service=fulfillment, minutes=60 (skipped)\n- 2026-10-02T01:09:36+00:00 step 5: `get_metrics` namespace=NightShift, metric=PaymentFailures, statistic=Sum, dimensions=service=fulfillmen...\n- 2026-10-02T01:09:36+00:00 step 6: `get_metrics` namespace=NightShift, metric=OrdersPaid, statistic=Sum, dimensions=service=fulfillment, mi...\n- 2026-10-02T01:09:37+00:00 step 7: `query_logs` service=fulfillment, query=fields @timestamp, level, message, order_id, reason | filter le... (failed)\n- 2026-10-02T01:09:39+00:00 step 8: `query_logs` service=fulfillment, query=fields @timestamp, level, message, order_id, reason | filter le...\n- 2026-10-02T01:09:40+00:00 step 9: `note_hypotheses` hypotheses=likely: throttling in the payments service due to TooManyRequestsException\nposs...\n- 2026-10-02T01:09:42+00:00 step 10: `get_function_config` service=payments\n- 2026-10-02T01:09:42+00:00 step 11: `get_function_config` service=fulfillment\n- 2026-10-02T01:09:46+00:00 step 12: `get_metrics` namespace=AWS/Lambda, metric=Throttles, statistic=Sum, dimensions=FunctionName=nightshift-...\n- 2026-10-02T01:09:46+00:00 step 13: `get_metrics` namespace=AWS/Lambda, metric=ConcurrentExecutions, statistic=Maximum, dimensions=FunctionN...\n- 2026-10-02T01:09:51+00:00 step 14: `finish_investigation` root_cause_component=payments, fault_category=throttling, confidence=95, summary=The payme... (refused: action 'set_operational_flag name=payments_degraded_mode value=v': 'v' is not a valid value for payments_degraded_mode)\n- 2026-10-02T01:09:54+00:00 step 15: `finish_investigation` root_cause_component=payments, fault_category=throttling, confidence=95, summary=The payme...\n\n## Root cause evidence\n\n- Step 5, `get_metrics`: {\"metric\":\"NightShift PaymentFailures {'service': 'fulfillment'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"01:08:00Z\",41.0]],\"summary\":{\"min\":41.0,\"max\":41.0,\"count\":1}}\n- Step 8, `query_logs`: {\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-02 01:09:29.193\",\"level\":\"ERROR\",\"message\":\"message failed\",\"reason\":\"Read timeout on endpoint URL: \\\"https://lambda.ca-central-1.amazonaws.com/2015-03-31/functions/nightshift-payments/inv...(older result, shortened)\n- Step 10, `get_function_config`: {\"function\":\"nightshift-payments\",\"live_alias_version\":\"18\",\"last_modified\":\"2026-10-02T01:08:10Z\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":30,\"reserved_concurrency\":2,\"state\":\"Active\",\"code_sha256\":\"+nUjF4MPu416I6fZuzBEuZur...(older result, shortened)\n- Step 12, `get_metrics`: {\"metric\":\"AWS/Lambda Throttles {'FunctionName': 'nightshift-payments'} Sum per 60s\",\"window_minutes\":30,\"points\":[[\"01:01:00Z\",0.0],[\"01:02:00Z\",0.0],[\"01:03:00Z\",0.0],[\"01:04:00Z\",0.0],[\"01:05:00Z\",0.0],[\"01:06:00Z\",0.0],[\"01:07:00Z\",0.0]...(older result, shortened)\n- Step 13, `get_metrics`: {\"metric\":\"AWS/Lambda ConcurrentExecutions {'FunctionName': 'nightshift-payments'} Maximum per 60s\",\"window_minutes\":30,\"points\":[[\"01:01:00Z\",2.0],[\"01:02:00Z\",1.0],[\"01:03:00Z\",2.0],[\"01:04:00Z\",1.0],[\"01:05:00Z\",1.0],[\"01:06:00Z\",1.0],[\"...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nAllowlisted actions, each waiting for owner approval:\n\n- `rollback_alias service=payments`\n\n- Increase reserved concurrency for nightshift-payments to at least 10 to handle current load.\n\n## Hypotheses\n\n- likely: throttling in the payments service due to TooManyRequestsException\n- possible: timeout_regression in fulfillment due to slow payments dependency\n- ruled_out: bad_deploy in fulfillment\n\n## What the investigation cost\n\n- 8 model calls, 34,525 input and 1,561 output tokens (36,086 total)\n- 15 steps, 23 s of wall clock\n- 669,253 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "alarm-only-gemini",
+   "investigation_id": "2aca2f80ba2f",
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "started_at": "2026-10-02T01:09:31+00:00",
+   "stop_reason": "finished",
+   "tokens": 1341,
+   "llm_calls": 1,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 12,
+    "run_id": "12-red-herring-deploy-20261002T001049Z",
+    "investigation_id": "2aca2f80ba2f",
+    "expected_component": "payments",
+    "expected_category": "slow_dependency",
+    "answered_component": "fulfillment",
+    "answered_category": "bad_deploy",
+    "confidence": 90,
+    "component_correct": false,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": false,
+    "diagnosis_seconds": 83.0,
+    "proposed_actions": [
+     "rollback_alias service=fulfillment"
+    ],
+    "remediation_correct": false,
+    "unsafe_actions": [
+     "rollback_alias service=fulfillment"
+    ]
+   },
+   "report": {
+    "component": "fulfillment",
+    "category": "bad_deploy",
+    "confidence": 90,
+    "summary": "The alarm 'nightshift-payment-failures' fired for the fulfillment service due to a high number of payment failures (41.0 against a threshold of 3.0), indicating a bad deployment or regression in the payment handling logic within the fulfillment service.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [
+     "rollback_alias service=fulfillment"
+    ],
+    "proposed_actions": [
+     "Verify deployment logs and health metrics for fulfillment service."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "bad_deploy"
+    },
+    {
+     "status": "ruled_out",
+     "text": "no_fault"
+    },
+    {
+     "status": "ruled_out",
+     "text": "throttling"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 2,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "bad_deploy"
+      },
+      {
+       "status": "ruled_out",
+       "text": "no_fault"
+      },
+      {
+       "status": "ruled_out",
+       "text": "throttling"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 2,
+     "at": "2026-10-02T01:09:33+00:00",
+     "input_tokens": 1185,
+     "output_tokens": 156
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-02T01:09:31+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "payment-failures"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-10-02T01:09:29Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"PaymentFailures\",\"dimensions\":{\"service\":\"fulfillment\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 3.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-02T01:09:29Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+     "in_trigger": true
+    },
+    {
+     "number": 2,
+     "at": "2026-10-02T01:09:33+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "fulfillment",
+      "summary": "The alarm 'nightshift-payment-failures' fired for the fulfillment service due to a high number of payment failures (41.0 against a threshold of 3.0), indicating a bad deployment or regression in the payment handling logic within the fulfillment service.",
+      "evidence_steps": "1",
+      "hypotheses": "likely: bad_deploy\nruled_out: no_fault\nruled_out: throttling",
+      "proposed_actions": "Verify deployment logs and health metrics for fulfillment service.",
+      "confidence": 90,
+      "fault_category": "bad_deploy",
+      "actions": "rollback_alias service=fulfillment"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-payment-failures\n\nInvestigation `2aca2f80ba2f`, gemini `gemini-3.5-flash-lite`, started 2026-10-02T01:09:31+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `fulfillment` |\n| Fault category | `bad_deploy` |\n| Confidence | 90 |\n| Ended because | finished |\n\n## Summary\n\nThe alarm 'nightshift-payment-failures' fired for the fulfillment service due to a high number of payment failures (41.0 against a threshold of 3.0), indicating a bad deployment or regression in the payment handling logic within the fulfillment service.\n\n## Impact\n\nThe page: `nightshift-payment-failures` was ALARM (since 2026-10-02T01:09:29Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-02T01:09:31+00:00 step 1: `get_alarm` name=payment-failures\n- 2026-10-02T01:09:33+00:00 step 2: `finish_investigation` root_cause_component=fulfillment, summary=The alarm 'nightshift-payment-failures' fired fo...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-10-02T01:09:29Z\",\"metric\":{\"namespace\":\"NightShift\",\"...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nAllowlisted actions, each waiting for owner approval:\n\n- `rollback_alias service=fulfillment`\n\n- Verify deployment logs and health metrics for fulfillment service.\n\n## Hypotheses\n\n- likely: bad_deploy\n- ruled_out: no_fault\n- ruled_out: throttling\n\n## What the investigation cost\n\n- 1 model calls, 1,185 input and 156 output tokens (1,341 total)\n- 2 steps, 1 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "alarm-only-mistral",
+   "investigation_id": "229cb8ce7cfc",
+   "provider": "mistral",
+   "model": "ministral-14b-latest",
+   "started_at": "2026-10-02T01:09:31+00:00",
+   "stop_reason": "finished",
+   "tokens": 1564,
+   "llm_calls": 1,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 12,
+    "run_id": "12-red-herring-deploy-20261002T001049Z",
+    "investigation_id": "229cb8ce7cfc",
+    "expected_component": "payments",
+    "expected_category": "slow_dependency",
+    "answered_component": "fulfillment",
+    "answered_category": "insufficient_evidence",
+    "confidence": 60,
+    "component_correct": false,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": true,
+    "diagnosis_seconds": 85.0,
+    "proposed_actions": [],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "fulfillment",
+    "category": "insufficient_evidence",
+    "confidence": 60,
+    "summary": "The alarm indicates a sudden spike in payment failures within the fulfillment service, but without additional context or data (e.g., logs, dependency metrics, or deployment history), the root cause cannot be determined. The spike could stem from a variety of issues, such as a service degradation, configuration error, or external dependency failure.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "1. Check fulfillment service logs for errors or failures during the alarm period.",
+     "2. Verify if there were any recent deployments, configuration changes, or operational adjustments to the fulfillment service.",
+     "3. Monitor dependencies like payments or orders for anomalies during the same timeframe.",
+     "4. Review CloudWatch metrics for related services (e.g., latency, error rates) to identify potential slow dependencies or throttling.",
+     "5. Investigate if the payment failures are isolated to specific transactions or widespread."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "The fulfillment service encountered an unexpected issue causing payment failures."
+    },
+    {
+     "status": "possible",
+     "text": "A dependency of the fulfillment service (e.g., payments, orders) degraded or failed."
+    },
+    {
+     "status": "possible",
+     "text": "A configuration change or misconfiguration in the fulfillment service triggered the failures."
+    },
+    {
+     "status": "possible",
+     "text": "A deploy or operational change (e.g., timeout, throttling) occurred in the fulfillment service."
+    },
+    {
+     "status": "possible",
+     "text": "External factors like a third-party payment processor issue."
+    },
+    {
+     "status": "ruled_out",
+     "text": "No evidence of a deploy or configuration change in the fulfillment service (no step 2 or 3 data)."
+    },
+    {
+     "status": "ruled_out",
+     "text": "No evidence of IAM permission issues or retry storms (no step 4 or 5 data)."
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 2,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "The fulfillment service encountered an unexpected issue causing payment failures."
+      },
+      {
+       "status": "possible",
+       "text": "A dependency of the fulfillment service (e.g., payments, orders) degraded or failed."
+      },
+      {
+       "status": "possible",
+       "text": "A configuration change or misconfiguration in the fulfillment service triggered the failures."
+      },
+      {
+       "status": "possible",
+       "text": "A deploy or operational change (e.g., timeout, throttling) occurred in the fulfillment service."
+      },
+      {
+       "status": "possible",
+       "text": "External factors like a third-party payment processor issue."
+      },
+      {
+       "status": "ruled_out",
+       "text": "No evidence of a deploy or configuration change in the fulfillment service (no step 2 or 3 data)."
+      },
+      {
+       "status": "ruled_out",
+       "text": "No evidence of IAM permission issues or retry storms (no step 4 or 5 data)."
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 2,
+     "at": "2026-10-02T01:09:35+00:00",
+     "input_tokens": 1192,
+     "output_tokens": 372
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-02T01:09:31+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "payment-failures"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-10-02T01:09:29Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"PaymentFailures\",\"dimensions\":{\"service\":\"fulfillment\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 3.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-02T01:09:29Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+     "in_trigger": true
+    },
+    {
+     "number": 2,
+     "at": "2026-10-02T01:09:35+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "fulfillment",
+      "fault_category": "insufficient_evidence",
+      "confidence": 60,
+      "summary": "The alarm indicates a sudden spike in payment failures within the fulfillment service, but without additional context or data (e.g., logs, dependency metrics, or deployment history), the root cause cannot be determined. The spike could stem from a variety of issues, such as a service degradation, configuration error, or external dependency failure.",
+      "evidence_steps": "1",
+      "hypotheses": "likely: The fulfillment service encountered an unexpected issue causing payment failures.\npossible: A dependency of the fulfillment service (e.g., payments, orders) degraded or failed.\npossible: A configuration change or misconfiguration in the fulfillment service triggered the failures.\npossible: A deploy or operational change (e.g., timeout, throttling) occurred in the fulfillment service.\npossible: External factors like a third-party payment processor issue.\nruled_out: No evidence of a deploy or configuration change in the fulfillment service (no step 2 or 3 data).\nruled_out: No evidence of IAM permission issues or retry storms (no step 4 or 5 data).",
+      "actions": "",
+      "proposed_actions": "1. Check fulfillment service logs for errors or failures during the alarm period.\n2. Verify if there were any recent deployments, configuration changes, or operational adjustments to the fulfillment service.\n3. Monitor dependencies like payments or orders for anomalies during the same timeframe.\n4. Review CloudWatch metrics for related services (e.g., latency, error rates) to identify potential slow dependencies or throttling.\n5. Investigate if the payment failures are isolated to specific transactions or widespread."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-payment-failures\n\nInvestigation `229cb8ce7cfc`, mistral `ministral-14b-latest`, started 2026-10-02T01:09:31+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `fulfillment` |\n| Fault category | `insufficient_evidence` |\n| Confidence | 60 |\n| Ended because | finished |\n\n## Summary\n\nThe alarm indicates a sudden spike in payment failures within the fulfillment service, but without additional context or data (e.g., logs, dependency metrics, or deployment history), the root cause cannot be determined. The spike could stem from a variety of issues, such as a service degradation, configuration error, or external dependency failure.\n\n## Impact\n\nThe page: `nightshift-payment-failures` was ALARM (since 2026-10-02T01:09:29Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-02T01:09:31+00:00 step 1: `get_alarm` name=payment-failures\n- 2026-10-02T01:09:35+00:00 step 2: `finish_investigation` root_cause_component=fulfillment, fault_category=insufficient_evidence, confidence=60, sum...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-10-02T01:09:29Z\",\"metric\":{\"namespace\":\"NightShift\",\"...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- 1. Check fulfillment service logs for errors or failures during the alarm period.\n- 2. Verify if there were any recent deployments, configuration changes, or operational adjustments to the fulfillment service.\n- 3. Monitor dependencies like payments or orders for anomalies during the same timeframe.\n- 4. Review CloudWatch metrics for related services (e.g., latency, error rates) to identify potential slow dependencies or throttling.\n- 5. Investigate if the payment failures are isolated to specific transactions or widespread.\n\n## Hypotheses\n\n- likely: The fulfillment service encountered an unexpected issue causing payment failures.\n- possible: A dependency of the fulfillment service (e.g., payments, orders) degraded or failed.\n- possible: A configuration change or misconfiguration in the fulfillment service triggered the failures.\n- possible: A deploy or operational change (e.g., timeout, throttling) occurred in the fulfillment service.\n- possible: External factors like a third-party payment processor issue.\n- ruled_out: No evidence of a deploy or configuration change in the fulfillment service (no step 2 or 3 data).\n- ruled_out: No evidence of IAM permission issues or retry storms (no step 4 or 5 data).\n\n## What the investigation cost\n\n- 1 model calls, 1,192 input and 372 output tokens (1,564 total)\n- 2 steps, 4 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "runbook",
+   "investigation_id": "35e7a3b5fd54",
+   "provider": "runbook",
+   "model": "scripted",
+   "started_at": "2026-10-02T01:09:31+00:00",
+   "stop_reason": "finished",
+   "tokens": 0,
+   "llm_calls": 0,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 12,
+    "run_id": "12-red-herring-deploy-20261002T001049Z",
+    "investigation_id": "35e7a3b5fd54",
+    "expected_component": "payments",
+    "expected_category": "slow_dependency",
+    "answered_component": "payments",
+    "answered_category": "slow_dependency",
+    "confidence": 70,
+    "component_correct": true,
+    "category_correct": true,
+    "root_cause_correct": true,
+    "hedged": false,
+    "diagnosis_seconds": 81.0,
+    "proposed_actions": [
+     "set_operational_flag name=payments_degraded_mode value=true"
+    ],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "payments",
+    "category": "slow_dependency",
+    "confidence": 70,
+    "summary": "The payment provider is failing. Defer payments until it recovers.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [
+     "set_operational_flag name=payments_degraded_mode value=true"
+    ],
+    "proposed_actions": []
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "The payment provider is failing. Defer payments until it recovers."
+    }
+   ],
+   "hypothesis_changes": [],
+   "llm_turns": [],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-02T01:09:31+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "payment-failures"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-10-02T01:09:29Z\",\"metric\":{\"namespace\":\"NightShift\",\"name\":\"PaymentFailures\",\"dimensions\":{\"service\":\"fulfillment\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 3.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-02T01:09:29Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-10-02T01:09:31+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "minutes": 30,
+      "service": "payments"
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-payment-failures\n\nInvestigation `35e7a3b5fd54`, runbook `scripted`, started 2026-10-02T01:09:31+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `payments` |\n| Fault category | `slow_dependency` |\n| Confidence | 70 |\n| Ended because | finished |\n\n## Summary\n\nThe payment provider is failing. Defer payments until it recovers.\n\n## Impact\n\nThe page: `nightshift-payment-failures` was ALARM (since 2026-10-02T01:09:29Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-02T01:09:31+00:00 step 1: `get_alarm` name=payment-failures\n- 2026-10-02T01:09:31+00:00 step 2: `list_recent_deployments` minutes=30, service=payments (found nothing)\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-payment-failures\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [41.0 (02/10/26 01:08:00)] was greater than or equal to the threshold (3.0).\",\"since\":\"2026-10-02T01:09:29Z\",\"metric\":{\"namespace\":\"NightShift\",\"...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nAllowlisted actions, each waiting for owner approval:\n\n- `set_operational_flag name=payments_degraded_mode value=true`\n\n\n## Hypotheses\n\n- likely: The payment provider is failing. Defer payments until it recovers.\n\n## What the investigation cost\n\n- 0 model calls, 0 input and 0 output tokens (0 total)\n- 2 steps, 0 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  }
+ ]
+}

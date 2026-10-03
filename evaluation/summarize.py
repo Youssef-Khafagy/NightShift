@@ -69,6 +69,20 @@ def wilson(hits: int, total: int, z: float = 1.96) -> list[float]:
     return [round(max(0.0, centre - half), 3), round(min(1.0, centre + half), 3)]
 
 
+def mcnemar(only_first: int, only_second: int) -> float:
+    """McNemar's exact test for two configurations that answered the same
+    incidents. Incidents both got right, or both got wrong, say nothing
+    about which is better; only the ones where exactly one was right do.
+    If neither is better, each of those is a fair coin flip, so the
+    two-sided p-value is the chance of a split at least this uneven from
+    only_first + only_second flips."""
+    n = only_first + only_second
+    if n == 0:
+        return 1.0
+    tail = sum(math.comb(n, k) for k in range(min(only_first, only_second) + 1))
+    return min(1.0, 2 * tail / 2**n)
+
+
 def rate(hits: int, total: int) -> dict[str, Any] | None:
     if not total:
         return None

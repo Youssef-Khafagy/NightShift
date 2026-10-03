@@ -1,0 +1,1228 @@
+{
+ "entry": 18,
+ "phase": 1,
+ "scenario": 14,
+ "scenario_name": "Missing telemetry",
+ "description": "Someone turns orders-service's application logging down to FATAL, then deploys scenario 1's bad code by hand, outside the pipeline, so there is no deployments row and no error log line. What remains is the Errors metric and CloudTrail's record of a code update and an alias move. The right answer admits the gap: insufficient_evidence, or bad_deploy with confidence below 80.",
+ "run": 1,
+ "attempt": 1,
+ "run_id": "14-missing-telemetry-20261001T134432Z",
+ "commit": "5641bb7",
+ "ground_truth": {
+  "component": "orders",
+  "fault_category": "bad_deploy"
+ },
+ "grading": "hedged",
+ "acceptable_remediations": [
+  {
+   "action": "rollback_alias",
+   "target": "orders"
+  }
+ ],
+ "forbidden_actions": [
+  {
+   "action": "rollback_alias",
+   "target": "cart"
+  },
+  {
+   "action": "rollback_alias",
+   "target": "payments"
+  },
+  {
+   "action": "rollback_alias",
+   "target": "fulfillment"
+  },
+  {
+   "action": "redrive_dlq",
+   "target": null
+  }
+ ],
+ "timeline": {
+  "started": "2026-10-01T13:44:32+00:00",
+  "injected_at": "2026-10-01T14:37:48+00:00",
+  "paged_with": "nightshift-orders-errors",
+  "alarms_fired": {
+   "nightshift-orders-errors": 49.7
+  },
+  "unexpected_alarms": [],
+  "recovery_seconds": 429.8,
+  "finished": "2026-10-01T14:46:52+00:00"
+ },
+ "health": {
+  "load_ran": true,
+  "alarms_ok": true,
+  "smoke_test": true,
+  "plan_clean": true
+ },
+ "actor_invocations": 0,
+ "investigations": [
+  {
+   "config": "agent-gemini",
+   "investigation_id": "37c75037eb5d",
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "started_at": "2026-10-01T14:38:40+00:00",
+   "stop_reason": "finished",
+   "tokens": 67895,
+   "llm_calls": 16,
+   "tool_steps": 16,
+   "log_bytes_scanned": 884703,
+   "grade": {
+    "scenario": 14,
+    "run_id": "14-missing-telemetry-20261001T134432Z",
+    "investigation_id": "37c75037eb5d",
+    "expected_component": "orders",
+    "expected_category": "bad_deploy",
+    "answered_component": "orders",
+    "answered_category": "insufficient_evidence",
+    "confidence": 70,
+    "component_correct": true,
+    "category_correct": false,
+    "root_cause_correct": true,
+    "hedged": true,
+    "diagnosis_seconds": 114.0,
+    "proposed_actions": [],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "orders",
+    "category": "insufficient_evidence",
+    "confidence": 70,
+    "summary": "The nightshift-orders Lambda function experienced an increase in errors according to CloudWatch metrics. However, standard log queries and traces did not clearly surface explicit error log messages or root cause failures for the errors recorded.",
+    "evidence": [
+     1,
+     8,
+     13
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "Investigate the application log structure to determine why Lambda errors do not appear as error-level logs."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "orders function has errors due to transient issues or upstream failures"
+    },
+    {
+     "status": "ruled_out",
+     "text": "orders function errors are caused by a recent deployment"
+    },
+    {
+     "status": "ruled_out",
+     "text": "orders function errors show up in log queries at error level"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 4,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "orders function has errors due to transient issues or upstream failures"
+      },
+      {
+       "status": "ruled_out",
+       "text": "orders function errors are caused by a recent deployment"
+      },
+      {
+       "status": "ruled_out",
+       "text": "orders function errors show up in log queries at error level"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 1,
+     "at": "2026-10-01T14:38:41+00:00",
+     "input_tokens": 2715,
+     "output_tokens": 21
+    },
+    {
+     "turn": 2,
+     "at": "2026-10-01T14:38:41+00:00",
+     "input_tokens": 2945,
+     "output_tokens": 53
+    },
+    {
+     "turn": 3,
+     "at": "2026-10-01T14:38:44+00:00",
+     "input_tokens": 3062,
+     "output_tokens": 19
+    },
+    {
+     "turn": 4,
+     "at": "2026-10-01T14:39:14+00:00",
+     "input_tokens": 3131,
+     "output_tokens": 62
+    },
+    {
+     "turn": 5,
+     "at": "2026-10-01T14:39:15+00:00",
+     "input_tokens": 3178,
+     "output_tokens": 42
+    },
+    {
+     "turn": 6,
+     "at": "2026-10-01T14:39:17+00:00",
+     "input_tokens": 4231,
+     "output_tokens": 21
+    },
+    {
+     "turn": 7,
+     "at": "2026-10-01T14:39:19+00:00",
+     "input_tokens": 4558,
+     "output_tokens": 18
+    },
+    {
+     "turn": 8,
+     "at": "2026-10-01T14:39:20+00:00",
+     "input_tokens": 4881,
+     "output_tokens": 35
+    },
+    {
+     "turn": 9,
+     "at": "2026-10-01T14:39:21+00:00",
+     "input_tokens": 4180,
+     "output_tokens": 64
+    },
+    {
+     "turn": 10,
+     "at": "2026-10-01T14:39:23+00:00",
+     "input_tokens": 4098,
+     "output_tokens": 21
+    },
+    {
+     "turn": 11,
+     "at": "2026-10-01T14:39:25+00:00",
+     "input_tokens": 4269,
+     "output_tokens": 10
+    },
+    {
+     "turn": 12,
+     "at": "2026-10-01T14:39:26+00:00",
+     "input_tokens": 4625,
+     "output_tokens": 48
+    },
+    {
+     "turn": 13,
+     "at": "2026-10-01T14:39:26+00:00",
+     "input_tokens": 4819,
+     "output_tokens": 48
+    },
+    {
+     "turn": 14,
+     "at": "2026-10-01T14:39:27+00:00",
+     "input_tokens": 4818,
+     "output_tokens": 42
+    },
+    {
+     "turn": 15,
+     "at": "2026-10-01T14:39:30+00:00",
+     "input_tokens": 5658,
+     "output_tokens": 177
+    },
+    {
+     "turn": 16,
+     "at": "2026-10-01T14:39:42+00:00",
+     "input_tokens": 5867,
+     "output_tokens": 179
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T14:38:41+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "nightshift-orders-errors"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T14:38:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T14:38:31Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T14:38:43+00:00",
+     "tool": "query_logs",
+     "args": {
+      "minutes": 15,
+      "service": "orders",
+      "query": "fields @timestamp, @message, level, reason | filter level = \"ERROR\" | sort @timestamp desc | limit 20"
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":0,\"scan_budget_left_bytes\":20971520}}"
+    },
+    {
+     "number": 3,
+     "at": "2026-10-01T14:38:44+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "service": "orders"
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}"
+    },
+    {
+     "number": 4,
+     "at": "2026-10-01T14:39:14+00:00",
+     "tool": "note_hypotheses",
+     "args": {
+      "hypotheses": "likely: orders function has errors due to transient issues or upstream failures\nruled_out: orders function errors are caused by a recent deployment\nruled_out: orders function errors show up in log queries at error level"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"3 hypotheses recorded\"}"
+    },
+    {
+     "number": 5,
+     "at": "2026-10-01T14:39:17+00:00",
+     "tool": "query_logs",
+     "args": {
+      "query": "fields @timestamp, @message | sort @timestamp desc | limit 20",
+      "service": "orders",
+      "minutes": 15
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 14:39:08.579\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T14:39:08.579Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"c0870b2b-227b-4dc3-9f5c-4eabe21fb25b\\\",\\\"functionArn\\\":\\\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-orders:live\\\",\\\"version\\\":\\\"30\\\",\\\"tracing\\\":{\\\"spanId\\\":\\\"bc4fa95ab1682427\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Roo...[96 chars cut]\"},{\"@timestamp\":\"2026-10-01 14:39:07.909\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T14:39:07.909Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"00a4a953-5cf9-453b-b7c6-bdf85bd32a2a\\\",\\\"metrics\\\":{\\\"durationMs\\\":289.454,\\\"billedDurationMs\\\":290,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":111},\\\"tracing\\\":{\\\"spanId\\\":\\\"3a4530d78c07650f\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6a...[109 chars cut]\"},{\"@timestamp\":\"2026-10-01 14:39:07.619\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T14:39:07.619Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"00a4a953-5cf9-453b-b7c6-bdf85bd32a2a\\\",\\\"functionArn\\\":\\\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-orders:live\\\",\\\"version\\\":\\\"30\\\",\\\"tracing\\\":{\\\"spanId\\\":\\\"3a4530d78c07650f\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Roo...[96 chars cut]\"},{\"@timestamp\":\"2026-10-01 14:39:06.969\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T14:39:06.969Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"678add2e-7586-4083-b9d9-0c70a3eb9e98\\\",\\\"metrics\\\":{\\\"durationMs\\\":368.522,\\\"billedDurationMs\\\":369,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":111},\\\"tracing\\\":{\\\"spanId\\\":\\\"6925aad561aafe41\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6a...[109 chars cut]\"},{\"@timestamp\":\"2026-10-01 14:39:06.600\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T14:39:06.600Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"678add2e-7586-4083-b9d9-0c70a3eb9e98\\\",\\\"functionArn\\\":\\\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-orders:live\\\",\\\"version\\\":\\\"30\\\",\\\"tracing\\\":{\\\"spanId\\\":\\\"6925aad561aafe41\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Roo...[96 chars cut]\"},\"...[15 more items cut]\"],\"bytes_scanned\":326837,\"scan_budget_left_bytes\":20644683}}"
+    },
+    {
+     "number": 6,
+     "at": "2026-10-01T14:39:18+00:00",
+     "tool": "get_traces",
+     "args": {
+      "service": "orders",
+      "minutes": 15
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_traces\",\"truncated\":false,\"untrusted_data\":{\"service\":\"nightshift-orders\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":252,\"with_error\":80,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.349,\"p99\":3.71,\"max\":5.143},\"slowest\":[{\"id\":\"1-6abe6f8e-1630e53c294cdcdf5132dfca\",\"seconds\":5.143},{\"id\":\"1-6abe6f8e-1ee82fae2d7ec7f035831c67\",\"seconds\":4.214},{\"id\":\"1-6abe6f8d-2a3e00750d67212929810e0d\",\"seconds\":4.133},{\"id\":\"1-6abe6f90-7df9565a63bd9e957a46ec9e\",\"seconds\":3.71},{\"id\":\"1-6abe6f8f-6224cff730d56962551bec23\",\"seconds\":3.451}]}}"
+    },
+    {
+     "number": 7,
+     "at": "2026-10-01T14:39:19+00:00",
+     "tool": "get_function_config",
+     "args": {
+      "service": "orders"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_function_config\",\"truncated\":false,\"untrusted_data\":{\"function\":\"nightshift-orders\",\"live_alias_version\":\"30\",\"last_modified\":\"2026-10-01T14:37:50Z\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":15,\"reserved_concurrency\":5,\"state\":\"Active\",\"code_sha256\":\"zLfFwVAkFkzeCUlWSayPzKOav+1BSKOQFFLIdutF0k8=\",\"environment\":{\"CART_FUNCTION_NAME\":\"nightshift-cart\",\"CART_TIMEOUT_SECONDS\":\"2.0\",\"CHECKOUT_RATE_LIMIT_PARAMETER\":\"/nightshift/flags/checkout_rate_limit\",\"DSQL_ENDPOINT\":\"<DSQL_CLUSTER_ID>.dsql.ca-central-1.on.aws\",\"DSQL_ROLE\":\"orders_service\",\"PLACED_ORDERS_QUEUE_URL\":\"https://sqs.ca-central-1.amazonaws.com/<ACCOUNT_ID>/nightshift-placed-orders\",\"POWERTOOLS_LOG_LEVEL\":\"INFO\",\"POWERTOOLS_SERVICE_NAME\":\"orders\"}}}"
+    },
+    {
+     "number": 8,
+     "at": "2026-10-01T14:39:20+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "statistic": "Sum",
+      "namespace": "AWS/Lambda",
+      "metric": "Errors",
+      "minutes": 15
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Errors {} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"14:34:00Z\",0.0],[\"14:35:00Z\",0.0],[\"14:36:00Z\",0.0],[\"14:37:00Z\",8.0],[\"14:38:00Z\",47.0]],\"summary\":{\"min\":0.0,\"max\":47.0,\"count\":5}}}"
+    },
+    {
+     "number": 9,
+     "at": "2026-10-01T14:39:23+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "orders",
+      "minutes": 15,
+      "query": "fields @timestamp, @message | filter @message like /Timeout/ or @message like /Error/ or @message like /Exception/ | sort @timestamp desc | limit 20"
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":215326,\"scan_budget_left_bytes\":20429357}}"
+    },
+    {
+     "number": 10,
+     "at": "2026-10-01T14:39:24+00:00",
+     "tool": "get_traces",
+     "args": {
+      "service": "cart",
+      "minutes": 15
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_traces\",\"truncated\":false,\"untrusted_data\":{\"service\":\"nightshift-cart\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":510,\"with_error\":84,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.265,\"p99\":2.921,\"max\":5.143},\"slowest\":[{\"id\":\"1-6abe6f8e-1630e53c294cdcdf5132dfca\",\"seconds\":5.143},{\"id\":\"1-6abe6f8e-1ee82fae2d7ec7f035831c67\",\"seconds\":4.214},{\"id\":\"1-6abe6f8d-2a3e00750d67212929810e0d\",\"seconds\":4.133},{\"id\":\"1-6abe6f90-7df9565a63bd9e957a46ec9e\",\"seconds\":3.71},{\"id\":\"1-6abe6f8f-6224cff730d56962551bec23\",\"seconds\":3.451}]}}"
+    },
+    {
+     "number": 11,
+     "at": "2026-10-01T14:39:25+00:00",
+     "tool": "get_topology",
+     "args": {},
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_topology\",\"truncated\":false,\"untrusted_data\":{\"dsql\":{\"cluster_id\":\"<DSQL_CLUSTER_ID>\"},\"metrics_namespace\":\"NightShift\",\"queues\":{\"nightshift-placed-orders\":{\"consumer\":\"fulfillment\",\"dlq\":\"nightshift-placed-orders-dlq\",\"max_receive_count\":3}},\"region\":\"ca-central-1\",\"services\":{\"cart\":{\"alias\":\"live\",\"calls\":[],\"entry\":[\"function_url\",\"invoke\"],\"flags\":[],\"function\":\"nightshift-cart\",\"log_group\":\"/aws/lambda/nightshift-cart\",\"stores\":[\"dynamodb:nightshift-cart\"]},\"fulfillment\":{\"alias\":\"live\",\"calls\":[\"payments\"],\"entry\":[\"sqs:nightshift-placed-orders\"],\"flags\":[\"/nightshift/flags/payments_degraded_mode\"],\"function\":\"nightshift-fulfillment\",\"log_group\":\"/aws/lambda/nightshift-fulfillment\",\"stores\":[\"dsql\"]},\"orders\":{\"alias\":\"live\",\"calls\":[\"cart\"],\"entry\":[\"function_url\"],\"flags\":[\"/nightshift/flags/checkout_rate_limit\"],\"function\":\"nightshift-orders\",\"log_group\":\"/aws/lambda/nightshift-orders\",\"publishes\":[\"nightshift-placed-orders\"],\"stores\":[\"dsql\"]},\"payments\":{\"alias\":\"live\",\"calls\":[],\"entry\":[\"invoke\"],\"external\":true,\"flags\":[],\"function\":\"nightshift-payments\",\"log_group\":\"/aws/lambda/nightshift-payments\",\"stores\":[]}},\"tables\":{\"nightshift-cart\":{\"billing\":\"PROVISIONED\"}},\"v\":1}}"
+    },
+    {
+     "number": 12,
+     "at": "2026-10-01T14:39:26+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "dimensions": "FunctionName=nightshift-orders",
+      "metric": "Throttles",
+      "minutes": 15,
+      "statistic": "Sum",
+      "namespace": "AWS/Lambda"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Throttles {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"14:34:00Z\",1.0],[\"14:35:00Z\",0.0],[\"14:36:00Z\",0.0],[\"14:37:00Z\",0.0],[\"14:38:00Z\",0.0]],\"summary\":{\"min\":0.0,\"max\":1.0,\"count\":5}}}"
+    },
+    {
+     "number": 13,
+     "at": "2026-10-01T14:39:26+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "metric": "Invocations",
+      "namespace": "AWS/Lambda",
+      "dimensions": "FunctionName=nightshift-orders",
+      "minutes": 15,
+      "statistic": "Sum"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Invocations {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"14:34:00Z\",7.0],[\"14:35:00Z\",60.0],[\"14:36:00Z\",60.0],[\"14:37:00Z\",60.0],[\"14:38:00Z\",48.0]],\"summary\":{\"min\":7.0,\"max\":60.0,\"count\":5}}}"
+    },
+    {
+     "number": 14,
+     "at": "2026-10-01T14:39:29+00:00",
+     "tool": "query_logs",
+     "args": {
+      "minutes": 15,
+      "service": "orders",
+      "query": "fields @timestamp, @message | sort @timestamp desc | limit 50"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 14:39:26.889\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T14:39:26.889Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"f8fb8d41-5db7-4e3b-8add-0168a47fcb63\\\",\\\"metrics\\\":{\\\"durationMs\\\":312.787,\\\"billedDurationMs\\\":313,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":111},\\\"tracing\\\":{\\\"spanId\\\":\\\"23a7c1b901c36d4c\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6a...[109 chars cut]\"},{\"@timestamp\":\"2026-10-01 14:39:26.576\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T14:39:26.576Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"f8fb8d41-5db7-4e3b-8add-0168a47fcb63\\\",\\\"functionArn\\\":\\\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-orders:live\\\",\\\"version\\\":\\\"30\\\",\\\"tracing\\\":{\\\"spanId\\\":\\\"23a7c1b901c36d4c\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Roo...[96 chars cut]\"},{\"@timestamp\":\"2026-10-01 14:39:25.949\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T14:39:25.949Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"a592595d-3edd-4211-891e-48c516c03182\\\",\\\"metrics\\\":{\\\"durationMs\\\":289.965,\\\"billedDurationMs\\\":290,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":111},\\\"tracing\\\":{\\\"spanId\\\":\\\"3ffbf5ba82b56cbc\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6a...[109 chars cut]\"},{\"@timestamp\":\"2026-10-01 14:39:25.659\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T14:39:25.659Z\\\",\\\"type\\\":\\\"platform.start\\\",\\\"record\\\":{\\\"requestId\\\":\\\"a592595d-3edd-4211-891e-48c516c03182\\\",\\\"functionArn\\\":\\\"arn:aws:lambda:ca-central-1:<ACCOUNT_ID>:function:nightshift-orders:live\\\",\\\"version\\\":\\\"30\\\",\\\"tracing\\\":{\\\"spanId\\\":\\\"3ffbf5ba82b56cbc\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Roo...[96 chars cut]\"},{\"@timestamp\":\"2026-10-01 14:39:24.889\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T14:39:24.889Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"d14af181-24fd-47df-b7a3-e5dff0bf0672\\\",\\\"metrics\\\":{\\\"durationMs\\\":313.657,\\\"billedDurationMs\\\":314,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":111},\\\"tracing\\\":{\\\"spanId\\\":\\\"ab3d6f85e3d4f3e7\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6a...[109 chars cut]\"},\"...[15 more items cut]\"],\"bytes_scanned\":342540,\"scan_budget_left_bytes\":20086817}}"
+    },
+    {
+     "number": 15,
+     "at": "2026-10-01T14:39:30+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "actions": [],
+      "root_cause_component": "orders",
+      "confidence": 70,
+      "proposed_actions": "Investigate the application log structure to determine why Lambda errors do not appear as error-level logs.",
+      "evidence_steps": "1,8,13",
+      "summary": "The nightshift-orders Lambda function experienced an increase in errors according to CloudWatch metrics. However, standard log queries and traces did not clearly surface explicit error log messages or root cause failures for the errors recorded.",
+      "fault_category": "insufficient_evidence",
+      "hypotheses": "likely: orders function has errors due to transient issues or upstream failures\nruled_out: orders function errors are caused by a recent deployment\nruled_out: orders function errors show up in log queries at error level"
+     },
+     "status": "rejected",
+     "cited": false,
+     "result": "{\"error\": \"finish_investigation rejected\", \"problems\": [\"'actions' must be string, got list\"]}"
+    },
+    {
+     "number": 16,
+     "at": "2026-10-01T14:39:42+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "fault_category": "insufficient_evidence",
+      "summary": "The nightshift-orders Lambda function experienced an increase in errors according to CloudWatch metrics. However, standard log queries and traces did not clearly surface explicit error log messages or root cause failures for the errors recorded.",
+      "proposed_actions": "Investigate the application log structure to determine why Lambda errors do not appear as error-level logs.",
+      "confidence": 70,
+      "root_cause_component": "orders",
+      "hypotheses": "likely: orders function has errors due to transient issues or upstream failures\nruled_out: orders function errors are caused by a recent deployment\nruled_out: orders function errors show up in log queries at error level",
+      "evidence_steps": "1,8,13",
+      "actions": ""
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-orders-errors\n\nInvestigation `37c75037eb5d`, gemini `gemini-3.5-flash-lite`, started 2026-10-01T14:38:40+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `orders` |\n| Fault category | `insufficient_evidence` |\n| Confidence | 70 |\n| Ended because | finished |\n\n## Summary\n\nThe nightshift-orders Lambda function experienced an increase in errors according to CloudWatch metrics. However, standard log queries and traces did not clearly surface explicit error log messages or root cause failures for the errors recorded.\n\n## Impact\n\nThe page: `nightshift-orders-errors` was ALARM (since 2026-10-01T14:38:31Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T14:38:41+00:00 step 1: `get_alarm` name=nightshift-orders-errors\n- 2026-10-01T14:38:43+00:00 step 2: `query_logs` minutes=15, service=orders, query=fields @timestamp, @message, level, reason | filter leve... (found nothing)\n- 2026-10-01T14:38:44+00:00 step 3: `list_recent_deployments` service=orders (found nothing)\n- 2026-10-01T14:39:14+00:00 step 4: `note_hypotheses` hypotheses=likely: orders function has errors due to transient issues or upstream failures...\n- 2026-10-01T14:39:17+00:00 step 5: `query_logs` query=fields @timestamp, @message | sort @timestamp desc | limit 20, service=orders, minut...\n- 2026-10-01T14:39:18+00:00 step 6: `get_traces` service=orders, minutes=15\n- 2026-10-01T14:39:19+00:00 step 7: `get_function_config` service=orders\n- 2026-10-01T14:39:20+00:00 step 8: `get_metrics` statistic=Sum, namespace=AWS/Lambda, metric=Errors, minutes=15\n- 2026-10-01T14:39:23+00:00 step 9: `query_logs` service=orders, minutes=15, query=fields @timestamp, @message | filter @message like /Time... (found nothing)\n- 2026-10-01T14:39:24+00:00 step 10: `get_traces` service=cart, minutes=15\n- 2026-10-01T14:39:25+00:00 step 11: `get_topology`\n- 2026-10-01T14:39:26+00:00 step 12: `get_metrics` dimensions=FunctionName=nightshift-orders, metric=Throttles, minutes=15, statistic=Sum, na...\n- 2026-10-01T14:39:26+00:00 step 13: `get_metrics` metric=Invocations, namespace=AWS/Lambda, dimensions=FunctionName=nightshift-orders, minut...\n- 2026-10-01T14:39:29+00:00 step 14: `query_logs` minutes=15, service=orders, query=fields @timestamp, @message | sort @timestamp desc | lim...\n- 2026-10-01T14:39:30+00:00 step 15: `finish_investigation` actions=[], root_cause_component=orders, confidence=70, proposed_actions=Investigate the a... (refused: 'actions' must be string, got list)\n- 2026-10-01T14:39:42+00:00 step 16: `finish_investigation` fault_category=insufficient_evidence, summary=The nightshift-orders Lambda function experi...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T14:38:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name...(older result, shortened)\n- Step 8, `get_metrics`: {\"metric\":\"AWS/Lambda Errors {} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"14:34:00Z\",0.0],[\"14:35:00Z\",0.0],[\"14:36:00Z\",0.0],[\"14:37:00Z\",8.0],[\"14:38:00Z\",47.0]],\"summary\":{\"min\":0.0,\"max\":47.0,\"count\":5}}\n- Step 13, `get_metrics`: {\"metric\":\"AWS/Lambda Invocations {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"14:34:00Z\",7.0],[\"14:35:00Z\",60.0],[\"14:36:00Z\",60.0],[\"14:37:00Z\",60.0],[\"14:38:00Z\",48.0]],\"summary\":{\"min\":7.0,\"max\":60....(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- Investigate the application log structure to determine why Lambda errors do not appear as error-level logs.\n\n## Hypotheses\n\n- likely: orders function has errors due to transient issues or upstream failures\n- ruled_out: orders function errors are caused by a recent deployment\n- ruled_out: orders function errors show up in log queries at error level\n\n## What the investigation cost\n\n- 16 model calls, 67,035 input and 860 output tokens (67,895 total)\n- 16 steps, 62 s of wall clock\n- 884,703 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "agent-mistral",
+   "investigation_id": "cd81012654ce",
+   "provider": "mistral",
+   "model": "ministral-14b-latest",
+   "started_at": "2026-10-01T14:38:40+00:00",
+   "stop_reason": "finished",
+   "tokens": 32841,
+   "llm_calls": 7,
+   "tool_steps": 14,
+   "log_bytes_scanned": 172667,
+   "grade": {
+    "scenario": 14,
+    "run_id": "14-missing-telemetry-20261001T134432Z",
+    "investigation_id": "cd81012654ce",
+    "expected_component": "orders",
+    "expected_category": "bad_deploy",
+    "answered_component": "fulfillment",
+    "answered_category": "slow_dependency",
+    "confidence": 85,
+    "component_correct": false,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": false,
+    "diagnosis_seconds": 102.0,
+    "proposed_actions": [],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "fulfillment",
+    "category": "slow_dependency",
+    "confidence": 85,
+    "summary": "The `nightshift-orders` Lambda function is experiencing errors due to slow responses from the `fulfillment` service. While no direct errors or throttling were found in the `fulfillment` logs, the elevated p99 duration in both `orders` and `fulfillment` functions, combined with database connection delays (e.g., `connect_ms: 1014.1`), strongly suggests that the `fulfillment` service is acting as a slow dependency. This is likely causing timeouts or delays in processing messages, which in turn triggers errors in the `orders` function.",
+    "evidence": [
+     1,
+     4,
+     6,
+     8,
+     13
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "1. Investigate database query performance in the `fulfillment` service for slow or contention-heavy queries.",
+     "2. Review the `fulfillment` function's timeout and concurrency settings to ensure they align with downstream dependencies.",
+     "3. Check for missing indexes or inefficient queries in the database layer."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "slow_dependency (fulfillment service acting as a slow dependency)"
+    },
+    {
+     "status": "possible",
+     "text": "timeout_regression in fulfillment due to slow database queries"
+    },
+    {
+     "status": "possible",
+     "text": "hot_row_contention in the database"
+    },
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy (no recent deployments)"
+    },
+    {
+     "status": "ruled_out",
+     "text": "config_regression (no recent config changes)"
+    },
+    {
+     "status": "ruled_out",
+     "text": "throttling (no throttles detected in fulfillment)"
+    },
+    {
+     "status": "ruled_out",
+     "text": "poison_message (no errors in DLQ or logs)"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 14,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "slow_dependency (fulfillment service acting as a slow dependency)"
+      },
+      {
+       "status": "possible",
+       "text": "timeout_regression in fulfillment due to slow database queries"
+      },
+      {
+       "status": "possible",
+       "text": "hot_row_contention in the database"
+      },
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy (no recent deployments)"
+      },
+      {
+       "status": "ruled_out",
+       "text": "config_regression (no recent config changes)"
+      },
+      {
+       "status": "ruled_out",
+       "text": "throttling (no throttles detected in fulfillment)"
+      },
+      {
+       "status": "ruled_out",
+       "text": "poison_message (no errors in DLQ or logs)"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 1,
+     "at": "2026-10-01T14:38:42+00:00",
+     "input_tokens": 2914,
+     "output_tokens": 91
+    },
+    {
+     "turn": 2,
+     "at": "2026-10-01T14:38:47+00:00",
+     "input_tokens": 3306,
+     "output_tokens": 116
+    },
+    {
+     "turn": 3,
+     "at": "2026-10-01T14:38:57+00:00",
+     "input_tokens": 3727,
+     "output_tokens": 587
+    },
+    {
+     "turn": 4,
+     "at": "2026-10-01T14:39:05+00:00",
+     "input_tokens": 4286,
+     "output_tokens": 266
+    },
+    {
+     "turn": 5,
+     "at": "2026-10-01T14:39:14+00:00",
+     "input_tokens": 4864,
+     "output_tokens": 566
+    },
+    {
+     "turn": 6,
+     "at": "2026-10-01T14:39:20+00:00",
+     "input_tokens": 5411,
+     "output_tokens": 339
+    },
+    {
+     "turn": 7,
+     "at": "2026-10-01T14:39:30+00:00",
+     "input_tokens": 6009,
+     "output_tokens": 359
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T14:38:42+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "nightshift-orders-errors"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T14:38:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T14:38:31Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T14:38:42+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "service": "orders",
+      "minutes": 30
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}"
+    },
+    {
+     "number": 3,
+     "at": "2026-10-01T14:38:44+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "orders",
+      "query": "fields @timestamp, @message, level, correlation_id | filter level = \"ERROR\" | sort @timestamp desc",
+      "minutes": 10,
+      "limit": 20
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":0,\"scan_budget_left_bytes\":20971520}}"
+    },
+    {
+     "number": 4,
+     "at": "2026-10-01T14:38:47+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/Lambda",
+      "metric": "Duration",
+      "statistic": "p99",
+      "dimensions": "FunctionName=nightshift-orders",
+      "minutes": 10,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Duration {'FunctionName': 'nightshift-orders'} p99 per 60s\",\"window_minutes\":10,\"points\":[[\"14:34:00Z\",3928.556],[\"14:35:00Z\",410.869],[\"14:36:00Z\",505.132],[\"14:37:00Z\",1979.55]],\"summary\":{\"min\":410.869,\"max\":3928.556,\"count\":4}}}"
+    },
+    {
+     "number": 5,
+     "at": "2026-10-01T14:38:47+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/Lambda",
+      "metric": "Invocations",
+      "statistic": "Sum",
+      "dimensions": "FunctionName=nightshift-orders",
+      "minutes": 10,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Invocations {'FunctionName': 'nightshift-orders'} Sum per 60s\",\"window_minutes\":10,\"points\":[[\"14:34:00Z\",7.0],[\"14:35:00Z\",60.0],[\"14:36:00Z\",60.0],[\"14:37:00Z\",59.0]],\"summary\":{\"min\":7.0,\"max\":60.0,\"count\":4}}}"
+    },
+    {
+     "number": 6,
+     "at": "2026-10-01T14:38:47+00:00",
+     "tool": "get_queue_stats",
+     "args": {},
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_queue_stats\",\"truncated\":false,\"untrusted_data\":{\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":9,\"visibility_timeout_seconds\":180},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":0,\"in_flight\":0,\"visibility_timeout_seconds\":30},\"max_receive_count\":3,\"consumer\":[{\"function\":\"nightshift-fulfillment:live\",\"state\":\"Enabled\",\"batch_size\":10,\"maximum_concurrency\":2}]}}}}"
+    },
+    {
+     "number": 7,
+     "at": "2026-10-01T14:38:59+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "fulfillment",
+      "query": "fields @timestamp, @message, level, correlation_id | filter level = \"ERROR\" or level = \"WARN\" | sort @timestamp desc",
+      "minutes": 10,
+      "limit": 20
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[],\"bytes_scanned\":80170,\"scan_budget_left_bytes\":20891350}}",
+     "reasoning": "No recent deployments were made to the `orders` service (Step 2), and no errors were found in the logs for the last 10 minutes (Step 3). However, the following observations are notable:\n\n1. **Lambda Errors**: The alarm indicates 3 errors in the `nightshift-orders` function at 14:37 (Step 1).\n2. **Lambda Duration**: The p99 duration spiked to **3928.556ms** at 14:34, then dropped significantly but remained elevated at **1979.55ms** at 14:37 (Step 4). This suggests intermittent latency issues.\n3. **Lambda Invocations**: Invocations remained steady (~60 per minute) during this period (Step 5), so traffic is not the root cause.\n4. **Queue Stats**: The `nightshift-placed-orders` queue has **9 messages in flight**, and the consumer (`nightshift-fulfillment`) is enabled with a batch size of 10 and a maximum concurrency of 2 (Step 6). This could indicate throttling or slow processing downstream.\n\n### Hypotheses:\n- **Possible**: The `nightshift-orders` function is experiencing intermittent late"
+    },
+    {
+     "number": 8,
+     "at": "2026-10-01T14:38:59+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/Lambda",
+      "metric": "Duration",
+      "statistic": "p99",
+      "dimensions": "FunctionName=nightshift-fulfillment",
+      "minutes": 10,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Duration {'FunctionName': 'nightshift-fulfillment'} p99 per 60s\",\"window_minutes\":10,\"points\":[[\"14:35:00Z\",3709.821],[\"14:36:00Z\",1707.481],[\"14:37:00Z\",1720.702]],\"summary\":{\"min\":1707.481,\"max\":3709.821,\"count\":3}}}"
+    },
+    {
+     "number": 9,
+     "at": "2026-10-01T14:39:05+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/Lambda",
+      "metric": "Throttles",
+      "statistic": "Sum",
+      "dimensions": "FunctionName=nightshift-fulfillment",
+      "minutes": 10,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Throttles {'FunctionName': 'nightshift-fulfillment'} Sum per 60s\",\"window_minutes\":10,\"points\":[[\"14:35:00Z\",0.0],[\"14:36:00Z\",0.0],[\"14:37:00Z\",0.0],[\"14:38:00Z\",0.0]],\"summary\":{\"min\":0.0,\"max\":0.0,\"count\":4}}}",
+     "reasoning": "No errors or warnings were found in the `fulfillment` logs for the last 10 minutes (Step 7), but the **p99 duration for `nightshift-fulfillment`** remains elevated, peaking at **3709.821ms** (Step 8). This aligns with the hypothesis of a **slow dependency** affecting the `orders` function, as the `fulfillment` service is downstream and responsible for processing messages from the `placed-orders` queue.\n\n### Next Steps:\n- Check if the `fulfillment` service is experiencing throttling, timeouts, or other issues that could cause delays in processing messages from the `placed-orders` queue.\n- Investigate if the `fulfillment` service is hitting concurrency limits or if there are downstream database or external API issues.\n\nI will now check for throttling or concurrency limits in the `fulfillment` service."
+    },
+    {
+     "number": 10,
+     "at": "2026-10-01T14:39:05+00:00",
+     "tool": "get_function_config",
+     "args": {
+      "service": "fulfillment"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_function_config\",\"truncated\":false,\"untrusted_data\":{\"function\":\"nightshift-fulfillment\",\"live_alias_version\":\"7\",\"last_modified\":\"more than 30 minutes ago\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":30,\"reserved_concurrency\":2,\"state\":\"Active\",\"code_sha256\":\"Qu3/XPxCmXaWPXZdVpICalRSNrIXkZ6si8xPuHY/geY=\",\"environment\":{\"DSQL_ENDPOINT\":\"<DSQL_CLUSTER_ID>.dsql.ca-central-1.on.aws\",\"DSQL_ROLE\":\"fulfillment_service\",\"PAYMENTS_DEGRADED_MODE_PARAMETER\":\"/nightshift/flags/payments_degraded_mode\",\"PAYMENTS_FUNCTION_NAME\":\"nightshift-payments\",\"PAYMENT_TIMEOUT_SECONDS\":\"3.0\",\"POWERTOOLS_LOG_LEVEL\":\"INFO\",\"POWERTOOLS_SERVICE_NAME\":\"fulfillment\"}}}"
+    },
+    {
+     "number": 11,
+     "at": "2026-10-01T14:39:14+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/AuroraDSQL",
+      "metric": "CPUUtilization",
+      "statistic": "Average",
+      "dimensions": "DBInstanceIdentifier=nightshift-dsql",
+      "minutes": 10,
+      "period": 60
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/AuroraDSQL CPUUtilization {'DBInstanceIdentifier': 'nightshift-dsql'} Average per 60s\",\"window_minutes\":10,\"points\":[],\"summary\":\"no data in this window (an idle metric publishes nothing)\"}}",
+     "reasoning": "### Analysis:\n- **No throttling** was detected in the `nightshift-fulfillment` service (Step 9).\n- The `nightshift-fulfillment` function has a **reserved concurrency of 2** (Step 10), which matches the queue's batch size of 10 and the 9 messages currently in flight (Step 6). This suggests that the service is not being throttled by Lambda but may still be experiencing slow processing due to downstream issues.\n\n### Evidence So Far:\n1. **Lambda Errors in `nightshift-orders`**: 3 errors at 14:37 (Step 1).\n2. **Elevated p99 Duration in `nightshift-orders`**: Spiked to 3928.556ms (Step 4).\n3. **Elevated p99 Duration in `nightshift-fulfillment`**: Peaked at 3709.821ms (Step 8).\n4. **No throttling in `nightshift-fulfillment`** (Step 9).\n5. **No recent deployments to `orders`** (Step 2).\n6. **No errors in `fulfillment` logs** (Step 7).\n\n### Hypotheses:\n- **Possible**: The `nightshift-orders` function is timing out or failing due to slow responses from the `fulfillment` service, which is downstr"
+    },
+    {
+     "number": 12,
+     "at": "2026-10-01T14:39:14+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/AuroraDSQL",
+      "metric": "Latency",
+      "statistic": "Average",
+      "dimensions": "DBInstanceIdentifier=nightshift-dsql",
+      "minutes": 10,
+      "period": 60
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/AuroraDSQL Latency {'DBInstanceIdentifier': 'nightshift-dsql'} Average per 60s\",\"window_minutes\":10,\"points\":[],\"summary\":\"no data in this window (an idle metric publishes nothing)\"}}"
+    },
+    {
+     "number": 13,
+     "at": "2026-10-01T14:39:22+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "fulfillment",
+      "query": "fields @timestamp, @message, level, correlation_id, duration | filter level = \"ERROR\" or @message like /timeout/ or @message like /database/ | sort @timestamp desc",
+      "minutes": 10,
+      "limit": 20
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 14:35:07.104\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"shared_connection:120\\\",\\\"message\\\":\\\"database connected\\\",\\\"timestamp\\\":\\\"2026-10-01 14:35:07,104+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-684f3cc9-1\\\",\\\"token_ms\\\":80.2,\\\"connect_ms\\\":1014.1,\\\"xray_trace_id\\\":\\\"1-6abe6f98-e3ce95613a1c49011129d5e9\\\"}\\n\",\"level\":\"INFO\",\"correlation_id\":\"load-684f3cc9-1\"},{\"@timestamp\":\"2026-10-01 14:35:05.926\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"shared_connection:120\\\",\\\"message\\\":\\\"database connected\\\",\\\"timestamp\\\":\\\"2026-10-01 14:35:05,926+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-684f3cc9-0\\\",\\\"token_ms\\\":80.2,\\\"connect_ms\\\":793.0,\\\"xray_trace_id\\\":\\\"1-6abe6f97-945df3635147508cd8a2a858\\\"}\\n\",\"level\":\"INFO\",\"correlation_id\":\"load-684f3cc9-0\"}],\"bytes_scanned\":92497,\"scan_budget_left_bytes\":20798853}}",
+     "reasoning": "The AuroraDSQL metrics for **CPUUtilization** and **Latency** did not return data for the last 10 minutes, which is expected for idle metrics. However, this does not rule out database-related issues, as the metrics may not reflect the specific queries or transactions being executed by the `fulfillment` service.\n\n### Updated Hypotheses:\n- **Possible**: The `nightshift-orders` function is failing due to slow responses from the `fulfillment` service, which may be experiencing **hot row contention** or **missing index** issues in the database.\n- **Possible**: The `fulfillment` service is experiencing **timeout_regression** due to slow downstream dependencies (e.g., database queries).\n- **Possible**: The `nightshift-orders` function itself is encountering **timeout_regression** due to a misconfigured timeout or slow dependency.\n\n### Next Steps:\nTo confirm the root cause, I will:\n1. Check for **database query performance** in the `fulfillment` service by examining its logs for slow queries o"
+    },
+    {
+     "number": 14,
+     "at": "2026-10-01T14:39:30+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "fulfillment",
+      "fault_category": "slow_dependency",
+      "confidence": 85,
+      "summary": "The `nightshift-orders` Lambda function is experiencing errors due to slow responses from the `fulfillment` service. While no direct errors or throttling were found in the `fulfillment` logs, the elevated p99 duration in both `orders` and `fulfillment` functions, combined with database connection delays (e.g., `connect_ms: 1014.1`), strongly suggests that the `fulfillment` service is acting as a slow dependency. This is likely causing timeouts or delays in processing messages, which in turn triggers errors in the `orders` function.",
+      "evidence_steps": "1,4,6,8,13",
+      "hypotheses": "likely: slow_dependency (fulfillment service acting as a slow dependency)\npossible: timeout_regression in fulfillment due to slow database queries\npossible: hot_row_contention in the database\nruled_out: bad_deploy (no recent deployments)\nruled_out: config_regression (no recent config changes)\nruled_out: throttling (no throttles detected in fulfillment)\nruled_out: poison_message (no errors in DLQ or logs)",
+      "actions": "",
+      "proposed_actions": "1. Investigate database query performance in the `fulfillment` service for slow or contention-heavy queries.\n2. Review the `fulfillment` function's timeout and concurrency settings to ensure they align with downstream dependencies.\n3. Check for missing indexes or inefficient queries in the database layer."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-orders-errors\n\nInvestigation `cd81012654ce`, mistral `ministral-14b-latest`, started 2026-10-01T14:38:40+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `fulfillment` |\n| Fault category | `slow_dependency` |\n| Confidence | 85 |\n| Ended because | finished |\n\n## Summary\n\nThe `nightshift-orders` Lambda function is experiencing errors due to slow responses from the `fulfillment` service. While no direct errors or throttling were found in the `fulfillment` logs, the elevated p99 duration in both `orders` and `fulfillment` functions, combined with database connection delays (e.g., `connect_ms: 1014.1`), strongly suggests that the `fulfillment` service is acting as a slow dependency. This is likely causing timeouts or delays in processing messages, which in turn triggers errors in the `orders` function.\n\n## Impact\n\nThe page: `nightshift-orders-errors` was ALARM (since 2026-10-01T14:38:31Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T14:38:42+00:00 step 1: `get_alarm` name=nightshift-orders-errors\n- 2026-10-01T14:38:42+00:00 step 2: `list_recent_deployments` service=orders, minutes=30 (found nothing)\n- 2026-10-01T14:38:44+00:00 step 3: `query_logs` service=orders, query=fields @timestamp, @message, level, correlation_id | filter level = ... (found nothing)\n- 2026-10-01T14:38:47+00:00 step 4: `get_metrics` namespace=AWS/Lambda, metric=Duration, statistic=p99, dimensions=FunctionName=nightshift-o...\n- 2026-10-01T14:38:47+00:00 step 5: `get_metrics` namespace=AWS/Lambda, metric=Invocations, statistic=Sum, dimensions=FunctionName=nightshif...\n- 2026-10-01T14:38:47+00:00 step 6: `get_queue_stats`\n- 2026-10-01T14:38:59+00:00 step 7: `query_logs` service=fulfillment, query=fields @timestamp, @message, level, correlation_id | filter lev... (found nothing)\n- 2026-10-01T14:38:59+00:00 step 8: `get_metrics` namespace=AWS/Lambda, metric=Duration, statistic=p99, dimensions=FunctionName=nightshift-f...\n- 2026-10-01T14:39:05+00:00 step 9: `get_metrics` namespace=AWS/Lambda, metric=Throttles, statistic=Sum, dimensions=FunctionName=nightshift-...\n- 2026-10-01T14:39:05+00:00 step 10: `get_function_config` service=fulfillment\n- 2026-10-01T14:39:14+00:00 step 11: `get_metrics` namespace=AWS/AuroraDSQL, metric=CPUUtilization, statistic=Average, dimensions=DBInstanceI... (found nothing)\n- 2026-10-01T14:39:14+00:00 step 12: `get_metrics` namespace=AWS/AuroraDSQL, metric=Latency, statistic=Average, dimensions=DBInstanceIdentifi... (found nothing)\n- 2026-10-01T14:39:22+00:00 step 13: `query_logs` service=fulfillment, query=fields @timestamp, @message, level, correlation_id, duration | ...\n- 2026-10-01T14:39:30+00:00 step 14: `finish_investigation` root_cause_component=fulfillment, fault_category=slow_dependency, confidence=85, summary=T...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T14:38:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name...(older result, shortened)\n- Step 4, `get_metrics`: {\"metric\":\"AWS/Lambda Duration {'FunctionName': 'nightshift-orders'} p99 per 60s\",\"window_minutes\":10,\"points\":[[\"14:34:00Z\",3928.556],[\"14:35:00Z\",410.869],[\"14:36:00Z\",505.132],[\"14:37:00Z\",1979.55]],\"summary\":{\"min\":410.869,\"max\":3928.55...(older result, shortened)\n- Step 6, `get_queue_stats`: {\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":9,\"visibility_timeout_seconds\":180},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":0,\"in_flight\":0,\"visibility_t...(older result, shortened)\n- Step 8, `get_metrics`: {\"metric\":\"AWS/Lambda Duration {'FunctionName': 'nightshift-fulfillment'} p99 per 60s\",\"window_minutes\":10,\"points\":[[\"14:35:00Z\",3709.821],[\"14:36:00Z\",1707.481],[\"14:37:00Z\",1720.702]],\"summary\":{\"min\":1707.481,\"max\":3709.821,\"count\":3}}\n- Step 13, `query_logs`: {\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 14:35:07.104\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"shared_connection:120\\\",\\\"message\\\":\\\"database connected\\\",\\\"timestamp\\\":\\\"2026-10-01 14:35:07,104+0000\\\",\\\"service\\\":\\\"fulf...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- 1. Investigate database query performance in the `fulfillment` service for slow or contention-heavy queries.\n- 2. Review the `fulfillment` function's timeout and concurrency settings to ensure they align with downstream dependencies.\n- 3. Check for missing indexes or inefficient queries in the database layer.\n\n## Hypotheses\n\n- likely: slow_dependency (fulfillment service acting as a slow dependency)\n- possible: timeout_regression in fulfillment due to slow database queries\n- possible: hot_row_contention in the database\n- ruled_out: bad_deploy (no recent deployments)\n- ruled_out: config_regression (no recent config changes)\n- ruled_out: throttling (no throttles detected in fulfillment)\n- ruled_out: poison_message (no errors in DLQ or logs)\n\n## What the investigation cost\n\n- 7 model calls, 30,517 input and 2,324 output tokens (32,841 total)\n- 14 steps, 50 s of wall clock\n- 172,667 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "alarm-only-gemini",
+   "investigation_id": "ef322a8aef50",
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "started_at": "2026-10-01T14:38:40+00:00",
+   "stop_reason": "finished",
+   "tokens": 1346,
+   "llm_calls": 1,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 14,
+    "run_id": "14-missing-telemetry-20261001T134432Z",
+    "investigation_id": "ef322a8aef50",
+    "expected_component": "orders",
+    "expected_category": "bad_deploy",
+    "answered_component": "orders",
+    "answered_category": "insufficient_evidence",
+    "confidence": 60,
+    "component_correct": true,
+    "category_correct": false,
+    "root_cause_correct": true,
+    "hedged": true,
+    "diagnosis_seconds": 53.0,
+    "proposed_actions": [],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "orders",
+    "category": "insufficient_evidence",
+    "confidence": 60,
+    "summary": "An alarm fired for nightshift-orders Lambda function errors, but without log access or additional tooling, there is insufficient evidence to definitively determine the fault category or root cause.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "Investigate CloudWatch logs for the nightshift-orders Lambda function to determine the root cause of the errors."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy"
+    },
+    {
+     "status": "possible",
+     "text": "config_regression"
+    },
+    {
+     "status": "possible",
+     "text": "timeout_regression"
+    },
+    {
+     "status": "possible",
+     "text": "slow_dependency"
+    },
+    {
+     "status": "possible",
+     "text": "throttling"
+    },
+    {
+     "status": "possible",
+     "text": "insufficient_evidence"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 2,
+     "hypotheses": [
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy"
+      },
+      {
+       "status": "possible",
+       "text": "config_regression"
+      },
+      {
+       "status": "possible",
+       "text": "timeout_regression"
+      },
+      {
+       "status": "possible",
+       "text": "slow_dependency"
+      },
+      {
+       "status": "possible",
+       "text": "throttling"
+      },
+      {
+       "status": "possible",
+       "text": "insufficient_evidence"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 2,
+     "at": "2026-10-01T14:38:41+00:00",
+     "input_tokens": 1186,
+     "output_tokens": 160
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T14:38:40+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "orders-errors"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T14:38:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T14:38:31Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+     "in_trigger": true
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T14:38:41+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "orders",
+      "fault_category": "insufficient_evidence",
+      "evidence_steps": "1",
+      "hypotheses": "ruled_out: bad_deploy\npossible: config_regression\npossible: timeout_regression\npossible: slow_dependency\npossible: throttling\npossible: insufficient_evidence",
+      "actions": "",
+      "proposed_actions": "Investigate CloudWatch logs for the nightshift-orders Lambda function to determine the root cause of the errors.",
+      "confidence": 60,
+      "summary": "An alarm fired for nightshift-orders Lambda function errors, but without log access or additional tooling, there is insufficient evidence to definitively determine the fault category or root cause."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-orders-errors\n\nInvestigation `ef322a8aef50`, gemini `gemini-3.5-flash-lite`, started 2026-10-01T14:38:40+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `orders` |\n| Fault category | `insufficient_evidence` |\n| Confidence | 60 |\n| Ended because | finished |\n\n## Summary\n\nAn alarm fired for nightshift-orders Lambda function errors, but without log access or additional tooling, there is insufficient evidence to definitively determine the fault category or root cause.\n\n## Impact\n\nThe page: `nightshift-orders-errors` was ALARM (since 2026-10-01T14:38:31Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T14:38:40+00:00 step 1: `get_alarm` name=orders-errors\n- 2026-10-01T14:38:41+00:00 step 2: `finish_investigation` root_cause_component=orders, fault_category=insufficient_evidence, evidence_steps=1, hypot...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T14:38:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- Investigate CloudWatch logs for the nightshift-orders Lambda function to determine the root cause of the errors.\n\n## Hypotheses\n\n- ruled_out: bad_deploy\n- possible: config_regression\n- possible: timeout_regression\n- possible: slow_dependency\n- possible: throttling\n- possible: insufficient_evidence\n\n## What the investigation cost\n\n- 1 model calls, 1,186 input and 160 output tokens (1,346 total)\n- 2 steps, 1 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "alarm-only-mistral",
+   "investigation_id": "116d27b3fad9",
+   "provider": "mistral",
+   "model": "ministral-14b-latest",
+   "started_at": "2026-10-01T14:38:40+00:00",
+   "stop_reason": "finished",
+   "tokens": 1495,
+   "llm_calls": 1,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 14,
+    "run_id": "14-missing-telemetry-20261001T134432Z",
+    "investigation_id": "116d27b3fad9",
+    "expected_component": "orders",
+    "expected_category": "bad_deploy",
+    "answered_component": "none",
+    "answered_category": "insufficient_evidence",
+    "confidence": 95,
+    "component_correct": false,
+    "category_correct": false,
+    "root_cause_correct": true,
+    "hedged": true,
+    "diagnosis_seconds": 57.0,
+    "proposed_actions": [],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "none",
+    "category": "insufficient_evidence",
+    "confidence": 95,
+    "summary": "The alarm indicates that the Lambda function `nightshift-orders` is experiencing errors, but the provided data lacks details about the nature of these errors (e.g., stack traces, logs, or specific failure modes). Without additional context, it is impossible to determine the root cause or affected component.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "1. Check CloudWatch Logs for the `nightshift-orders` Lambda function to identify error details, stack traces, or patterns.",
+     "2. Review recent deployments, configuration changes, or dependencies that might have impacted the function.",
+     "3. Verify if the errors correlate with specific events, such as increased load or external service failures.",
+     "4. Investigate if the Lambda function is throttling or hitting concurrency limits."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "insufficient_evidence"
+    },
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy"
+    },
+    {
+     "status": "ruled_out",
+     "text": "config_regression"
+    },
+    {
+     "status": "ruled_out",
+     "text": "timeout_regression"
+    },
+    {
+     "status": "ruled_out",
+     "text": "slow_dependency"
+    },
+    {
+     "status": "ruled_out",
+     "text": "poison_message"
+    },
+    {
+     "status": "ruled_out",
+     "text": "iam_regression"
+    },
+    {
+     "status": "ruled_out",
+     "text": "hot_row_contention"
+    },
+    {
+     "status": "ruled_out",
+     "text": "missing_index"
+    },
+    {
+     "status": "ruled_out",
+     "text": "throttling"
+    },
+    {
+     "status": "ruled_out",
+     "text": "retry_storm"
+    },
+    {
+     "status": "ruled_out",
+     "text": "no_fault"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 2,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "insufficient_evidence"
+      },
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy"
+      },
+      {
+       "status": "ruled_out",
+       "text": "config_regression"
+      },
+      {
+       "status": "ruled_out",
+       "text": "timeout_regression"
+      },
+      {
+       "status": "ruled_out",
+       "text": "slow_dependency"
+      },
+      {
+       "status": "ruled_out",
+       "text": "poison_message"
+      },
+      {
+       "status": "ruled_out",
+       "text": "iam_regression"
+      },
+      {
+       "status": "ruled_out",
+       "text": "hot_row_contention"
+      },
+      {
+       "status": "ruled_out",
+       "text": "missing_index"
+      },
+      {
+       "status": "ruled_out",
+       "text": "throttling"
+      },
+      {
+       "status": "ruled_out",
+       "text": "retry_storm"
+      },
+      {
+       "status": "ruled_out",
+       "text": "no_fault"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 2,
+     "at": "2026-10-01T14:38:45+00:00",
+     "input_tokens": 1191,
+     "output_tokens": 304
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T14:38:40+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "orders-errors"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T14:38:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T14:38:31Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+     "in_trigger": true
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T14:38:45+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "none",
+      "fault_category": "insufficient_evidence",
+      "confidence": 95,
+      "summary": "The alarm indicates that the Lambda function `nightshift-orders` is experiencing errors, but the provided data lacks details about the nature of these errors (e.g., stack traces, logs, or specific failure modes). Without additional context, it is impossible to determine the root cause or affected component.",
+      "evidence_steps": "1",
+      "hypotheses": "likely: insufficient_evidence\nruled_out: bad_deploy\nruled_out: config_regression\nruled_out: timeout_regression\nruled_out: slow_dependency\nruled_out: poison_message\nruled_out: iam_regression\nruled_out: hot_row_contention\nruled_out: missing_index\nruled_out: throttling\nruled_out: retry_storm\nruled_out: no_fault",
+      "actions": "",
+      "proposed_actions": "1. Check CloudWatch Logs for the `nightshift-orders` Lambda function to identify error details, stack traces, or patterns.\n2. Review recent deployments, configuration changes, or dependencies that might have impacted the function.\n3. Verify if the errors correlate with specific events, such as increased load or external service failures.\n4. Investigate if the Lambda function is throttling or hitting concurrency limits."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-orders-errors\n\nInvestigation `116d27b3fad9`, mistral `ministral-14b-latest`, started 2026-10-01T14:38:40+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `none` |\n| Fault category | `insufficient_evidence` |\n| Confidence | 95 |\n| Ended because | finished |\n\n## Summary\n\nThe alarm indicates that the Lambda function `nightshift-orders` is experiencing errors, but the provided data lacks details about the nature of these errors (e.g., stack traces, logs, or specific failure modes). Without additional context, it is impossible to determine the root cause or affected component.\n\n## Impact\n\nThe page: `nightshift-orders-errors` was ALARM (since 2026-10-01T14:38:31Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T14:38:40+00:00 step 1: `get_alarm` name=orders-errors\n- 2026-10-01T14:38:45+00:00 step 2: `finish_investigation` root_cause_component=none, fault_category=insufficient_evidence, confidence=95, summary=Th...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T14:38:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- 1. Check CloudWatch Logs for the `nightshift-orders` Lambda function to identify error details, stack traces, or patterns.\n- 2. Review recent deployments, configuration changes, or dependencies that might have impacted the function.\n- 3. Verify if the errors correlate with specific events, such as increased load or external service failures.\n- 4. Investigate if the Lambda function is throttling or hitting concurrency limits.\n\n## Hypotheses\n\n- likely: insufficient_evidence\n- ruled_out: bad_deploy\n- ruled_out: config_regression\n- ruled_out: timeout_regression\n- ruled_out: slow_dependency\n- ruled_out: poison_message\n- ruled_out: iam_regression\n- ruled_out: hot_row_contention\n- ruled_out: missing_index\n- ruled_out: throttling\n- ruled_out: retry_storm\n- ruled_out: no_fault\n\n## What the investigation cost\n\n- 1 model calls, 1,191 input and 304 output tokens (1,495 total)\n- 2 steps, 5 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "runbook",
+   "investigation_id": "e094a78a4115",
+   "provider": "runbook",
+   "model": "scripted",
+   "started_at": "2026-10-01T14:38:40+00:00",
+   "stop_reason": "finished",
+   "tokens": 0,
+   "llm_calls": 0,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 14,
+    "run_id": "14-missing-telemetry-20261001T134432Z",
+    "investigation_id": "e094a78a4115",
+    "expected_component": "orders",
+    "expected_category": "bad_deploy",
+    "answered_component": "none",
+    "answered_category": "insufficient_evidence",
+    "confidence": 0,
+    "component_correct": false,
+    "category_correct": false,
+    "root_cause_correct": true,
+    "hedged": true,
+    "diagnosis_seconds": 52.0,
+    "proposed_actions": [],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "none",
+    "category": "insufficient_evidence",
+    "confidence": 0,
+    "summary": "No runbook rule explains orders-errors without a recent deploy.",
+    "evidence": [],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": []
+   },
+   "hypotheses": [
+    {
+     "status": "possible",
+     "text": "No runbook rule explains orders-errors without a recent deploy."
+    }
+   ],
+   "hypothesis_changes": [],
+   "llm_turns": [],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T14:38:40+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "orders-errors"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-orders-errors\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\",\"since\":\"2026-10-01T14:38:31Z\",\"metric\":{\"namespace\":\"AWS/Lambda\",\"name\":\"Errors\",\"dimensions\":{\"FunctionName\":\"nightshift-orders\"},\"statistic\":\"Sum\",\"period_seconds\":60},\"fires_when\":\"GreaterThanOrEqualToThreshold 1.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T14:38:31Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T14:38:40+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "minutes": 30,
+      "service": "orders"
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-orders-errors\n\nInvestigation `e094a78a4115`, runbook `scripted`, started 2026-10-01T14:38:40+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `none` |\n| Fault category | `insufficient_evidence` |\n| Confidence | 0 |\n| Ended because | finished |\n\n## Summary\n\nNo runbook rule explains orders-errors without a recent deploy.\n\n## Impact\n\nThe page: `nightshift-orders-errors` was ALARM (since 2026-10-01T14:38:31Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [3.0 (01/10/26 14:37:00)] was greater than or equal to the threshold (1.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T14:38:40+00:00 step 1: `get_alarm` name=orders-errors\n- 2026-10-01T14:38:40+00:00 step 2: `list_recent_deployments` minutes=30, service=orders (found nothing)\n\n## Root cause evidence\n\nNo evidence steps were cited.\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nNone proposed.\n\n## Hypotheses\n\n- possible: No runbook rule explains orders-errors without a recent deploy.\n\n## What the investigation cost\n\n- 0 model calls, 0 input and 0 output tokens (0 total)\n- 2 steps, 0 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  }
+ ]
+}

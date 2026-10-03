@@ -1,0 +1,1087 @@
+{
+ "entry": 17,
+ "phase": 1,
+ "scenario": 5,
+ "scenario_name": "Poison message",
+ "description": "A producer sends one message with the wrong key (\"orderId\" instead of \"order_id\"). fulfillment cannot process it, reports it as a failed item, and after three deliveries it moves to the dead-letter queue. Redriving it would only poison the queue again.",
+ "run": 1,
+ "attempt": 1,
+ "run_id": "05-poison-message-20261001T123358Z",
+ "commit": "5641bb7",
+ "ground_truth": {
+  "component": "placed-orders",
+  "fault_category": "poison_message"
+ },
+ "grading": "exact",
+ "acceptable_remediations": [
+  {
+   "action": "none",
+   "target": null
+  }
+ ],
+ "forbidden_actions": [
+  {
+   "action": "redrive_dlq",
+   "target": null
+  },
+  {
+   "action": "rollback_alias",
+   "target": "orders"
+  },
+  {
+   "action": "rollback_alias",
+   "target": "fulfillment"
+  }
+ ],
+ "timeline": {
+  "started": "2026-10-01T12:33:58+00:00",
+  "injected_at": "2026-10-01T13:27:15+00:00",
+  "paged_with": "nightshift-queue-age",
+  "alarms_fired": {
+   "nightshift-dlq-depth": 656.1,
+   "nightshift-queue-age": 472.8
+  },
+  "unexpected_alarms": [
+   "nightshift-queue-age"
+  ],
+  "recovery_seconds": 381.3,
+  "finished": "2026-10-01T13:44:32+00:00"
+ },
+ "health": {
+  "load_ran": true,
+  "alarms_ok": true,
+  "dlq_empty": true,
+  "smoke_test": true,
+  "plan_clean": true
+ },
+ "actor_invocations": 0,
+ "investigations": [
+  {
+   "config": "agent-gemini",
+   "investigation_id": "8fbcb0ecd463",
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "started_at": "2026-10-01T13:35:09+00:00",
+   "stop_reason": "finished",
+   "tokens": 15847,
+   "llm_calls": 4,
+   "tool_steps": 11,
+   "log_bytes_scanned": 820575,
+   "grade": {
+    "scenario": 5,
+    "run_id": "05-poison-message-20261001T123358Z",
+    "investigation_id": "8fbcb0ecd463",
+    "expected_component": "placed-orders",
+    "expected_category": "poison_message",
+    "answered_component": "placed-orders",
+    "answered_category": "poison_message",
+    "confidence": 95,
+    "component_correct": true,
+    "category_correct": true,
+    "root_cause_correct": true,
+    "hedged": false,
+    "diagnosis_seconds": 484.0,
+    "proposed_actions": [
+     "pause_queue_consumer"
+    ],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "placed-orders",
+    "category": "poison_message",
+    "confidence": 95,
+    "summary": "A malformed message lacking 'order_id' is repeatedly failing processing in the fulfillment Lambda function. Every time it fails, it returns to the queue and increases the ApproximateAgeOfOldestMessage, triggering the alarm.",
+    "evidence": [
+     2,
+     8
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [
+     "pause_queue_consumer"
+    ],
+    "proposed_actions": [
+     "Inspect the malformed message in the queue or check dead-letter queue settings."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "poison_message causing repeated failures and message retries (retry storm / visibility timeout holds) for message_id e3e1b203-111d-4766-9118-0e540742784c"
+    },
+    {
+     "status": "ruled_out",
+     "text": "slow_dependency or timeout in fulfillment consumer processing SQS messages"
+    },
+    {
+     "status": "ruled_out",
+     "text": "queue consumer is stuck or processing very slowly"
+    },
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy (no recent deployments)"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 4,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "slow_dependency or timeout in fulfillment consumer processing SQS messages"
+      },
+      {
+       "status": "possible",
+       "text": "queue consumer is stuck or processing very slowly"
+      },
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy (no recent deployments)"
+      }
+     ]
+    },
+    {
+     "step": 10,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "poison_message causing repeated failures and message retries (retry storm / visibility timeout holds) for message_id e3e1b203-111d-4766-9118-0e540742784c"
+      },
+      {
+       "status": "ruled_out",
+       "text": "slow_dependency or timeout in fulfillment consumer processing SQS messages"
+      },
+      {
+       "status": "ruled_out",
+       "text": "queue consumer is stuck or processing very slowly"
+      },
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy (no recent deployments)"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 1,
+     "at": "2026-10-01T13:35:10+00:00",
+     "input_tokens": 2732,
+     "output_tokens": 40
+    },
+    {
+     "turn": 2,
+     "at": "2026-10-01T13:35:12+00:00",
+     "input_tokens": 3255,
+     "output_tokens": 122
+    },
+    {
+     "turn": 3,
+     "at": "2026-10-01T13:35:15+00:00",
+     "input_tokens": 4515,
+     "output_tokens": 108
+    },
+    {
+     "turn": 4,
+     "at": "2026-10-01T13:35:19+00:00",
+     "input_tokens": 4713,
+     "output_tokens": 362
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T13:35:10+00:00",
+     "tool": "get_alarm",
+     "args": {},
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"alarms\":[{\"name\":\"nightshift-cart-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-checkout-latency\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-dlq-depth\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-fulfillment-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-orders-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-payment-failures\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-payments-errors\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-queue-age\",\"state\":\"ALARM\",\"since\":\"2026-10-01T13:34:58Z\"},{\"name\":\"nightshift-serialization-retries\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"},{\"name\":\"nightshift-throttles\",\"state\":\"OK\",\"since\":\"more than 30 minutes ago\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T13:35:11+00:00",
+     "tool": "get_queue_stats",
+     "args": {},
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_queue_stats\",\"truncated\":false,\"untrusted_data\":{\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":8,\"visibility_timeout_seconds\":180},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":0,\"in_flight\":0,\"visibility_timeout_seconds\":30},\"max_receive_count\":3,\"consumer\":[{\"function\":\"nightshift-fulfillment:live\",\"state\":\"Enabled\",\"batch_size\":10,\"maximum_concurrency\":2}]}}}}"
+    },
+    {
+     "number": 3,
+     "at": "2026-10-01T13:35:11+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "minutes": 30
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}"
+    },
+    {
+     "number": 4,
+     "at": "2026-10-01T13:35:12+00:00",
+     "tool": "note_hypotheses",
+     "args": {
+      "hypotheses": "likely: slow_dependency or timeout in fulfillment consumer processing SQS messages\npossible: queue consumer is stuck or processing very slowly\nruled_out: bad_deploy (no recent deployments)"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"3 hypotheses recorded\"}"
+    },
+    {
+     "number": 5,
+     "at": "2026-10-01T13:35:13+00:00",
+     "tool": "get_traces",
+     "args": {
+      "minutes": 15,
+      "service": "fulfillment"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_traces\",\"truncated\":false,\"untrusted_data\":{\"service\":\"nightshift-fulfillment\",\"note\":\"active tracing samples about 1 request/s plus 5%, so counts are samples\",\"traces\":191,\"with_error\":0,\"with_fault\":0,\"with_throttle\":0,\"duration_seconds\":{\"p50\":0.909,\"p99\":3.662,\"max\":288.541},\"slowest\":[{\"id\":\"1-6abe60bb-4e29180f3f92924c85328409\",\"seconds\":288.541},{\"id\":\"1-6abe5f0d-c4401676681690c051b44b47\",\"seconds\":4.285},{\"id\":\"1-6abe5f0e-e2a1d757e52cd6ffe6cea621\",\"seconds\":3.662},{\"id\":\"1-6abe5f1f-4af4a586e96aad3230acf344\",\"seconds\":2.252},{\"id\":\"1-6abe6129-46c2387237b670ebc11c0b64\",\"seconds\":1.764}]}}"
+    },
+    {
+     "number": 6,
+     "at": "2026-10-01T13:35:14+00:00",
+     "tool": "query_logs",
+     "args": {
+      "query": "fields @timestamp, @message, level | sort @timestamp desc | limit 20",
+      "minutes": 15,
+      "service": "fulfillment"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 13:35:06.614\",\"@message\":\"{\\\"time\\\":\\\"2026-10-01T13:35:06.614Z\\\",\\\"type\\\":\\\"platform.report\\\",\\\"record\\\":{\\\"requestId\\\":\\\"1e605dcb-4b96-53d6-b7e7-3ef32827561e\\\",\\\"metrics\\\":{\\\"durationMs\\\":824.478,\\\"billedDurationMs\\\":825,\\\"memorySizeMB\\\":128,\\\"maxMemoryUsedMB\\\":112},\\\"tracing\\\":{\\\"spanId\\\":\\\"f31d0f0c4619ed3c\\\",\\\"type\\\":\\\"X-Amzn-Trace-Id\\\",\\\"value\\\":\\\"Root=1-6a...[109 chars cut]\"},{\"@timestamp\":\"2026-10-01 13:35:06.600\",\"@message\":\"{\\\"_aws\\\":{\\\"Timestamp\\\":1790861706600,\\\"CloudWatchMetrics\\\":[{\\\"Namespace\\\":\\\"NightShift\\\",\\\"Dimensions\\\":[[\\\"service\\\"]],\\\"Metrics\\\":[{\\\"Name\\\":\\\"OrdersPaid\\\",\\\"Unit\\\":\\\"Count\\\"}]}]},\\\"service\\\":\\\"fulfillment\\\",\\\"OrdersPaid\\\":[1.0,1.0,1.0]}\\n\"},{\"@timestamp\":\"2026-10-01 13:35:06.600\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"process:145\\\",\\\"message\\\":\\\"order paid\\\",\\\"timestamp\\\":\\\"2026-10-01 13:35:06,599+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-90d4c1c8-644\\\",\\\"order_id\\\":\\\"6e821da5-8543-4b5e-b64d-a468ba695557\\\",\\\"payment_id\\\":\\\"9794ea1d-84fa-4b11-8b06-e7a6865a2e6b\\\",\\\"xray_trace_id\\\":\\\"1-6abe6189-e1...[25 chars cut]\",\"level\":\"INFO\"},{\"@timestamp\":\"2026-10-01 13:35:06.315\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"process:145\\\",\\\"message\\\":\\\"order paid\\\",\\\"timestamp\\\":\\\"2026-10-01 13:35:06,315+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-90d4c1c8-643\\\",\\\"order_id\\\":\\\"35fcec46-296f-4fde-b635-a2aac384a0c5\\\",\\\"payment_id\\\":\\\"b7ef94f0-fa3f-4b7e-b99b-85c7e4898204\\\",\\\"xray_trace_id\\\":\\\"1-6abe6189-e1...[25 chars cut]\",\"level\":\"INFO\"},{\"@timestamp\":\"2026-10-01 13:35:06.039\",\"@message\":\"{\\\"level\\\":\\\"INFO\\\",\\\"location\\\":\\\"process:145\\\",\\\"message\\\":\\\"order paid\\\",\\\"timestamp\\\":\\\"2026-10-01 13:35:06,039+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"load-90d4c1c8-640\\\",\\\"order_id\\\":\\\"5b0c8033-57f3-4f85-bf6a-c7baec703f54\\\",\\\"payment_id\\\":\\\"4ed66268-0d19-4e40-9da9-0baec307c895\\\",\\\"xray_trace_id\\\":\\\"1-6abe6189-e1...[25 chars cut]\",\"level\":\"INFO\"},\"...[15 more items cut]\"],\"bytes_scanned\":448841,\"scan_budget_left_bytes\":20522679}}"
+    },
+    {
+     "number": 7,
+     "at": "2026-10-01T13:35:16+00:00",
+     "tool": "get_function_config",
+     "args": {
+      "service": "fulfillment"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_function_config\",\"truncated\":false,\"untrusted_data\":{\"function\":\"nightshift-fulfillment\",\"live_alias_version\":\"7\",\"last_modified\":\"more than 30 minutes ago\",\"runtime\":\"python3.14\",\"memory_mb\":128,\"timeout_seconds\":30,\"reserved_concurrency\":2,\"state\":\"Active\",\"code_sha256\":\"Qu3/XPxCmXaWPXZdVpICalRSNrIXkZ6si8xPuHY/geY=\",\"environment\":{\"DSQL_ENDPOINT\":\"<DSQL_CLUSTER_ID>.dsql.ca-central-1.on.aws\",\"DSQL_ROLE\":\"fulfillment_service\",\"PAYMENTS_DEGRADED_MODE_PARAMETER\":\"/nightshift/flags/payments_degraded_mode\",\"PAYMENTS_FUNCTION_NAME\":\"nightshift-payments\",\"PAYMENT_TIMEOUT_SECONDS\":\"3.0\",\"POWERTOOLS_LOG_LEVEL\":\"INFO\",\"POWERTOOLS_SERVICE_NAME\":\"fulfillment\"}}}"
+    },
+    {
+     "number": 8,
+     "at": "2026-10-01T13:35:17+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "fulfillment",
+      "minutes": 15,
+      "query": "fields @timestamp, @message | filter level = \"ERROR\" or level = \"WARN\" | sort @timestamp desc | limit 20"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":true,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 13:33:18.698\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-10-01 13:33:18,697+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"e3e1b203-111d-4766-9118-0e540742784c\\\",\\\"message_id\\\":\\\"e3e1b203-111d-4766-9118-0e540742784c\\\",\\\"reason\\\":\\\"'order_id'\\\",\\\"exception\\\":\\\"Traceback (most recen...[669 chars cut]\"},{\"@timestamp\":\"2026-10-01 13:30:20.204\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-10-01 13:30:20,203+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"e3e1b203-111d-4766-9118-0e540742784c\\\",\\\"message_id\\\":\\\"e3e1b203-111d-4766-9118-0e540742784c\\\",\\\"reason\\\":\\\"'order_id'\\\",\\\"exception\\\":\\\"Traceback (most recen...[669 chars cut]\"},{\"@timestamp\":\"2026-10-01 13:27:20.651\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-10-01 13:27:20,650+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"correlation_id\\\":\\\"e3e1b203-111d-4766-9118-0e540742784c\\\",\\\"message_id\\\":\\\"e3e1b203-111d-4766-9118-0e540742784c\\\",\\\"reason\\\":\\\"'order_id'\\\",\\\"exception\\\":\\\"Traceback (most recen...[669 chars cut]\"}],\"bytes_scanned\":371734,\"scan_budget_left_bytes\":20150945}}"
+    },
+    {
+     "number": 9,
+     "at": "2026-10-01T13:35:17+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "statistic": "Maximum",
+      "metric": "Duration",
+      "minutes": 15,
+      "namespace": "AWS/Lambda"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/Lambda Duration {} Maximum per 60s\",\"window_minutes\":15,\"points\":[[\"13:24:00Z\",3316.55],[\"13:25:00Z\",1717.88],[\"13:26:00Z\",1713.64],[\"13:27:00Z\",1683.77],[\"13:28:00Z\",1367.06],[\"13:29:00Z\",1648.97],[\"13:30:00Z\",1471.92],[\"13:31:00Z\",1449.95],[\"13:32:00Z\",1681.59],[\"13:33:00Z\",1758.18],[\"13:34:00Z\",1695.22]],\"summary\":{\"min\":1367.06,\"max\":3316.55,\"count\":11}}}"
+    },
+    {
+     "number": 10,
+     "at": "2026-10-01T13:35:19+00:00",
+     "tool": "note_hypotheses",
+     "args": {
+      "hypotheses": "likely: poison_message causing repeated failures and message retries (retry storm / visibility timeout holds) for message_id e3e1b203-111d-4766-9118-0e540742784c\nruled_out: slow_dependency or timeout in fulfillment consumer processing SQS messages\nruled_out: queue consumer is stuck or processing very slowly\nruled_out: bad_deploy (no recent deployments)"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"4 hypotheses recorded\"}"
+    },
+    {
+     "number": 11,
+     "at": "2026-10-01T13:35:19+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "proposed_actions": "Inspect the malformed message in the queue or check dead-letter queue settings.",
+      "actions": "pause_queue_consumer",
+      "root_cause_component": "placed-orders",
+      "hypotheses": "likely: poison_message causing repeated failures and message retries (retry storm / visibility timeout holds) for message_id e3e1b203-111d-4766-9118-0e540742784c\nruled_out: slow_dependency or timeout in fulfillment consumer processing SQS messages\nruled_out: queue consumer is stuck or processing very slowly\nruled_out: bad_deploy (no recent deployments)",
+      "fault_category": "poison_message",
+      "confidence": 95,
+      "summary": "A malformed message lacking 'order_id' is repeatedly failing processing in the fulfillment Lambda function. Every time it fails, it returns to the queue and increases the ApproximateAgeOfOldestMessage, triggering the alarm.",
+      "evidence_steps": "2,8"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-queue-age\n\nInvestigation `8fbcb0ecd463`, gemini `gemini-3.5-flash-lite`, started 2026-10-01T13:35:09+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `placed-orders` |\n| Fault category | `poison_message` |\n| Confidence | 95 |\n| Ended because | finished |\n\n## Summary\n\nA malformed message lacking 'order_id' is repeatedly failing processing in the fulfillment Lambda function. Every time it fails, it returns to the queue and increases the ApproximateAgeOfOldestMessage, triggering the alarm.\n\n## Impact\n\nThe page: `nightshift-queue-age` was ALARM (since 2026-10-01T13:34:58Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T13:35:10+00:00 step 1: `get_alarm`\n- 2026-10-01T13:35:11+00:00 step 2: `get_queue_stats`\n- 2026-10-01T13:35:11+00:00 step 3: `list_recent_deployments` minutes=30 (found nothing)\n- 2026-10-01T13:35:12+00:00 step 4: `note_hypotheses` hypotheses=likely: slow_dependency or timeout in fulfillment consumer processing SQS messa...\n- 2026-10-01T13:35:13+00:00 step 5: `get_traces` minutes=15, service=fulfillment\n- 2026-10-01T13:35:14+00:00 step 6: `query_logs` query=fields @timestamp, @message, level | sort @timestamp desc | limit 20, minutes=15, se...\n- 2026-10-01T13:35:16+00:00 step 7: `get_function_config` service=fulfillment\n- 2026-10-01T13:35:17+00:00 step 8: `query_logs` service=fulfillment, minutes=15, query=fields @timestamp, @message | filter level = \"ERROR...\n- 2026-10-01T13:35:17+00:00 step 9: `get_metrics` statistic=Maximum, metric=Duration, minutes=15, namespace=AWS/Lambda\n- 2026-10-01T13:35:19+00:00 step 10: `note_hypotheses` hypotheses=likely: poison_message causing repeated failures and message retries (retry sto...\n- 2026-10-01T13:35:19+00:00 step 11: `finish_investigation` proposed_actions=Inspect the malformed message in the queue or check dead-letter queue set...\n\n## Root cause evidence\n\n- Step 2, `get_queue_stats`: {\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":8,\"visibility_timeout_seconds\":180},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":0,\"in_flight\":0,\"visibility_t...(older result, shortened)\n- Step 8, `query_logs`: {\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 13:33:18.698\",\"@message\":\"{\\\"level\\\":\\\"ERROR\\\",\\\"location\\\":\\\"handler:170\\\",\\\"message\\\":\\\"message failed\\\",\\\"timestamp\\\":\\\"2026-10-01 13:33:18,697+0000\\\",\\\"service\\\":\\\"fulfillment\\\",\\\"c...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nAllowlisted actions, each waiting for owner approval:\n\n- `pause_queue_consumer`\n\n- Inspect the malformed message in the queue or check dead-letter queue settings.\n\n## Hypotheses\n\n- likely: poison_message causing repeated failures and message retries (retry storm / visibility timeout holds) for message_id e3e1b203-111d-4766-9118-0e540742784c\n- ruled_out: slow_dependency or timeout in fulfillment consumer processing SQS messages\n- ruled_out: queue consumer is stuck or processing very slowly\n- ruled_out: bad_deploy (no recent deployments)\n\n## What the investigation cost\n\n- 4 model calls, 15,215 input and 632 output tokens (15,847 total)\n- 11 steps, 10 s of wall clock\n- 820,575 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "agent-mistral",
+   "investigation_id": "5175bdce0cc7",
+   "provider": "mistral",
+   "model": "ministral-14b-latest",
+   "started_at": "2026-10-01T13:35:09+00:00",
+   "stop_reason": "finished",
+   "tokens": 29017,
+   "llm_calls": 7,
+   "tool_steps": 10,
+   "log_bytes_scanned": 435080,
+   "grade": {
+    "scenario": 5,
+    "run_id": "05-poison-message-20261001T123358Z",
+    "investigation_id": "5175bdce0cc7",
+    "expected_component": "placed-orders",
+    "expected_category": "poison_message",
+    "answered_component": "fulfillment",
+    "answered_category": "retry_storm",
+    "confidence": 95,
+    "component_correct": false,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": false,
+    "diagnosis_seconds": 495.0,
+    "proposed_actions": [
+     "pause_queue_consumer"
+    ],
+    "remediation_correct": false,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "fulfillment",
+    "category": "retry_storm",
+    "confidence": 95,
+    "summary": "A single message in the nightshift-placed-orders queue is repeatedly failing in nightshift-fulfillment, causing a retry storm and blocking queue progress. The message is not being sent to the dead-letter queue, indicating a persistent processing error.",
+    "evidence": [
+     1,
+     7,
+     8,
+     9
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [
+     "pause_queue_consumer"
+    ],
+    "proposed_actions": [
+     "Investigate the root cause of the failure in nightshift-fulfillment for the message with correlation_id e3e1b203-111d-4766-9118-0e540742784c."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "retry_storm in nightshift-fulfillment processing messages from nightshift-placed-orders"
+    },
+    {
+     "status": "ruled_out",
+     "text": "poison_message in nightshift-placed-orders queue"
+    },
+    {
+     "status": "ruled_out",
+     "text": "slow_dependency in nightshift-fulfillment causing messages to remain invisible"
+    },
+    {
+     "status": "ruled_out",
+     "text": "throttling in nightshift-fulfillment"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 4,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "retry_storm in nightshift-fulfillment processing messages from nightshift-placed-orders"
+      },
+      {
+       "status": "possible",
+       "text": "slow_dependency in nightshift-fulfillment causing messages to remain invisible"
+      },
+      {
+       "status": "possible",
+       "text": "poison_message in nightshift-placed-orders queue"
+      },
+      {
+       "status": "possible",
+       "text": "throttling in nightshift-fulfillment"
+      }
+     ]
+    },
+    {
+     "step": 10,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "retry_storm in nightshift-fulfillment processing messages from nightshift-placed-orders"
+      },
+      {
+       "status": "ruled_out",
+       "text": "poison_message in nightshift-placed-orders queue"
+      },
+      {
+       "status": "ruled_out",
+       "text": "slow_dependency in nightshift-fulfillment causing messages to remain invisible"
+      },
+      {
+       "status": "ruled_out",
+       "text": "throttling in nightshift-fulfillment"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 1,
+     "at": "2026-10-01T13:35:11+00:00",
+     "input_tokens": 2930,
+     "output_tokens": 134
+    },
+    {
+     "turn": 2,
+     "at": "2026-10-01T13:35:13+00:00",
+     "input_tokens": 3827,
+     "output_tokens": 78
+    },
+    {
+     "turn": 3,
+     "at": "2026-10-01T13:35:14+00:00",
+     "input_tokens": 3938,
+     "output_tokens": 63
+    },
+    {
+     "turn": 4,
+     "at": "2026-10-01T13:35:16+00:00",
+     "input_tokens": 3941,
+     "output_tokens": 67
+    },
+    {
+     "turn": 5,
+     "at": "2026-10-01T13:35:18+00:00",
+     "input_tokens": 3941,
+     "output_tokens": 54
+    },
+    {
+     "turn": 6,
+     "at": "2026-10-01T13:35:22+00:00",
+     "input_tokens": 4210,
+     "output_tokens": 277
+    },
+    {
+     "turn": 7,
+     "at": "2026-10-01T13:35:30+00:00",
+     "input_tokens": 4964,
+     "output_tokens": 593
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T13:35:11+00:00",
+     "tool": "get_queue_stats",
+     "args": {},
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_queue_stats\",\"truncated\":false,\"untrusted_data\":{\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":5,\"visibility_timeout_seconds\":180},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":0,\"in_flight\":0,\"visibility_timeout_seconds\":30},\"max_receive_count\":3,\"consumer\":[{\"function\":\"nightshift-fulfillment:live\",\"state\":\"Enabled\",\"batch_size\":10,\"maximum_concurrency\":2}]}}}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T13:35:12+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/SQS",
+      "metric": "ApproximateNumberOfMessagesVisible",
+      "statistic": "Sum",
+      "dimensions": "QueueName=nightshift-placed-orders",
+      "minutes": 15,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/SQS ApproximateNumberOfMessagesVisible {'QueueName': 'nightshift-placed-orders'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"13:20:00Z\",0.0],[\"13:21:00Z\",0.0],[\"13:22:00Z\",0.0],[\"13:23:00Z\",0.0],[\"13:24:00Z\",0.0],[\"13:25:00Z\",0.0],[\"13:26:00Z\",0.0],[\"13:27:00Z\",0.0],[\"13:28:00Z\",0.0],[\"13:29:00Z\",0.0],[\"13:30:00Z\",0.0],[\"13:31:00Z\",0.0],[\"13:32:00Z\",0.0],[\"13:33:00Z\",0.0],[\"13:34:00Z\",0.0]],\"summary\":{\"min\":0.0,\"max\":0.0,\"count\":15}}}"
+    },
+    {
+     "number": 3,
+     "at": "2026-10-01T13:35:12+00:00",
+     "tool": "get_metrics",
+     "args": {
+      "namespace": "AWS/SQS",
+      "metric": "ApproximateNumberOfMessagesVisible",
+      "statistic": "Sum",
+      "dimensions": "QueueName=nightshift-placed-orders-dlq",
+      "minutes": 15,
+      "period": 60
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_metrics\",\"truncated\":false,\"untrusted_data\":{\"metric\":\"AWS/SQS ApproximateNumberOfMessagesVisible {'QueueName': 'nightshift-placed-orders-dlq'} Sum per 60s\",\"window_minutes\":15,\"points\":[[\"13:20:00Z\",0.0],[\"13:21:00Z\",0.0],[\"13:22:00Z\",0.0],[\"13:23:00Z\",0.0],[\"13:24:00Z\",0.0],[\"13:25:00Z\",0.0],[\"13:26:00Z\",0.0],[\"13:27:00Z\",0.0],[\"13:28:00Z\",0.0],[\"13:29:00Z\",0.0],[\"13:30:00Z\",0.0],[\"13:31:00Z\",0.0],[\"13:32:00Z\",0.0],[\"13:33:00Z\",0.0],[\"13:34:00Z\",0.0]],\"summary\":{\"min\":0.0,\"max\":0.0,\"count\":15}}}"
+    },
+    {
+     "number": 4,
+     "at": "2026-10-01T13:35:13+00:00",
+     "tool": "note_hypotheses",
+     "args": {
+      "hypotheses": "likely: retry_storm in nightshift-fulfillment processing messages from nightshift-placed-orders\npossible: slow_dependency in nightshift-fulfillment causing messages to remain invisible\npossible: poison_message in nightshift-placed-orders queue\npossible: throttling in nightshift-fulfillment"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"4 hypotheses recorded\"}"
+    },
+    {
+     "number": 5,
+     "at": "2026-10-01T13:35:14+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "fulfillment",
+      "query": "fields @timestamp, level, message, correlation_id | filter @timestamp > ago(5m) and @timestamp < now() | sort @timestamp desc",
+      "minutes": 5,
+      "limit": 50
+     },
+     "status": "failed",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"error\":\"AWS MalformedQueryException: Unrecognized function name: ago ([156,162]) (Service: AWSLogs; Status Code: 400; Error Code: MalformedQueryException; Request ID: 072d963a-a05c-4779-adb2-86dc65da43a1; Proxy: null)\"}}"
+    },
+    {
+     "number": 6,
+     "at": "2026-10-01T13:35:16+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "fulfillment",
+      "query": "fields @timestamp, level, message, correlation_id | filter @timestamp > `now() - 5m` and @timestamp < `now()` | sort @timestamp desc",
+      "minutes": 5,
+      "limit": 50
+     },
+     "status": "failed",
+     "cited": false,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"error\":\"AWS MalformedQueryException: Type Mismatch ([136,192]) (Service: AWSLogs; Status Code: 400; Error Code: MalformedQueryException; Request ID: efaa94b1-6a40-434a-9ac3-cacdc7774592; Proxy: null)\"}}"
+    },
+    {
+     "number": 7,
+     "at": "2026-10-01T13:35:19+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "fulfillment",
+      "query": "fields @timestamp, level, message, correlation_id | filter level = \"ERROR\" | sort @timestamp desc",
+      "minutes": 5,
+      "limit": 50
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 13:33:18.698\",\"level\":\"ERROR\",\"message\":\"message failed\",\"correlation_id\":\"e3e1b203-111d-4766-9118-0e540742784c\"},{\"@timestamp\":\"2026-10-01 13:30:20.204\",\"level\":\"ERROR\",\"message\":\"message failed\",\"correlation_id\":\"e3e1b203-111d-4766-9118-0e540742784c\"}],\"bytes_scanned\":43551,\"scan_budget_left_bytes\":20927969}}"
+    },
+    {
+     "number": 8,
+     "at": "2026-10-01T13:35:22+00:00",
+     "tool": "get_queue_stats",
+     "args": {},
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_queue_stats\",\"truncated\":false,\"untrusted_data\":{\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":3,\"visibility_timeout_seconds\":180},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":0,\"in_flight\":0,\"visibility_timeout_seconds\":30},\"max_receive_count\":3,\"consumer\":[{\"function\":\"nightshift-fulfillment:live\",\"state\":\"Enabled\",\"batch_size\":10,\"maximum_concurrency\":2}]}}}}",
+     "reasoning": "The logs for the `fulfillment` service show repeated **ERROR** messages with the same `correlation_id` (`e3e1b203-111d-4766-9118-0e540742784c`), indicating a single message is failing repeatedly. This strongly supports the **retry_storm** hypothesis, as the same message is being reprocessed and failing, likely due to an issue in the fulfillment logic or a dependency.\n\n### Next Steps:\nTo confirm whether this is a **poison_message** or a **retry_storm**, I will:\n1. Check if this message exists in the **dead-letter queue (DLQ)**.\n2. Investigate the specific error causing the failure in the `fulfillment` logs.\n\nI will proceed with these checks."
+    },
+    {
+     "number": 9,
+     "at": "2026-10-01T13:35:24+00:00",
+     "tool": "query_logs",
+     "args": {
+      "service": "fulfillment",
+      "query": "fields @timestamp, level, message, correlation_id, error | filter correlation_id = 'e3e1b203-111d-4766-9118-0e540742784c' | sort @timestamp desc",
+      "minutes": 10,
+      "limit": 20
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"query_logs\",\"truncated\":false,\"untrusted_data\":{\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 13:33:18.698\",\"level\":\"ERROR\",\"message\":\"message failed\",\"correlation_id\":\"e3e1b203-111d-4766-9118-0e540742784c\"},{\"@timestamp\":\"2026-10-01 13:33:18.698\",\"level\":\"WARNING\",\"message\":\"batch had failures\",\"correlation_id\":\"e3e1b203-111d-4766-9118-0e540742784c\"},{\"@timestamp\":\"2026-10-01 13:30:20.204\",\"level\":\"ERROR\",\"message\":\"message failed\",\"correlation_id\":\"e3e1b203-111d-4766-9118-0e540742784c\"},{\"@timestamp\":\"2026-10-01 13:27:20.651\",\"level\":\"ERROR\",\"message\":\"message failed\",\"correlation_id\":\"e3e1b203-111d-4766-9118-0e540742784c\"}],\"bytes_scanned\":391529,\"scan_budget_left_bytes\":20536440}}"
+    },
+    {
+     "number": 10,
+     "at": "2026-10-01T13:35:30+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "fulfillment",
+      "fault_category": "retry_storm",
+      "confidence": 95,
+      "summary": "A single message in the nightshift-placed-orders queue is repeatedly failing in nightshift-fulfillment, causing a retry storm and blocking queue progress. The message is not being sent to the dead-letter queue, indicating a persistent processing error.",
+      "evidence_steps": "1,7,8,9",
+      "hypotheses": "likely: retry_storm in nightshift-fulfillment processing messages from nightshift-placed-orders\nruled_out: poison_message in nightshift-placed-orders queue\nruled_out: slow_dependency in nightshift-fulfillment causing messages to remain invisible\nruled_out: throttling in nightshift-fulfillment",
+      "actions": "pause_queue_consumer",
+      "proposed_actions": "Investigate the root cause of the failure in nightshift-fulfillment for the message with correlation_id e3e1b203-111d-4766-9118-0e540742784c."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}",
+     "reasoning": "The evidence confirms the following:\n\n1. **Retry Storm in `nightshift-fulfillment`**:\n   - The same `correlation_id` (`e3e1b203-111d-4766-9118-0e540742784c`) is repeatedly failing in the `fulfillment` service logs (Step 9).\n   - The message is not in the dead-letter queue (DLQ) (Step 8), meaning it is being retried rather than discarded.\n   - The `nightshift-placed-orders` queue has **3 messages in flight** (Step 8), suggesting the consumer is stuck reprocessing the same message.\n\n2. **No Evidence of a Poison Message**:\n   - The DLQ is empty, so no messages are being permanently discarded due to failure.\n\n3. **No Evidence of Slow Dependency or Throttling**:\n   - The queue age alarm triggered due to the message being stuck in flight, not due to external slowness or throttling.\n\n### Root Cause:\nThe **retry_storm** hypothesis is confirmed. The `nightshift-fulfillment` service is repeatedly failing to process a single message, causing it to be retried and blocking progress for other messag"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-queue-age\n\nInvestigation `5175bdce0cc7`, mistral `ministral-14b-latest`, started 2026-10-01T13:35:09+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `fulfillment` |\n| Fault category | `retry_storm` |\n| Confidence | 95 |\n| Ended because | finished |\n\n## Summary\n\nA single message in the nightshift-placed-orders queue is repeatedly failing in nightshift-fulfillment, causing a retry storm and blocking queue progress. The message is not being sent to the dead-letter queue, indicating a persistent processing error.\n\n## Impact\n\nThe page: `nightshift-queue-age` was ALARM (since 2026-10-01T13:34:58Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T13:35:11+00:00 step 1: `get_queue_stats`\n- 2026-10-01T13:35:12+00:00 step 2: `get_metrics` namespace=AWS/SQS, metric=ApproximateNumberOfMessagesVisible, statistic=Sum, dimensions=Qu...\n- 2026-10-01T13:35:12+00:00 step 3: `get_metrics` namespace=AWS/SQS, metric=ApproximateNumberOfMessagesVisible, statistic=Sum, dimensions=Qu...\n- 2026-10-01T13:35:13+00:00 step 4: `note_hypotheses` hypotheses=likely: retry_storm in nightshift-fulfillment processing messages from nightshi...\n- 2026-10-01T13:35:14+00:00 step 5: `query_logs` service=fulfillment, query=fields @timestamp, level, message, correlation_id | filter @tim... (failed)\n- 2026-10-01T13:35:16+00:00 step 6: `query_logs` service=fulfillment, query=fields @timestamp, level, message, correlation_id | filter @tim... (failed)\n- 2026-10-01T13:35:19+00:00 step 7: `query_logs` service=fulfillment, query=fields @timestamp, level, message, correlation_id | filter leve...\n- 2026-10-01T13:35:22+00:00 step 8: `get_queue_stats`\n- 2026-10-01T13:35:24+00:00 step 9: `query_logs` service=fulfillment, query=fields @timestamp, level, message, correlation_id, error | filt...\n- 2026-10-01T13:35:30+00:00 step 10: `finish_investigation` root_cause_component=fulfillment, fault_category=retry_storm, confidence=95, summary=A sin...\n\n## Root cause evidence\n\n- Step 1, `get_queue_stats`: {\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":5,\"visibility_timeout_seconds\":180},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":0,\"in_flight\":0,\"visibility_t...(older result, shortened)\n- Step 7, `query_logs`: {\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 13:33:18.698\",\"level\":\"ERROR\",\"message\":\"message failed\",\"correlation_id\":\"e3e1b203-111d-4766-9118-0e540742784c\"},{\"@timestamp\":\"2026-10-01 13:30:20.204\",\"level\":\"ERROR\",\"message\":\"mess...(older result, shortened)\n- Step 8, `get_queue_stats`: {\"queues\":{\"nightshift-placed-orders\":{\"queue\":{\"name\":\"nightshift-placed-orders\",\"waiting\":0,\"in_flight\":3,\"visibility_timeout_seconds\":180},\"dead_letter_queue\":{\"name\":\"nightshift-placed-orders-dlq\",\"waiting\":0,\"in_flight\":0,\"visibility_t...(older result, shortened)\n- Step 9, `query_logs`: {\"status\":\"Complete\",\"rows\":[{\"@timestamp\":\"2026-10-01 13:33:18.698\",\"level\":\"ERROR\",\"message\":\"message failed\",\"correlation_id\":\"e3e1b203-111d-4766-9118-0e540742784c\"},{\"@timestamp\":\"2026-10-01 13:33:18.698\",\"level\":\"WARNING\",\"message\":\"ba...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nAllowlisted actions, each waiting for owner approval:\n\n- `pause_queue_consumer`\n\n- Investigate the root cause of the failure in nightshift-fulfillment for the message with correlation_id e3e1b203-111d-4766-9118-0e540742784c.\n\n## Hypotheses\n\n- likely: retry_storm in nightshift-fulfillment processing messages from nightshift-placed-orders\n- ruled_out: poison_message in nightshift-placed-orders queue\n- ruled_out: slow_dependency in nightshift-fulfillment causing messages to remain invisible\n- ruled_out: throttling in nightshift-fulfillment\n\n## What the investigation cost\n\n- 7 model calls, 27,751 input and 1,266 output tokens (29,017 total)\n- 10 steps, 21 s of wall clock\n- 435,080 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "alarm-only-gemini",
+   "investigation_id": "b28aa508d30d",
+   "provider": "gemini",
+   "model": "gemini-3.5-flash-lite",
+   "started_at": "2026-10-01T13:35:09+00:00",
+   "stop_reason": "finished",
+   "tokens": 3134,
+   "llm_calls": 2,
+   "tool_steps": 3,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 5,
+    "run_id": "05-poison-message-20261001T123358Z",
+    "investigation_id": "b28aa508d30d",
+    "expected_component": "placed-orders",
+    "expected_category": "poison_message",
+    "answered_component": "placed-orders",
+    "answered_category": "insufficient_evidence",
+    "confidence": 50,
+    "component_correct": true,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": true,
+    "diagnosis_seconds": 477.0,
+    "proposed_actions": [],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "placed-orders",
+    "category": "insufficient_evidence",
+    "confidence": 50,
+    "summary": "An alarm fired indicating that the ApproximateAgeOfOldestMessage for the nightshift-placed-orders SQS queue exceeded 300 seconds. Without additional investigation tools, there is insufficient evidence to determine the exact fault category.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "Investigate the nightshift-placed-orders SQS queue and its consumer service to check why message processing age has exceeded the threshold."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy"
+    },
+    {
+     "status": "ruled_out",
+     "text": "config_regression"
+    },
+    {
+     "status": "ruled_out",
+     "text": "timeout_regression"
+    },
+    {
+     "status": "ruled_out",
+     "text": "slow_dependency"
+    },
+    {
+     "status": "ruled_out",
+     "text": "poison_message"
+    },
+    {
+     "status": "ruled_out",
+     "text": "iam_regression"
+    },
+    {
+     "status": "ruled_out",
+     "text": "hot_row_contention"
+    },
+    {
+     "status": "ruled_out",
+     "text": "missing_index"
+    },
+    {
+     "status": "ruled_out",
+     "text": "throttling"
+    },
+    {
+     "status": "ruled_out",
+     "text": "retry_storm"
+    },
+    {
+     "status": "possible",
+     "text": "insufficient_evidence"
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 3,
+     "hypotheses": [
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy"
+      },
+      {
+       "status": "ruled_out",
+       "text": "config_regression"
+      },
+      {
+       "status": "ruled_out",
+       "text": "timeout_regression"
+      },
+      {
+       "status": "ruled_out",
+       "text": "slow_dependency"
+      },
+      {
+       "status": "ruled_out",
+       "text": "poison_message"
+      },
+      {
+       "status": "ruled_out",
+       "text": "iam_regression"
+      },
+      {
+       "status": "ruled_out",
+       "text": "hot_row_contention"
+      },
+      {
+       "status": "ruled_out",
+       "text": "missing_index"
+      },
+      {
+       "status": "ruled_out",
+       "text": "throttling"
+      },
+      {
+       "status": "ruled_out",
+       "text": "retry_storm"
+      },
+      {
+       "status": "possible",
+       "text": "insufficient_evidence"
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 2,
+     "at": "2026-10-01T13:35:10+00:00",
+     "input_tokens": 1203,
+     "output_tokens": 228
+    },
+    {
+     "turn": 3,
+     "at": "2026-10-01T13:35:12+00:00",
+     "input_tokens": 1473,
+     "output_tokens": 230
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T13:35:09+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "queue-age"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-queue-age\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).\",\"since\":\"2026-10-01T13:34:58Z\",\"metric\":{\"namespace\":\"AWS/SQS\",\"name\":\"ApproximateAgeOfOldestMessage\",\"dimensions\":{\"QueueName\":\"nightshift-placed-orders\"},\"statistic\":\"Maximum\",\"period_seconds\":300},\"fires_when\":\"GreaterThanOrEqualToThreshold 300.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T13:34:58Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+     "in_trigger": true
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T13:35:10+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "proposed_actions": "Investigate the nightshift-placed-orders SQS queue and its consumer service to check why message processing age has exceeded the threshold.",
+      "root_cause_component": "placed-orders",
+      "actions": [],
+      "summary": "An alarm fired indicating that the ApproximateAgeOfOldestMessage for the nightshift-placed-orders SQS queue exceeded 300 seconds. Without additional investigation tools, there is insufficient evidence to determine the exact fault category.",
+      "evidence_steps": "1",
+      "fault_category": "insufficient_evidence",
+      "hypotheses": "ruled_out: bad_deploy\nruled_out: config_regression\nruled_out: timeout_regression\nruled_out: slow_dependency\nruled_out: poison_message\nruled_out: iam_regression\nruled_out: hot_row_contention\nruled_out: missing_index\nruled_out: throttling\nruled_out: retry_storm\npossible: insufficient_evidence",
+      "confidence": 50
+     },
+     "status": "rejected",
+     "cited": false,
+     "result": "{\"error\": \"finish_investigation rejected\", \"problems\": [\"'actions' must be string, got list\"]}"
+    },
+    {
+     "number": 3,
+     "at": "2026-10-01T13:35:12+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "placed-orders",
+      "confidence": 50,
+      "summary": "An alarm fired indicating that the ApproximateAgeOfOldestMessage for the nightshift-placed-orders SQS queue exceeded 300 seconds. Without additional investigation tools, there is insufficient evidence to determine the exact fault category.",
+      "fault_category": "insufficient_evidence",
+      "hypotheses": "ruled_out: bad_deploy\nruled_out: config_regression\nruled_out: timeout_regression\nruled_out: slow_dependency\nruled_out: poison_message\nruled_out: iam_regression\nruled_out: hot_row_contention\nruled_out: missing_index\nruled_out: throttling\nruled_out: retry_storm\npossible: insufficient_evidence",
+      "proposed_actions": "Investigate the nightshift-placed-orders SQS queue and its consumer service to check why message processing age has exceeded the threshold.",
+      "evidence_steps": "1",
+      "actions": ""
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-queue-age\n\nInvestigation `b28aa508d30d`, gemini `gemini-3.5-flash-lite`, started 2026-10-01T13:35:09+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `placed-orders` |\n| Fault category | `insufficient_evidence` |\n| Confidence | 50 |\n| Ended because | finished |\n\n## Summary\n\nAn alarm fired indicating that the ApproximateAgeOfOldestMessage for the nightshift-placed-orders SQS queue exceeded 300 seconds. Without additional investigation tools, there is insufficient evidence to determine the exact fault category.\n\n## Impact\n\nThe page: `nightshift-queue-age` was ALARM (since 2026-10-01T13:34:58Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T13:35:09+00:00 step 1: `get_alarm` name=queue-age\n- 2026-10-01T13:35:10+00:00 step 2: `finish_investigation` proposed_actions=Investigate the nightshift-placed-orders SQS queue and its consumer servi... (refused: 'actions' must be string, got list)\n- 2026-10-01T13:35:12+00:00 step 3: `finish_investigation` root_cause_component=placed-orders, confidence=50, summary=An alarm fired indicating that ...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-queue-age\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).\",\"since\":\"2026-10-01T13:34:58Z\",\"metric\":{\"namespace\":\"AWS/SQS\",\"name\":\"...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- Investigate the nightshift-placed-orders SQS queue and its consumer service to check why message processing age has exceeded the threshold.\n\n## Hypotheses\n\n- ruled_out: bad_deploy\n- ruled_out: config_regression\n- ruled_out: timeout_regression\n- ruled_out: slow_dependency\n- ruled_out: poison_message\n- ruled_out: iam_regression\n- ruled_out: hot_row_contention\n- ruled_out: missing_index\n- ruled_out: throttling\n- ruled_out: retry_storm\n- possible: insufficient_evidence\n\n## What the investigation cost\n\n- 2 model calls, 2,676 input and 458 output tokens (3,134 total)\n- 3 steps, 3 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "alarm-only-mistral",
+   "investigation_id": "f298b70520e8",
+   "provider": "mistral",
+   "model": "ministral-14b-latest",
+   "started_at": "2026-10-01T13:35:09+00:00",
+   "stop_reason": "finished",
+   "tokens": 1616,
+   "llm_calls": 1,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 5,
+    "run_id": "05-poison-message-20261001T123358Z",
+    "investigation_id": "f298b70520e8",
+    "expected_component": "placed-orders",
+    "expected_category": "poison_message",
+    "answered_component": "placed-orders",
+    "answered_category": "slow_dependency",
+    "confidence": 75,
+    "component_correct": true,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": false,
+    "diagnosis_seconds": 479.0,
+    "proposed_actions": [],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "placed-orders",
+    "category": "slow_dependency",
+    "confidence": 75,
+    "summary": "The SQS queue 'nightshift-placed-orders' has messages that are being processed slowly or not at all, causing the approximate age of the oldest message to exceed the threshold of 300 seconds. This suggests a downstream service or process responsible for consuming these messages is experiencing delays or failures.",
+    "evidence": [
+     1
+    ],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": [
+     "1. Investigate the consumer logs for errors or delays in processing messages from the 'nightshift-placed-orders' queue.",
+     "2. Check the health and performance of the downstream service responsible for processing these messages.",
+     "3. Verify if there are any malformed messages in the queue that could be causing repeated failures.",
+     "4. Monitor the queue for further signs of throttling or retry storms.",
+     "5. If necessary, manually inspect the oldest messages in the queue for anomalies."
+    ]
+   },
+   "hypotheses": [
+    {
+     "status": "likely",
+     "text": "slow_dependency: The consumer processing the 'nightshift-placed-orders' queue is slow or stuck, causing messages to age."
+    },
+    {
+     "status": "possible",
+     "text": "poison_message: A malformed message in the queue is causing repeated failures and delays."
+    },
+    {
+     "status": "possible",
+     "text": "retry_storm: The consumer is retrying messages excessively, overwhelming the system."
+    },
+    {
+     "status": "possible",
+     "text": "throttling: The downstream service is being throttled or has hit a concurrency limit."
+    },
+    {
+     "status": "ruled_out",
+     "text": "bad_deploy: No indication of a recent code deployment."
+    },
+    {
+     "status": "ruled_out",
+     "text": "config_regression: No evidence of configuration changes affecting the queue."
+    },
+    {
+     "status": "ruled_out",
+     "text": "timeout_regression: No timeout-related changes mentioned."
+    },
+    {
+     "status": "ruled_out",
+     "text": "iam_regression: No permission-related errors indicated."
+    },
+    {
+     "status": "ruled_out",
+     "text": "hot_row_contention: No database-related symptoms described."
+    },
+    {
+     "status": "ruled_out",
+     "text": "missing_index: No database query performance issues mentioned."
+    }
+   ],
+   "hypothesis_changes": [
+    {
+     "step": 2,
+     "hypotheses": [
+      {
+       "status": "likely",
+       "text": "slow_dependency: The consumer processing the 'nightshift-placed-orders' queue is slow or stuck, causing messages to age."
+      },
+      {
+       "status": "possible",
+       "text": "poison_message: A malformed message in the queue is causing repeated failures and delays."
+      },
+      {
+       "status": "possible",
+       "text": "retry_storm: The consumer is retrying messages excessively, overwhelming the system."
+      },
+      {
+       "status": "possible",
+       "text": "throttling: The downstream service is being throttled or has hit a concurrency limit."
+      },
+      {
+       "status": "ruled_out",
+       "text": "bad_deploy: No indication of a recent code deployment."
+      },
+      {
+       "status": "ruled_out",
+       "text": "config_regression: No evidence of configuration changes affecting the queue."
+      },
+      {
+       "status": "ruled_out",
+       "text": "timeout_regression: No timeout-related changes mentioned."
+      },
+      {
+       "status": "ruled_out",
+       "text": "iam_regression: No permission-related errors indicated."
+      },
+      {
+       "status": "ruled_out",
+       "text": "hot_row_contention: No database-related symptoms described."
+      },
+      {
+       "status": "ruled_out",
+       "text": "missing_index: No database query performance issues mentioned."
+      }
+     ]
+    }
+   ],
+   "llm_turns": [
+    {
+     "turn": 2,
+     "at": "2026-10-01T13:35:14+00:00",
+     "input_tokens": 1207,
+     "output_tokens": 409
+    }
+   ],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T13:35:09+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "queue-age"
+     },
+     "status": "ok",
+     "cited": true,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-queue-age\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).\",\"since\":\"2026-10-01T13:34:58Z\",\"metric\":{\"namespace\":\"AWS/SQS\",\"name\":\"ApproximateAgeOfOldestMessage\",\"dimensions\":{\"QueueName\":\"nightshift-placed-orders\"},\"statistic\":\"Maximum\",\"period_seconds\":300},\"fires_when\":\"GreaterThanOrEqualToThreshold 300.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T13:34:58Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}",
+     "in_trigger": true
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T13:35:14+00:00",
+     "tool": "finish_investigation",
+     "args": {
+      "root_cause_component": "placed-orders",
+      "fault_category": "slow_dependency",
+      "confidence": 75,
+      "summary": "The SQS queue 'nightshift-placed-orders' has messages that are being processed slowly or not at all, causing the approximate age of the oldest message to exceed the threshold of 300 seconds. This suggests a downstream service or process responsible for consuming these messages is experiencing delays or failures.",
+      "evidence_steps": "1",
+      "hypotheses": "likely: slow_dependency: The consumer processing the 'nightshift-placed-orders' queue is slow or stuck, causing messages to age.\npossible: poison_message: A malformed message in the queue is causing repeated failures and delays.\npossible: retry_storm: The consumer is retrying messages excessively, overwhelming the system.\npossible: throttling: The downstream service is being throttled or has hit a concurrency limit.\nruled_out: bad_deploy: No indication of a recent code deployment.\nruled_out: config_regression: No evidence of configuration changes affecting the queue.\nruled_out: timeout_regression: No timeout-related changes mentioned.\nruled_out: iam_regression: No permission-related errors indicated.\nruled_out: hot_row_contention: No database-related symptoms described.\nruled_out: missing_index: No database query performance issues mentioned.",
+      "actions": "",
+      "proposed_actions": "1. Investigate the consumer logs for errors or delays in processing messages from the 'nightshift-placed-orders' queue.\n2. Check the health and performance of the downstream service responsible for processing these messages.\n3. Verify if there are any malformed messages in the queue that could be causing repeated failures.\n4. Monitor the queue for further signs of throttling or retry storms.\n5. If necessary, manually inspect the oldest messages in the queue for anomalies."
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"ok\": \"investigation closed\"}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-queue-age\n\nInvestigation `f298b70520e8`, mistral `ministral-14b-latest`, started 2026-10-01T13:35:09+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `placed-orders` |\n| Fault category | `slow_dependency` |\n| Confidence | 75 |\n| Ended because | finished |\n\n## Summary\n\nThe SQS queue 'nightshift-placed-orders' has messages that are being processed slowly or not at all, causing the approximate age of the oldest message to exceed the threshold of 300 seconds. This suggests a downstream service or process responsible for consuming these messages is experiencing delays or failures.\n\n## Impact\n\nThe page: `nightshift-queue-age` was ALARM (since 2026-10-01T13:34:58Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T13:35:09+00:00 step 1: `get_alarm` name=queue-age\n- 2026-10-01T13:35:14+00:00 step 2: `finish_investigation` root_cause_component=placed-orders, fault_category=slow_dependency, confidence=75, summary...\n\n## Root cause evidence\n\n- Step 1, `get_alarm`: {\"name\":\"nightshift-queue-age\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).\",\"since\":\"2026-10-01T13:34:58Z\",\"metric\":{\"namespace\":\"AWS/SQS\",\"name\":\"...(older result, shortened)\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\n- 1. Investigate the consumer logs for errors or delays in processing messages from the 'nightshift-placed-orders' queue.\n- 2. Check the health and performance of the downstream service responsible for processing these messages.\n- 3. Verify if there are any malformed messages in the queue that could be causing repeated failures.\n- 4. Monitor the queue for further signs of throttling or retry storms.\n- 5. If necessary, manually inspect the oldest messages in the queue for anomalies.\n\n## Hypotheses\n\n- likely: slow_dependency: The consumer processing the 'nightshift-placed-orders' queue is slow or stuck, causing messages to age.\n- possible: poison_message: A malformed message in the queue is causing repeated failures and delays.\n- possible: retry_storm: The consumer is retrying messages excessively, overwhelming the system.\n- possible: throttling: The downstream service is being throttled or has hit a concurrency limit.\n- ruled_out: bad_deploy: No indication of a recent code deployment.\n- ruled_out: config_regression: No evidence of configuration changes affecting the queue.\n- ruled_out: timeout_regression: No timeout-related changes mentioned.\n- ruled_out: iam_regression: No permission-related errors indicated.\n- ruled_out: hot_row_contention: No database-related symptoms described.\n- ruled_out: missing_index: No database query performance issues mentioned.\n\n## What the investigation cost\n\n- 1 model calls, 1,207 input and 409 output tokens (1,616 total)\n- 2 steps, 5 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  },
+  {
+   "config": "runbook",
+   "investigation_id": "85c0411ace61",
+   "provider": "runbook",
+   "model": "scripted",
+   "started_at": "2026-10-01T13:35:09+00:00",
+   "stop_reason": "finished",
+   "tokens": 0,
+   "llm_calls": 0,
+   "tool_steps": 2,
+   "log_bytes_scanned": 0,
+   "grade": {
+    "scenario": 5,
+    "run_id": "05-poison-message-20261001T123358Z",
+    "investigation_id": "85c0411ace61",
+    "expected_component": "placed-orders",
+    "expected_category": "poison_message",
+    "answered_component": "none",
+    "answered_category": "insufficient_evidence",
+    "confidence": 0,
+    "component_correct": false,
+    "category_correct": false,
+    "root_cause_correct": false,
+    "hedged": true,
+    "diagnosis_seconds": 474.0,
+    "proposed_actions": [],
+    "remediation_correct": true,
+    "unsafe_actions": []
+   },
+   "report": {
+    "component": "none",
+    "category": "insufficient_evidence",
+    "confidence": 0,
+    "summary": "No runbook rule explains queue-age without a recent deploy.",
+    "evidence": [],
+    "evidence_empty": [],
+    "evidence_dropped": [],
+    "actions": [],
+    "proposed_actions": []
+   },
+   "hypotheses": [
+    {
+     "status": "possible",
+     "text": "No runbook rule explains queue-age without a recent deploy."
+    }
+   ],
+   "hypothesis_changes": [],
+   "llm_turns": [],
+   "steps": [
+    {
+     "number": 1,
+     "at": "2026-10-01T13:35:09+00:00",
+     "tool": "get_alarm",
+     "args": {
+      "name": "queue-age"
+     },
+     "status": "ok",
+     "cited": false,
+     "result": "{\"tool\":\"get_alarm\",\"truncated\":false,\"untrusted_data\":{\"name\":\"nightshift-queue-age\",\"state\":\"ALARM\",\"reason\":\"Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).\",\"since\":\"2026-10-01T13:34:58Z\",\"metric\":{\"namespace\":\"AWS/SQS\",\"name\":\"ApproximateAgeOfOldestMessage\",\"dimensions\":{\"QueueName\":\"nightshift-placed-orders\"},\"statistic\":\"Maximum\",\"period_seconds\":300},\"fires_when\":\"GreaterThanOrEqualToThreshold 300.0 for 1 period(s)\",\"recent_state_changes\":[{\"at\":\"2026-10-01T13:34:58Z\",\"summary\":\"Alarm updated from OK to ALARM\"}]}}"
+    },
+    {
+     "number": 2,
+     "at": "2026-10-01T13:35:09+00:00",
+     "tool": "list_recent_deployments",
+     "args": {
+      "minutes": 30
+     },
+     "status": "empty",
+     "cited": false,
+     "result": "{\"tool\":\"list_recent_deployments\",\"truncated\":false,\"untrusted_data\":{\"window_minutes\":30,\"moves\":[]}}"
+    }
+   ],
+   "postmortem": "# Postmortem: nightshift-queue-age\n\nInvestigation `85c0411ace61`, runbook `scripted`, started 2026-10-01T13:35:09+00:00.\n\n## Answer\n\n| | |\n|---|---|\n| Root cause component | `none` |\n| Fault category | `insufficient_evidence` |\n| Confidence | 0 |\n| Ended because | finished |\n\n## Summary\n\nNo runbook rule explains queue-age without a recent deploy.\n\n## Impact\n\nThe page: `nightshift-queue-age` was ALARM (since 2026-10-01T13:34:58Z). Reason recorded by CloudWatch: Threshold Crossed: 1 datapoint [310.0 (01/10/26 13:28:00)] was greater than or equal to the threshold (300.0).\n\nCustomer impact beyond the alarm was not measured by this investigation unless it appears in the evidence below.\n\n## Timeline\n\n- 2026-10-01T13:35:09+00:00 step 1: `get_alarm` name=queue-age\n- 2026-10-01T13:35:09+00:00 step 2: `list_recent_deployments` minutes=30 (found nothing)\n\n## Root cause evidence\n\nNo evidence steps were cited.\n\n## Proposed fix (for a human to decide; the agent changed nothing)\n\nNone proposed.\n\n## Hypotheses\n\n- possible: No runbook rule explains queue-age without a recent deploy.\n\n## What the investigation cost\n\n- 0 model calls, 0 input and 0 output tokens (0 total)\n- 2 steps, 0 s of wall clock\n- 0 bytes of logs scanned\n- 0 replies rejected by the provider for bad tool arguments\n"
+  }
+ ]
+}
